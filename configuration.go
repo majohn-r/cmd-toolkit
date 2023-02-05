@@ -218,6 +218,18 @@ func (c *Configuration) BoolDefault(key string, defaultValue bool) (b bool, err 
 	return
 }
 
+// BooleanValue returns a boolean value and whether it exists
+func (c *Configuration) BooleanValue(key string) (value, ok bool) {
+	value, ok = c.bMap[key]
+	return
+}
+
+// HasSubConfiguration returns whether the specified subConfiguration exists
+func (c *Configuration) HasSubConfiguration(key string) bool {
+	_, ok := c.cMap[key]
+	return ok
+}
+
 // IntDefault returns a default value for a specified key, which may or may not
 // be defined in the Configuration instance
 func (c *Configuration) IntDefault(key string, b *IntBounds) (i int, err error) {
@@ -240,6 +252,12 @@ func (c *Configuration) IntDefault(key string, b *IntBounds) (i int, err error) 
 			}
 		}
 	}
+	return
+}
+
+// IntValue returns an int value and whether it exists
+func (c *Configuration) IntValue(key string) (value int, ok bool) {
+	value, ok = c.iMap[key]
 	return
 }
 

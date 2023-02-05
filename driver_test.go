@@ -27,14 +27,14 @@ func (*unhappyCommand) Exec(o output.Bus, _ []string) bool {
 
 func TestExecute(t *testing.T) {
 	savedAppname := appname
-	savedAppDataValue, savedAppDataSet := os.LookupEnv(appDataVar)
+	savedAppDataValue, savedAppDataSet := os.LookupEnv(ApplicationDataEnvVarName)
 	savedDescriptions := descriptions
 	defer func() {
 		appname = savedAppname
 		if savedAppDataSet {
-			os.Setenv(appDataVar, savedAppDataValue)
+			os.Setenv(ApplicationDataEnvVarName, savedAppDataValue)
 		} else {
-			os.Unsetenv(appDataVar)
+			os.Unsetenv(ApplicationDataEnvVarName)
 		}
 		descriptions = savedDescriptions
 	}()
@@ -218,9 +218,9 @@ func TestExecute(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			appname = tt.appname
 			if tt.appDataSet {
-				os.Setenv(appDataVar, tt.appDataValue)
+				os.Setenv(ApplicationDataEnvVarName, tt.appDataValue)
 			} else {
-				os.Unsetenv(appDataVar)
+				os.Unsetenv(ApplicationDataEnvVarName)
 			}
 			descriptions = tt.descriptions
 			tt.preTest()

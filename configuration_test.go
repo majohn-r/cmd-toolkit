@@ -822,3 +822,108 @@ func TestIntBounds_constrainedValue(t *testing.T) {
 		})
 	}
 }
+
+func TestConfiguration_BooleanValue(t *testing.T) {
+	type args struct {
+		key string
+	}
+	tests := map[string]struct {
+		c *Configuration
+		args
+		wantValue bool
+		wantOk    bool
+	}{
+		"absent": {
+			c:      &Configuration{bMap: map[string]bool{}},
+			args:   args{key: "key"},
+			wantOk: false,
+		},
+		"present and true": {
+			c:         &Configuration{bMap: map[string]bool{"key": true}},
+			args:      args{key: "key"},
+			wantValue: true,
+			wantOk:    true,
+		},
+		"present and false": {
+			c:         &Configuration{bMap: map[string]bool{"key": false}},
+			args:      args{key: "key"},
+			wantValue: false,
+			wantOk:    true,
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			gotValue, gotOk := tt.c.BooleanValue(tt.args.key)
+			if gotValue != tt.wantValue {
+				t.Errorf("Configuration.BooleanValue() gotValue = %v, want %v", gotValue, tt.wantValue)
+			}
+			if gotOk != tt.wantOk {
+				t.Errorf("Configuration.BooleanValue() gotOk = %v, want %v", gotOk, tt.wantOk)
+			}
+		})
+	}
+}
+
+func TestConfiguration_HasSubConfiguration(t *testing.T) {
+	type args struct {
+		key string
+	}
+	tests := map[string]struct {
+		c *Configuration
+		args
+		want bool
+	}{
+		"absent": {
+			c:    EmptyConfiguration(),
+			args: args{key: "key"},
+			want: false,
+		},
+		"present": {
+			c:    &Configuration{cMap: map[string]*Configuration{"key": EmptyConfiguration()}},
+			args: args{key: "key"},
+			want: true,
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := tt.c.HasSubConfiguration(tt.args.key); got != tt.want {
+				t.Errorf("Configuration.HasSubConfiguration() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestConfiguration_IntValue(t *testing.T) {
+	type args struct {
+		key string
+	}
+	tests := map[string]struct {
+		c *Configuration
+		args
+		wantValue int
+		wantOk    bool
+	}{
+		"absent": {
+			c:      EmptyConfiguration(),
+			args:   args{key: "key"},
+			wantOk: false,
+		},
+		"present": {
+			c:         &Configuration{iMap: map[string]int{"key": 42}},
+			args:      args{key: "key"},
+			wantValue: 42,
+			wantOk:    true,
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			gotValue, gotOk := tt.c.IntValue(tt.args.key)
+			if gotValue != tt.wantValue {
+				t.Errorf("Configuration.IntValue() gotValue = %v, want %v", gotValue, tt.wantValue)
+			}
+			if gotOk != tt.wantOk {
+				t.Errorf("Configuration.IntValue() gotOk = %v, want %v", gotOk, tt.wantOk)
+			}
+		})
+	}
+}

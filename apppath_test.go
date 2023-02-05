@@ -32,7 +32,7 @@ func TestInitApplicationPath(t *testing.T) {
 	savedApplicationPath := applicationPath
 	var appDataWasSet bool
 	var savedAppDataValue string
-	if value, ok := os.LookupEnv(appDataVar); ok {
+	if value, ok := os.LookupEnv(ApplicationDataEnvVarName); ok {
 		appDataWasSet = true
 		savedAppDataValue = value
 	}
@@ -40,9 +40,9 @@ func TestInitApplicationPath(t *testing.T) {
 		appname = savedAppname
 		applicationPath = savedApplicationPath
 		if appDataWasSet {
-			os.Setenv(appDataVar, savedAppDataValue)
+			os.Setenv(ApplicationDataEnvVarName, savedAppDataValue)
 		} else {
-			os.Unsetenv(appDataVar)
+			os.Unsetenv(ApplicationDataEnvVarName)
 		}
 	}()
 	tests := map[string]struct {
@@ -135,9 +135,9 @@ func TestInitApplicationPath(t *testing.T) {
 			appname = tt.appname
 			applicationPath = ""
 			if tt.appDataSet {
-				os.Setenv(appDataVar, tt.appDataValue)
+				os.Setenv(ApplicationDataEnvVarName, tt.appDataValue)
 			} else {
-				os.Unsetenv(appDataVar)
+				os.Unsetenv(ApplicationDataEnvVarName)
 			}
 			tt.preTest()
 			defer tt.postTest()

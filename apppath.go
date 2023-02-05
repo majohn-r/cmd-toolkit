@@ -14,7 +14,7 @@ import (
 
 var applicationPath string
 
-const appDataVar = "APPDATA"
+const ApplicationDataEnvVarName = "APPDATA"
 
 // ApplicationPath returns the path to application-specific data (%APPDATA%\appname)
 func ApplicationPath() string {
@@ -23,7 +23,7 @@ func ApplicationPath() string {
 
 // InitApplicationPath ensures that the application path exists
 func InitApplicationPath(o output.Bus) (initialized bool) {
-	if value, ok := os.LookupEnv(appDataVar); ok {
+	if value, ok := os.LookupEnv(ApplicationDataEnvVarName); ok {
 		if dir, err := CreateAppSpecificPath(value); err == nil {
 			applicationPath = dir
 			if DirExists(applicationPath) {
@@ -43,7 +43,7 @@ func InitApplicationPath(o output.Bus) (initialized bool) {
 			o.Log(output.Error, "program error", map[string]any{"error": err})
 		}
 	} else {
-		o.Log(output.Error, "not set", map[string]any{"environmentVariable": appDataVar})
+		o.Log(output.Error, "not set", map[string]any{"environmentVariable": ApplicationDataEnvVarName})
 	}
 	return
 }
