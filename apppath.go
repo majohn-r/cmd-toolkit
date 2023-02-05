@@ -14,6 +14,9 @@ import (
 
 var applicationPath string
 
+// ApplicationDataEnvVarName is the name of the environment variable used to
+// read/write application-specific files that are intended to have some
+// permanence.
 const ApplicationDataEnvVarName = "APPDATA"
 
 // ApplicationPath returns the path to application-specific data (%APPDATA%\appname)
