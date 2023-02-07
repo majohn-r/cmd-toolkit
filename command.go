@@ -2,6 +2,7 @@ package cmd_toolkit
 
 import (
 	"flag"
+	"fmt"
 	"sort"
 	"strings"
 
@@ -91,7 +92,7 @@ func determineDefaultCommand(o output.Bus, c *Configuration) (defaultCommand str
 		}
 		switch len(defaultCmds) {
 		case 0:
-			o.Log(output.Error, "No default command", map[string]any{"commands": describedCommandNames()})
+			o.Log(output.Error, "No default command", map[string]any{"commands": describedCommandNames("")})
 			o.WriteCanonicalError("A programming error has occurred - none of the defined commands is defined as the default command.")
 			ok = false
 		case 1:
@@ -107,10 +108,14 @@ func determineDefaultCommand(o output.Bus, c *Configuration) (defaultCommand str
 	return
 }
 
-func describedCommandNames() []string {
+func describedCommandNames(defaultCommand string) []string {
 	var names []string
 	for name := range descriptions {
-		names = append(names, name)
+		if name == defaultCommand {
+			names = append(names, fmt.Sprintf("%s (default)", name))
+		} else {
+			names = append(names, name)
+		}
 	}
 	sort.Strings(names)
 	return names
@@ -151,7 +156,7 @@ func selectCommand(o output.Bus, defaultCmd string, c *Configuration, args []str
 	if !found {
 		cmd = nil
 		cmdArgs = nil
-		names := describedCommandNames()
+		names := describedCommandNames(defaultCmd)
 		o.Log(output.Error, "unrecognized command", map[string]any{"command": firstArg, "commands": names})
 		o.WriteCanonicalError("There is no command named %q; valid commands include %v", firstArg, names)
 		return

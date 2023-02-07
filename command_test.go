@@ -343,11 +343,16 @@ func Test_describedCommandNames(t *testing.T) {
 	defer func() {
 		descriptions = savedDescriptions
 	}()
+	type args struct {
+		defaultCommand string
+	}
 	tests := map[string]struct {
+		args
 		descriptions map[string]*CommandDescription
 		want         []string
 	}{
-		"simple test": {
+		"no default": {
+			args: args{},
 			descriptions: map[string]*CommandDescription{
 				"someCommand": {},
 				"about":       {},
@@ -355,11 +360,20 @@ func Test_describedCommandNames(t *testing.T) {
 			},
 			want: []string{"about", "help", "someCommand"},
 		},
+		"with default": {
+			args: args{defaultCommand: "help"},
+			descriptions: map[string]*CommandDescription{
+				"someCommand": {},
+				"about":       {},
+				"help":        {},
+			},
+			want: []string{"about", "help (default)", "someCommand"},
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			descriptions = tt.descriptions
-			if got := describedCommandNames(); !reflect.DeepEqual(got, tt.want) {
+			if got := describedCommandNames(tt.args.defaultCommand); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("describedCommandNames() = %v, want %v", got, tt.want)
 			}
 		})
@@ -443,8 +457,8 @@ func Test_selectCommand(t *testing.T) {
 			},
 			args: args{defaultCmd: "about", c: EmptyConfiguration(), args: []string{"cmd", "nonCommand", "-flag2=14"}},
 			WantedRecording: output.WantedRecording{
-				Error: "There is no command named \"nonCommand\"; valid commands include [about].\n",
-				Log:   "level='error' command='nonCommand' commands='[about]' msg='unrecognized command'\n",
+				Error: "There is no command named \"nonCommand\"; valid commands include [about (default)].\n",
+				Log:   "level='error' command='nonCommand' commands='[about (default)]' msg='unrecognized command'\n",
 			},
 		},
 		"all commands initialized, first real argument is a real command": {
