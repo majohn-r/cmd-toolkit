@@ -158,7 +158,7 @@ func selectCommand(o output.Bus, defaultCmd string, c *Configuration, args []str
 		cmdArgs = nil
 		names := describedCommandNames(defaultCmd)
 		o.Log(output.Error, "unrecognized command", map[string]any{"command": firstArg, "commands": names})
-		o.WriteCanonicalError("There is no command named %q; valid commands include %v", firstArg, names)
+		o.WriteCanonicalError("There is no command named %q; valid commands include [%s]", firstArg, strings.Join(names, ", "))
 		return
 	}
 	cmdArgs = args[2:]
