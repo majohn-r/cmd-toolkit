@@ -1,22 +1,26 @@
 package cmd_toolkit
 
 import (
-	"runtime/debug"
 	"time"
 
 	"github.com/majohn-r/output"
 )
 
-func Execute(o output.Bus, logInit func(output.Bus) bool, readBuildInfo func() (*debug.BuildInfo, bool), appName, appVersion, buildTimestamp string, cmdLine []string) (exitCode int) {
+var (
+	logInitializer func(output.Bus) bool = InitLogging
+)
+
+func Execute(o output.Bus, firstYear int, appName, appVersion, buildTimestamp string, cmdLine []string) (exitCode int) {
 	start := time.Now()
+	setFirstYear(firstYear)
 	exitCode = 1
 	if err := SetAppName(appName); err != nil {
 		o.WriteCanonicalError("A programming error has occurred - %v", err)
 		return
 	}
-	if logInit(o) && InitApplicationPath(o) {
+	if logInitializer(o) && InitApplicationPath(o) {
 		// parse build data
-		InitBuildData(readBuildInfo, appVersion, buildTimestamp)
+		InitBuildData(appVersion, buildTimestamp)
 		o.Log(output.Info, "execution starts", map[string]any{
 			"version":      appVersion,
 			"timeStamp":    buildTimestamp,

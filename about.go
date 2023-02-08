@@ -29,7 +29,8 @@ var (
 	// this may be reset by SetAuthor()
 	author = "Marc Johnson"
 	// this should be reset by SetFirstYear()
-	firstYear = time.Now().Year()
+	firstYear                                       = time.Now().Year()
+	buildInfoReader func() (*debug.BuildInfo, bool) = debug.ReadBuildInfo
 )
 
 // BuildDependencies returns information about the dependencies used to compile
@@ -45,8 +46,8 @@ func GoVersion() string {
 
 // InitBuildData captures information about how the program was compiled, the
 // version of the program, and the timestamp for when the program was built.
-func InitBuildData(f func() (*debug.BuildInfo, bool), version, creation string) {
-	if b, ok := f(); ok {
+func InitBuildData(version, creation string) {
+	if b, ok := buildInfoReader(); ok {
 		goVersion = b.GoVersion
 		for _, d := range b.Deps {
 			buildDependencies = append(buildDependencies, fmt.Sprintf("%s %s", d.Path, d.Version))
@@ -65,10 +66,7 @@ func SetAuthor(s string) {
 	author = s
 }
 
-// SetFirstYear needs to be called before the about command can run. In the
-// first year of using this library, it will work fine, but after that, the
-// first year of development will continue to update to "this year".
-func SetFirstYear(i int) {
+func setFirstYear(i int) {
 	firstYear = i
 }
 

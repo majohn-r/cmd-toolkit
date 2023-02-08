@@ -72,14 +72,15 @@ func TestInitBuildData(t *testing.T) {
 	savedBuildDependencies := buildDependencies
 	savedBuildTimestamp := buildTimestamp
 	savedGoVersion := goVersion
+	savedBuildInfoReader := buildInfoReader
 	defer func() {
 		appVersion = savedAppVersion
 		buildDependencies = savedBuildDependencies
 		buildTimestamp = savedBuildTimestamp
 		goVersion = savedGoVersion
+		buildInfoReader = savedBuildInfoReader
 	}()
 	type args struct {
-		f                     func() (*debug.BuildInfo, bool)
 		version               string
 		creation              string
 		wantBuildDependencies []string
@@ -89,10 +90,10 @@ func TestInitBuildData(t *testing.T) {
 	}
 	tests := map[string]struct {
 		args
+		preTest func()
 	}{
 		"failure": {
-			args{
-				f:                     func() (*debug.BuildInfo, bool) { return nil, false },
+			args: args{
 				version:               "1.2.3",
 				creation:              "today",
 				wantBuildDependencies: nil,
@@ -100,20 +101,12 @@ func TestInitBuildData(t *testing.T) {
 				wantAppVersion:        "1.2.3",
 				wantBuildTimeStamp:    "today",
 			},
+			preTest: func() {
+				buildInfoReader = func() (*debug.BuildInfo, bool) { return nil, false }
+			},
 		},
 		"success": {
-			args{
-				f: func() (*debug.BuildInfo, bool) {
-					return &debug.BuildInfo{
-						GoVersion: "go1.9.6",
-						Deps: []*debug.Module{
-							{Path: "github.com/majohn-r/output", Version: "v0.1.1"},
-							{Path: "github.com/sirupsen/logrus", Version: "v1.9.0"},
-							{Path: "github.com/utahta/go-cronowriter", Version: "v1.2.0"},
-							{Path: "gopkg.in/yaml.v3", Version: "v3.0.1"},
-						},
-					}, true
-				},
+			args: args{
 				version:  "2.3.4",
 				creation: "2022-08-10T13:29:57-04:00",
 				wantBuildDependencies: []string{
@@ -126,11 +119,25 @@ func TestInitBuildData(t *testing.T) {
 				wantAppVersion:     "2.3.4",
 				wantBuildTimeStamp: "2022-08-10T13:29:57-04:00",
 			},
+			preTest: func() {
+				buildInfoReader = func() (*debug.BuildInfo, bool) {
+					return &debug.BuildInfo{
+						GoVersion: "go1.9.6",
+						Deps: []*debug.Module{
+							{Path: "github.com/majohn-r/output", Version: "v0.1.1"},
+							{Path: "github.com/sirupsen/logrus", Version: "v1.9.0"},
+							{Path: "github.com/utahta/go-cronowriter", Version: "v1.2.0"},
+							{Path: "gopkg.in/yaml.v3", Version: "v3.0.1"},
+						},
+					}, true
+				}
+			},
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			InitBuildData(tt.args.f, tt.args.version, tt.args.creation)
+			tt.preTest()
+			InitBuildData(tt.args.version, tt.args.creation)
 			if gotBuildDependencies := buildDependencies; !reflect.DeepEqual(gotBuildDependencies, tt.wantBuildDependencies) {
 				t.Errorf("InitBuildData() gotBuildDependencies %v wantBuildDependencies %v", gotBuildDependencies, tt.wantBuildDependencies)
 			}
@@ -171,7 +178,7 @@ func TestSetAuthor(t *testing.T) {
 	}
 }
 
-func TestSetFirstYear(t *testing.T) {
+func Test_setFirstYear(t *testing.T) {
 	savedFirstYear := firstYear
 	defer func() {
 		firstYear = savedFirstYear
@@ -187,9 +194,9 @@ func TestSetFirstYear(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			SetFirstYear(tt.args.i)
+			setFirstYear(tt.args.i)
 			if got := firstYear; got != tt.want {
-				t.Errorf("SetFirstYear() got %d want %d", got, tt.want)
+				t.Errorf("setFirstYear() got %d want %d", got, tt.want)
 			}
 		})
 	}

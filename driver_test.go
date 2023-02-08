@@ -29,6 +29,9 @@ func TestExecute(t *testing.T) {
 	savedAppname := appname
 	savedAppDataValue, savedAppDataSet := os.LookupEnv(ApplicationDataEnvVarName)
 	savedDescriptions := descriptions
+	savedLogInitializer := logInitializer
+	savedBuildInfoReader := buildInfoReader
+	savedFirstYear := firstYear
 	defer func() {
 		appname = savedAppname
 		if savedAppDataSet {
@@ -37,10 +40,12 @@ func TestExecute(t *testing.T) {
 			os.Unsetenv(ApplicationDataEnvVarName)
 		}
 		descriptions = savedDescriptions
+		logInitializer = savedLogInitializer
+		buildInfoReader = savedBuildInfoReader
+		firstYear = savedFirstYear
 	}()
 	type args struct {
-		logInit        func(output.Bus) bool
-		readBuildInfo  func() (*debug.BuildInfo, bool)
+		firstYear      int
 		appName        string
 		appVersion     string
 		buildTimestamp string
@@ -65,13 +70,15 @@ func TestExecute(t *testing.T) {
 			WantedRecording: output.WantedRecording{Error: "A programming error has occurred - app name has already been initialized: myApp.\n"},
 		},
 		"logInit fails": {
-			preTest:  func() {},
-			postTest: func() {},
-			args: args{
-				logInit: func(o output.Bus) bool {
+			preTest: func() {
+				logInitializer = func(o output.Bus) bool {
 					o.WriteError("log init failed!!\n")
 					return false
-				},
+				}
+			},
+			postTest: func() {},
+			args: args{
+				firstYear:      2021,
 				appName:        "myNewApp",
 				appVersion:     "0.0.1",
 				buildTimestamp: "today",
@@ -84,12 +91,14 @@ func TestExecute(t *testing.T) {
 			},
 		},
 		"InitApplicationPath fails": {
-			preTest:  func() {},
+			preTest: func() {
+				logInitializer = func(_ output.Bus) bool {
+					return true
+				}
+			},
 			postTest: func() {},
 			args: args{
-				logInit: func(_ output.Bus) bool {
-					return true
-				},
+				firstYear:      2021,
 				appName:        "myNewApp",
 				appVersion:     "0.0.1",
 				buildTimestamp: "today",
@@ -107,18 +116,19 @@ func TestExecute(t *testing.T) {
 			preTest: func() {
 				path := filepath.Join(".", "appdata", "myApp")
 				_ = os.MkdirAll(path, StdDirPermissions)
+				logInitializer = func(_ output.Bus) bool {
+					return true
+				}
+				buildInfoReader = func() (*debug.BuildInfo, bool) {
+					return nil, false
+				}
 			},
 			postTest: func() {
 				path := filepath.Join(".", "appdata")
 				_ = os.RemoveAll(path)
 			},
 			args: args{
-				logInit: func(_ output.Bus) bool {
-					return true
-				},
-				readBuildInfo: func() (*debug.BuildInfo, bool) {
-					return nil, false
-				},
+				firstYear:      2021,
 				appName:        "myNewApp",
 				appVersion:     "0.0.1",
 				buildTimestamp: "today",
@@ -148,18 +158,19 @@ func TestExecute(t *testing.T) {
 			preTest: func() {
 				path := filepath.Join(".", "appdata", "myApp")
 				_ = os.MkdirAll(path, StdDirPermissions)
+				logInitializer = func(_ output.Bus) bool {
+					return true
+				}
+				buildInfoReader = func() (*debug.BuildInfo, bool) {
+					return nil, false
+				}
 			},
 			postTest: func() {
 				path := filepath.Join(".", "appdata")
 				_ = os.RemoveAll(path)
 			},
 			args: args{
-				logInit: func(_ output.Bus) bool {
-					return true
-				},
-				readBuildInfo: func() (*debug.BuildInfo, bool) {
-					return nil, false
-				},
+				firstYear:      2021,
 				appName:        "myNewApp",
 				appVersion:     "0.0.1",
 				buildTimestamp: "today",
@@ -188,18 +199,19 @@ func TestExecute(t *testing.T) {
 			preTest: func() {
 				path := filepath.Join(".", "appdata", "myApp")
 				_ = os.MkdirAll(path, StdDirPermissions)
+				logInitializer = func(_ output.Bus) bool {
+					return true
+				}
+				buildInfoReader = func() (*debug.BuildInfo, bool) {
+					return nil, false
+				}
 			},
 			postTest: func() {
 				path := filepath.Join(".", "appdata")
 				_ = os.RemoveAll(path)
 			},
 			args: args{
-				logInit: func(_ output.Bus) bool {
-					return true
-				},
-				readBuildInfo: func() (*debug.BuildInfo, bool) {
-					return nil, false
-				},
+				firstYear:      2021,
 				appName:        "myNewApp",
 				appVersion:     "0.0.1",
 				buildTimestamp: "today",
@@ -226,7 +238,7 @@ func TestExecute(t *testing.T) {
 			tt.preTest()
 			defer tt.postTest()
 			o := output.NewRecorder()
-			if gotExitCode := Execute(o, tt.args.logInit, tt.args.readBuildInfo, tt.args.appName, tt.args.appVersion, tt.args.buildTimestamp, tt.args.cmdLine); gotExitCode != tt.wantExitCode {
+			if gotExitCode := Execute(o, tt.args.firstYear, tt.args.appName, tt.args.appVersion, tt.args.buildTimestamp, tt.args.cmdLine); gotExitCode != tt.wantExitCode {
 				t.Errorf("Execute() = %v, want %v", gotExitCode, tt.wantExitCode)
 			}
 			if gotConsole := o.ConsoleOutput(); gotConsole != tt.WantedRecording.Console {
