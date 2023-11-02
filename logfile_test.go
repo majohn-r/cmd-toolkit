@@ -75,9 +75,9 @@ func Test_initWriter(t *testing.T) {
 				_ = logger.Close()
 				_ = os.RemoveAll("goodLogs")
 			},
-			want:  cronowriter.MustNew(
-				filepath.Join("goodLogs\\myApp\\logs", "myApp%Y%m%d.log"),
-				cronowriter.WithSymlink(filepath.Join("goodLogs\\myApp\\logs", "latest.log")),
+			want: cronowriter.MustNew(
+				filepath.Join("goodLogs", "myApp", "logs", "myApp%Y%m%d.log"),
+				cronowriter.WithSymlink(filepath.Join("goodLogs", "myApp", "logs", "latest.log")),
 				cronowriter.WithInit()),
 		},
 	}
