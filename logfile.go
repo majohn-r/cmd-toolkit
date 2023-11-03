@@ -21,28 +21,33 @@ const (
 )
 
 // exposed so that unit tests can close the writer!
-var logger io.WriteCloser
+var logWriter io.WriteCloser
 
-func initWriter(o output.Bus) (w io.Writer) {
-	if tmpFolder, found := findTemp(o); found {
-		if tmp, err := CreateAppSpecificPath(tmpFolder); err != nil {
-			o.WriteCanonicalError("A programming error has occurred: %v", err)
-		} else {
-			logPath := filepath.Join(tmp, logDirName)
-			if err := os.MkdirAll(logPath, StdDirPermissions); err != nil {
-				WriteDirectoryCreationError(o, logPath, err)
-			} else {
-				cleanup(o, logPath)
-				logger = cronowriter.MustNew(
-					filepath.Join(logPath, logFilePrefix()+"%Y%m%d"+logFileExtension),
-					cronowriter.WithSymlink(filepath.Join(logPath, symlinkName)),
-					cronowriter.WithInit())
-				w = logger
-			}
-		}
+func initWriter(o output.Bus) io.Writer {
+	var tmpFolder string
+	var found bool
+	if tmpFolder, found = findTemp(o); !found {
+		return nil
 	}
-	return
+	var tmp string
+	var err error
+	if tmp, err = CreateAppSpecificPath(tmpFolder); err != nil {
+		o.WriteCanonicalError("A programming error has occurred: %v", err)
+		return nil
+	}
+	logPath := filepath.Join(tmp, logDirName)
+	if err = os.MkdirAll(logPath, StdDirPermissions); err != nil {
+		WriteDirectoryCreationError(o, logPath, err)
+		return nil
+	}
+	cleanup(o, logPath)
+	logWriter = cronowriter.MustNew(
+		filepath.Join(logPath, logFilePrefix()+"%Y%m%d"+logFileExtension),
+		cronowriter.WithSymlink(filepath.Join(logPath, symlinkName)),
+		cronowriter.WithInit())
+	return logWriter
 }
+
 func cleanup(o output.Bus, logPath string) (found, deleted int) {
 	if files, ok := ReadDirectory(o, logPath); ok {
 		var fileMap map[time.Time]fs.DirEntry = make(map[time.Time]fs.DirEntry)

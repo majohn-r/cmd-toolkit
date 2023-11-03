@@ -1,6 +1,8 @@
 package cmd_toolkit
 
 import (
+	"io"
+
 	"github.com/majohn-r/output"
 	"github.com/sirupsen/logrus"
 )
@@ -9,9 +11,13 @@ import (
 // interface
 type ProductionLogger struct{}
 
+// function to get an io.Writer with which to initialize the logger; this makes
+// it easy to substitute another function in unit tests
+var writerGetter func(o output.Bus) io.Writer = initWriter
+
 // InitLogging sets up logging
 func InitLogging(o output.Bus) (ok bool) {
-	if w := initWriter(o); w != nil {
+	if w := writerGetter(o); w != nil {
 		logrus.SetOutput(w)
 		ok = true
 	}

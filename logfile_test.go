@@ -2,7 +2,6 @@ package cmd_toolkit
 
 import (
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -10,7 +9,6 @@ import (
 	"time"
 
 	"github.com/majohn-r/output"
-	"github.com/utahta/go-cronowriter"
 )
 
 func Test_initWriter(t *testing.T) {
@@ -25,7 +23,7 @@ func Test_initWriter(t *testing.T) {
 	tests := map[string]struct {
 		preTest  func()
 		postTest func()
-		want     io.Writer
+		wantNil  bool
 		output.WantedRecording
 	}{
 		"no temp folder defined": {
@@ -34,7 +32,7 @@ func Test_initWriter(t *testing.T) {
 				os.Unsetenv("TEMP")
 			},
 			postTest:        func() {},
-			want:            nil,
+			wantNil:         true,
 			WantedRecording: output.WantedRecording{Error: "Neither the TMP nor TEMP environment variables are defined.\n"},
 		},
 		"uninitialized appname": {
@@ -44,7 +42,7 @@ func Test_initWriter(t *testing.T) {
 				appname = ""
 			},
 			postTest:        func() {},
-			want:            nil,
+			wantNil:         true,
 			WantedRecording: output.WantedRecording{Error: "A programming error has occurred: app name has not been initialized.\n"},
 		},
 		"bad TMP setting": {
@@ -57,7 +55,7 @@ func Test_initWriter(t *testing.T) {
 			postTest: func() {
 				os.Remove("logs")
 			},
-			want: nil,
+			wantNil: true,
 			WantedRecording: output.WantedRecording{
 				Error: "The directory \"logs\\\\myApp\\\\logs\" cannot be created: mkdir logs: The system cannot find the path specified.\n",
 			},
@@ -69,16 +67,18 @@ func Test_initWriter(t *testing.T) {
 				appname = "myApp"
 			},
 			postTest: func() {
-				// critical to close the logger, otherwise, "goodLogs" cannot be
-				// removed, as the logger will continue hold the current log
-				// file open
-				_ = logger.Close()
-				_ = os.RemoveAll("goodLogs")
+				// critical to close logWriter, otherwise, "goodLogs" cannot be
+				// removed, as logWriter will continue hold the current log file
+				// open
+				if err := logWriter.Close(); err != nil {
+					t.Errorf("error closing logWriter: %v", err)
+				} else {
+					if err := os.RemoveAll("goodLogs"); err != nil {
+						t.Errorf("Error removing goodLogs: %v", err)
+					}
+				}
 			},
-			want: cronowriter.MustNew(
-				filepath.Join("goodLogs", "myApp", "logs", "myApp%Y%m%d.log"),
-				cronowriter.WithSymlink(filepath.Join("goodLogs", "myApp", "logs", "latest.log")),
-				cronowriter.WithInit()),
+			wantNil: false,
 		},
 	}
 	for name, tt := range tests {
@@ -86,10 +86,8 @@ func Test_initWriter(t *testing.T) {
 			tt.preTest()
 			defer tt.postTest()
 			o := output.NewRecorder()
-			if got := initWriter(o); got != tt.want {
-				if got == nil || tt.want == nil {
-					t.Errorf("initWriter() = %v, want %v", got, tt.want)
-				}
+			if gotNil := initWriter(o) == nil; !gotNil == tt.wantNil {
+				t.Errorf("initWriter() gotNil= %t, wantNil %t", gotNil, tt.wantNil)
 			}
 			if issues, ok := o.Verify(tt.WantedRecording); !ok {
 				for _, issue := range issues {

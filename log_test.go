@@ -1,7 +1,8 @@
 package cmd_toolkit
 
 import (
-	"os"
+	"bytes"
+	"io"
 	"testing"
 
 	"github.com/majohn-r/output"
@@ -9,82 +10,28 @@ import (
 )
 
 func TestInitLogging(t *testing.T) {
-	savedTmp := NewEnvVarMemento("TMP")
-	savedTemp := NewEnvVarMemento("TEMP")
-	savedAppname := appname
-	defer func() {
-		savedTmp.Restore()
-		savedTemp.Restore()
-		appname = savedAppname
-	}()
 	tests := map[string]struct {
-		preTest  func()
-		postTest func()
-		want     bool
-		output.WantedRecording
+		writerGetter func(o output.Bus) io.Writer
+		want         bool
 	}{
-		"no temp folder defined": {
-			preTest: func() {
-				os.Unsetenv("TMP")
-				os.Unsetenv("TEMP")
-			},
-			postTest:        func() {},
-			want:            false,
-			WantedRecording: output.WantedRecording{Error: "Neither the TMP nor TEMP environment variables are defined.\n"},
-		},
-		"uninitialized appname": {
-			preTest: func() {
-				os.Setenv("TMP", "logs")
-				os.Unsetenv("TEMP")
-				appname = ""
-			},
-			postTest:        func() {},
-			want:            false,
-			WantedRecording: output.WantedRecording{Error: "A programming error has occurred: app name has not been initialized.\n"},
-		},
-		"bad TMP setting": {
-			preTest: func() {
-				os.Setenv("TMP", "logs")
-				os.Unsetenv("TEMP")
-				appname = "myApp"
-				_ = os.WriteFile("logs", []byte{}, StdFilePermissions)
-			},
-			postTest: func() {
-				os.Remove("logs")
-			},
-			want: false,
-			WantedRecording: output.WantedRecording{
-				Error: "The directory \"logs\\\\myApp\\\\logs\" cannot be created: mkdir logs: The system cannot find the path specified.\n",
-			},
+		"no writer available": {
+			writerGetter: func(o output.Bus) io.Writer { return nil },
+			want:         false,
 		},
 		"success": {
-			preTest: func() {
-				os.Setenv("TMP", "goodLogs")
-				os.Unsetenv("TEMP")
-				appname = "myApp"
-			},
-			postTest: func() {
-				// critical to close the logger, otherwise, "goodLogs" cannot be
-				// removed, as the logger will continue hold the current log
-				// file open
-				_ = logger.Close()
-				_ = os.RemoveAll("goodLogs")
-			},
-			want: true,
+			writerGetter: func(o output.Bus) io.Writer { return &bytes.Buffer{} },
+			want:         true,
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			tt.preTest()
-			defer tt.postTest()
-			o := output.NewRecorder()
-			if got := InitLogging(o); got != tt.want {
+			oldFunc := writerGetter
+			defer func() {
+				writerGetter = oldFunc
+			}()
+			writerGetter = tt.writerGetter
+			if got := InitLogging(nil); got != tt.want {
 				t.Errorf("InitLogging() = %v, want %v", got, tt.want)
-			}
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
-				for _, issue := range issues {
-					t.Errorf("InitLogging() %s", issue)
-				}
 			}
 		})
 	}
