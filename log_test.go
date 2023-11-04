@@ -50,16 +50,16 @@ func TestInitLoggingWithLevel(t *testing.T) {
 	// introduce a programming error when the underlying log implementation
 	// cannot be initialized with the specified log level
 	tests := map[string]struct {
-		l      LoggingLevel
+		l      output.Level
 		wantOk bool
 	}{
-		"panic": {l: Panic, wantOk: true},
-		"fatal": {l: Fatal, wantOk: true},
-		"error": {l: Error, wantOk: true},
-		"warn":  {l: Warn, wantOk: true},
-		"info":  {l: Info, wantOk: true},
-		"debug": {l: Debug, wantOk: true},
-		"trace": {l: Trace, wantOk: true},
+		"panic": {l: output.Panic, wantOk: true},
+		"fatal": {l: output.Fatal, wantOk: true},
+		"error": {l: output.Error, wantOk: true},
+		"warn":  {l: output.Warning, wantOk: true},
+		"info":  {l: output.Info, wantOk: true},
+		"debug": {l: output.Debug, wantOk: true},
+		"trace": {l: output.Trace, wantOk: true},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -81,43 +81,43 @@ func TestProductionLogger_Debug(t *testing.T) {
 	}
 	tests := map[string]struct {
 		pl ProductionLogger
-		l  LoggingLevel
+		l  output.Level
 		args
 		want string
 	}{
 		"panic": {
 			pl:   ProductionLogger{},
-			l:    Panic,
+			l:    output.Panic,
 			args: args{msg: "debug", fields: map[string]any{}},
 			want: "",
 		},
 		"fatal": {
 			pl:   ProductionLogger{},
-			l:    Fatal,
+			l:    output.Fatal,
 			args: args{msg: "debug", fields: map[string]any{}},
 			want: "",
 		},
 		"error": {
 			pl:   ProductionLogger{},
-			l:    Error,
+			l:    output.Error,
 			args: args{msg: "debug", fields: map[string]any{}},
 			want: "",
 		},
 		"warn": {
 			pl:   ProductionLogger{},
-			l:    Warn,
+			l:    output.Warning,
 			args: args{msg: "debug", fields: map[string]any{}},
 			want: "",
 		},
 		"info": {
 			pl:   ProductionLogger{},
-			l:    Info,
+			l:    output.Info,
 			args: args{msg: "debug", fields: map[string]any{}},
 			want: "",
 		},
 		"debug": {
 			pl: ProductionLogger{},
-			l:  Debug,
+			l:  output.Debug,
 			args: args{msg: "debug message", fields: map[string]any{
 				"field1": "value1",
 				"field2": 2,
@@ -128,7 +128,7 @@ func TestProductionLogger_Debug(t *testing.T) {
 		},
 		"trace": {
 			pl:   ProductionLogger{},
-			l:    Trace,
+			l:    output.Trace,
 			args: args{msg: "debug", fields: map[string]any{}},
 			want: "level=debug msg=debug\n",
 		},
@@ -165,43 +165,43 @@ func TestProductionLogger_Error(t *testing.T) {
 	}
 	tests := map[string]struct {
 		pl ProductionLogger
-		l  LoggingLevel
+		l  output.Level
 		args
 		want string
 	}{
 		"panic": {
 			pl:   ProductionLogger{},
-			l:    Panic,
+			l:    output.Panic,
 			args: args{msg: "error", fields: map[string]any{}},
 			want: "",
 		},
 		"fatal": {
 			pl:   ProductionLogger{},
-			l:    Fatal,
+			l:    output.Fatal,
 			args: args{msg: "error", fields: map[string]any{}},
 			want: "",
 		},
 		"error": {
 			pl:   ProductionLogger{},
-			l:    Error,
+			l:    output.Error,
 			args: args{msg: "error", fields: map[string]any{}},
 			want: "level=error msg=error\n",
 		},
 		"warn": {
 			pl:   ProductionLogger{},
-			l:    Warn,
+			l:    output.Warning,
 			args: args{msg: "error", fields: map[string]any{}},
 			want: "level=error msg=error\n",
 		},
 		"info": {
 			pl:   ProductionLogger{},
-			l:    Info,
+			l:    output.Info,
 			args: args{msg: "error", fields: nil},
 			want: "level=error msg=error\n",
 		},
 		"debug": {
 			pl: ProductionLogger{},
-			l:  Debug,
+			l:  output.Debug,
 			args: args{msg: "error", fields: map[string]any{
 				"field1": "value1",
 				"field2": 2,
@@ -212,7 +212,7 @@ func TestProductionLogger_Error(t *testing.T) {
 		},
 		"trace": {
 			pl:   ProductionLogger{},
-			l:    Trace,
+			l:    output.Trace,
 			args: args{msg: "error", fields: map[string]any{}},
 			want: "level=error msg=error\n",
 		},
@@ -249,43 +249,43 @@ func TestProductionLogger_Fatal(t *testing.T) {
 	}
 	tests := map[string]struct {
 		pl ProductionLogger
-		l  LoggingLevel
+		l  output.Level
 		args
 		want string
 	}{
 		"panic": {
 			pl:   ProductionLogger{},
-			l:    Panic,
+			l:    output.Panic,
 			args: args{msg: "fatal", fields: map[string]any{}},
 			want: "",
 		},
 		"fatal": {
 			pl:   ProductionLogger{},
-			l:    Fatal,
+			l:    output.Fatal,
 			args: args{msg: "fatal", fields: map[string]any{}},
 			want: "level=fatal msg=fatal\n",
 		},
 		"error": {
 			pl:   ProductionLogger{},
-			l:    Error,
+			l:    output.Error,
 			args: args{msg: "fatal", fields: map[string]any{}},
 			want: "level=fatal msg=fatal\n",
 		},
 		"warn": {
 			pl:   ProductionLogger{},
-			l:    Warn,
+			l:    output.Warning,
 			args: args{msg: "fatal", fields: map[string]any{}},
 			want: "level=fatal msg=fatal\n",
 		},
 		"info": {
 			pl:   ProductionLogger{},
-			l:    Info,
+			l:    output.Info,
 			args: args{msg: "fatal", fields: nil},
 			want: "level=fatal msg=fatal\n",
 		},
 		"debug": {
 			pl: ProductionLogger{},
-			l:  Debug,
+			l:  output.Debug,
 			args: args{msg: "fatal message", fields: map[string]any{
 				"field1": "value1",
 				"field2": 2,
@@ -296,7 +296,7 @@ func TestProductionLogger_Fatal(t *testing.T) {
 		},
 		"trace": {
 			pl:   ProductionLogger{},
-			l:    Trace,
+			l:    output.Trace,
 			args: args{msg: "fatal", fields: map[string]any{}},
 			want: "level=fatal msg=fatal\n",
 		},
@@ -344,43 +344,43 @@ func TestProductionLogger_Info(t *testing.T) {
 	}
 	tests := map[string]struct {
 		pl ProductionLogger
-		l  LoggingLevel
+		l  output.Level
 		args
 		want string
 	}{
 		"panic": {
 			pl:   ProductionLogger{},
-			l:    Panic,
+			l:    output.Panic,
 			args: args{msg: "info", fields: map[string]any{}},
 			want: "",
 		},
 		"fatal": {
 			pl:   ProductionLogger{},
-			l:    Fatal,
+			l:    output.Fatal,
 			args: args{msg: "info", fields: map[string]any{}},
 			want: "",
 		},
 		"error": {
 			pl:   ProductionLogger{},
-			l:    Error,
+			l:    output.Error,
 			args: args{msg: "info", fields: map[string]any{}},
 			want: "",
 		},
 		"warn": {
 			pl:   ProductionLogger{},
-			l:    Warn,
+			l:    output.Warning,
 			args: args{msg: "info", fields: map[string]any{}},
 			want: "",
 		},
 		"info": {
 			pl:   ProductionLogger{},
-			l:    Info,
+			l:    output.Info,
 			args: args{msg: "info", fields: nil},
 			want: "level=info msg=info\n",
 		},
 		"debug": {
 			pl: ProductionLogger{},
-			l:  Debug,
+			l:  output.Debug,
 			args: args{msg: "info message", fields: map[string]any{
 				"field1": "value1",
 				"field2": 2,
@@ -391,7 +391,7 @@ func TestProductionLogger_Info(t *testing.T) {
 		},
 		"trace": {
 			pl:   ProductionLogger{},
-			l:    Trace,
+			l:    output.Trace,
 			args: args{msg: "info", fields: map[string]any{}},
 			want: "level=info msg=info\n",
 		},
@@ -428,43 +428,43 @@ func TestProductionLogger_Panic(t *testing.T) {
 	}
 	tests := map[string]struct {
 		pl ProductionLogger
-		l  LoggingLevel
+		l  output.Level
 		args
 		want string
 	}{
 		"panic": {
 			pl:   ProductionLogger{},
-			l:    Panic,
+			l:    output.Panic,
 			args: args{msg: "panic", fields: map[string]any{}},
 			want: "level=panic msg=panic\n",
 		},
 		"fatal": {
 			pl:   ProductionLogger{},
-			l:    Fatal,
+			l:    output.Fatal,
 			args: args{msg: "panic", fields: map[string]any{}},
 			want: "level=panic msg=panic\n",
 		},
 		"error": {
 			pl:   ProductionLogger{},
-			l:    Error,
+			l:    output.Error,
 			args: args{msg: "panic", fields: map[string]any{}},
 			want: "level=panic msg=panic\n",
 		},
 		"warn": {
 			pl:   ProductionLogger{},
-			l:    Warn,
+			l:    output.Warning,
 			args: args{msg: "panic", fields: map[string]any{}},
 			want: "level=panic msg=panic\n",
 		},
 		"info": {
 			pl:   ProductionLogger{},
-			l:    Info,
+			l:    output.Info,
 			args: args{msg: "panic", fields: nil},
 			want: "level=panic msg=panic\n",
 		},
 		"debug": {
 			pl: ProductionLogger{},
-			l:  Debug,
+			l:  output.Debug,
 			args: args{msg: "panic message", fields: map[string]any{
 				"field1": "value1",
 				"field2": 2,
@@ -475,7 +475,7 @@ func TestProductionLogger_Panic(t *testing.T) {
 		},
 		"trace": {
 			pl:   ProductionLogger{},
-			l:    Trace,
+			l:    output.Trace,
 			args: args{msg: "panic", fields: map[string]any{}},
 			want: "level=panic msg=panic\n",
 		},
@@ -517,43 +517,43 @@ func TestProductionLogger_Trace(t *testing.T) {
 	}
 	tests := map[string]struct {
 		pl ProductionLogger
-		l  LoggingLevel
+		l  output.Level
 		args
 		want string
 	}{
 		"panic": {
 			pl:   ProductionLogger{},
-			l:    Panic,
+			l:    output.Panic,
 			args: args{msg: "trace", fields: map[string]any{}},
 			want: "",
 		},
 		"fatal": {
 			pl:   ProductionLogger{},
-			l:    Fatal,
+			l:    output.Fatal,
 			args: args{msg: "trace", fields: map[string]any{}},
 			want: "",
 		},
 		"error": {
 			pl:   ProductionLogger{},
-			l:    Error,
+			l:    output.Error,
 			args: args{msg: "trace", fields: map[string]any{}},
 			want: "",
 		},
 		"warn": {
 			pl:   ProductionLogger{},
-			l:    Warn,
+			l:    output.Warning,
 			args: args{msg: "trace", fields: map[string]any{}},
 			want: "",
 		},
 		"info": {
 			pl:   ProductionLogger{},
-			l:    Info,
+			l:    output.Info,
 			args: args{msg: "trace", fields: nil},
 			want: "",
 		},
 		"debug": {
 			pl: ProductionLogger{},
-			l:  Debug,
+			l:  output.Debug,
 			args: args{msg: "trace message", fields: map[string]any{
 				"field1": "value1",
 				"field2": 2,
@@ -564,7 +564,7 @@ func TestProductionLogger_Trace(t *testing.T) {
 		},
 		"trace": {
 			pl:   ProductionLogger{},
-			l:    Trace,
+			l:    output.Trace,
 			args: args{msg: "trace", fields: map[string]any{}},
 			want: "level=trace msg=trace\n",
 		},
@@ -601,43 +601,43 @@ func TestProductionLogger_Warning(t *testing.T) {
 	}
 	tests := map[string]struct {
 		pl ProductionLogger
-		l  LoggingLevel
+		l  output.Level
 		args
 		want string
 	}{
 		"panic": {
 			pl:   ProductionLogger{},
-			l:    Panic,
+			l:    output.Panic,
 			args: args{msg: "warn", fields: map[string]any{}},
 			want: "",
 		},
 		"fatal": {
 			pl:   ProductionLogger{},
-			l:    Fatal,
+			l:    output.Fatal,
 			args: args{msg: "warn", fields: map[string]any{}},
 			want: "",
 		},
 		"error": {
 			pl:   ProductionLogger{},
-			l:    Error,
+			l:    output.Error,
 			args: args{msg: "warn", fields: map[string]any{}},
 			want: "",
 		},
 		"warn": {
 			pl:   ProductionLogger{},
-			l:    Warn,
+			l:    output.Warning,
 			args: args{msg: "warn", fields: map[string]any{}},
 			want: "level=warning msg=warn\n",
 		},
 		"info": {
 			pl:   ProductionLogger{},
-			l:    Info,
+			l:    output.Info,
 			args: args{msg: "warn", fields: nil},
 			want: "level=warning msg=warn\n",
 		},
 		"debug": {
 			pl: ProductionLogger{},
-			l:  Debug,
+			l:  output.Debug,
 			args: args{msg: "warn message", fields: map[string]any{
 				"field1": "value1",
 				"field2": 2,
@@ -648,7 +648,7 @@ func TestProductionLogger_Warning(t *testing.T) {
 		},
 		"trace": {
 			pl:   ProductionLogger{},
-			l:    Trace,
+			l:    output.Trace,
 			args: args{msg: "warn", fields: map[string]any{}},
 			want: "level=warning msg=warn\n",
 		},

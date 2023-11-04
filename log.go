@@ -11,44 +11,29 @@ import (
 // interface
 type ProductionLogger struct{}
 
-// LoggingLevel specifies the level of a log, and its values are ordered such
-// that if logging is initialized at level 'x', then messages are logged if the
-// associated log level is equal to or less than 'x'.
-type LoggingLevel int
-
-const (
-	Panic LoggingLevel = iota
-	Fatal
-	Error
-	Warn
-	Info
-	Debug
-	Trace
-)
-
-const defaultLoggingLevel = Info
-
 // function to get an io.Writer with which to initialize the logger; this makes
 // it easy to substitute another function in unit tests
 var writerGetter func(o output.Bus) io.Writer = initWriter
+
+const defaultLoggingLevel = output.Info
 
 // InitLogging sets up logging at the default log level
 func InitLogging(o output.Bus) (ok bool) {
 	return InitLoggingWithLevel(o, defaultLoggingLevel)
 }
 
-var logrusLogLevelMap map[LoggingLevel]logrus.Level = map[LoggingLevel]logrus.Level{
-	Panic: logrus.PanicLevel,
-	Fatal: logrus.FatalLevel,
-	Error: logrus.ErrorLevel,
-	Warn:  logrus.WarnLevel,
-	Info:  logrus.InfoLevel,
-	Debug: logrus.DebugLevel,
-	Trace: logrus.TraceLevel,
+var logrusLogLevelMap map[output.Level]logrus.Level = map[output.Level]logrus.Level{
+	output.Panic:   logrus.PanicLevel,
+	output.Fatal:   logrus.FatalLevel,
+	output.Error:   logrus.ErrorLevel,
+	output.Warning: logrus.WarnLevel,
+	output.Info:    logrus.InfoLevel,
+	output.Debug:   logrus.DebugLevel,
+	output.Trace:   logrus.TraceLevel,
 }
 
 // InitLoggingWithLevel initializes logging with a specific log level
-func InitLoggingWithLevel(o output.Bus, l LoggingLevel) (ok bool) {
+func InitLoggingWithLevel(o output.Bus, l output.Level) (ok bool) {
 	if w := writerGetter(o); w != nil {
 		logrus.SetOutput(w)
 		logrus.SetLevel(logrusLogLevelMap[l])
