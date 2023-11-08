@@ -11,43 +11,43 @@ import (
 	"github.com/majohn-r/output"
 )
 
-func TestInitLogging(t *testing.T) {
+func TestOldInitLogging(t *testing.T) {
 	tests := map[string]struct {
-		writerGetter func(o output.Bus) io.Writer
-		want         bool
+		oldWriterGetter func(o output.Bus) io.Writer
+		want            bool
 	}{
 		"no writer available": {
-			writerGetter: func(o output.Bus) io.Writer { return nil },
-			want:         false,
+			oldWriterGetter: func(o output.Bus) io.Writer { return nil },
+			want:            false,
 		},
 		"success": {
-			writerGetter: func(o output.Bus) io.Writer { return &bytes.Buffer{} },
-			want:         true,
+			oldWriterGetter: func(o output.Bus) io.Writer { return &bytes.Buffer{} },
+			want:            true,
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			oldFunc := writerGetter
+			oldFunc := OldWriterGetter
 			defer func() {
-				writerGetter = oldFunc
+				OldWriterGetter = oldFunc
 			}()
-			writerGetter = tt.writerGetter
-			if got := InitLogging(nil); got != tt.want {
-				t.Errorf("InitLogging() = %v, want %v", got, tt.want)
+			OldWriterGetter = tt.oldWriterGetter
+			if got := OldInitLogging(nil); got != tt.want {
+				t.Errorf("OldInitLogging() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestInitLoggingWithLevel(t *testing.T) {
-	savedGetWriterFunc := writerGetter
+func TestOldInitLoggingWithLevel(t *testing.T) {
+	oldoldSavedGetWriterFunc := OldWriterGetter
 	defer func() {
-		writerGetter = savedGetWriterFunc
+		OldWriterGetter = oldoldSavedGetWriterFunc
 	}()
-	writerGetter = func(_ output.Bus) io.Writer {
+	OldWriterGetter = func(_ output.Bus) io.Writer {
 		return &bytes.Buffer{}
 	}
-	// only going to vary the logging level - TestInitLogging handles the error
+	// only going to vary the logging level - TestOldInitLogging handles the error
 	// cases where a writer cannot be obtained. This ensures that we don't
 	// introduce a programming error when the underlying log implementation
 	// cannot be initialized with the specified log level
@@ -65,54 +65,61 @@ func TestInitLoggingWithLevel(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if gotOk := InitLoggingWithLevel(nil, tt.l); gotOk != tt.wantOk {
-				t.Errorf("InitLoggingWithLevel() = %t, want %t", gotOk, tt.wantOk)
+			if gotOk := OldInitLoggingWithLevel(nil, tt.l); gotOk != tt.wantOk {
+				t.Errorf("OldInitLoggingWithLevel() = %t, want %t", gotOk, tt.wantOk)
 			}
 		})
 	}
 }
 
-func Test_simpleLogger_Debug(t *testing.T) {
-	savedGetWriterFunc := writerGetter
+func TestOldProductionLogger_Debug(t *testing.T) {
+	oldoldSavedGetWriterFunc := OldWriterGetter
 	defer func() {
-		writerGetter = savedGetWriterFunc
+		OldWriterGetter = oldoldSavedGetWriterFunc
 	}()
 	type args struct {
 		msg    string
 		fields map[string]any
 	}
 	tests := map[string]struct {
-		l output.Level
+		opl OldProductionLogger
+		l   output.Level
 		args
 		want string
 	}{
 		"panic": {
+			opl:  OldProductionLogger{},
 			l:    output.Panic,
 			args: args{msg: "debug", fields: map[string]any{}},
 			want: "",
 		},
 		"fatal": {
+			opl:  OldProductionLogger{},
 			l:    output.Fatal,
 			args: args{msg: "debug", fields: map[string]any{}},
 			want: "",
 		},
 		"error": {
+			opl:  OldProductionLogger{},
 			l:    output.Error,
 			args: args{msg: "debug", fields: map[string]any{}},
 			want: "",
 		},
 		"warn": {
+			opl:  OldProductionLogger{},
 			l:    output.Warning,
 			args: args{msg: "debug", fields: map[string]any{}},
 			want: "",
 		},
 		"info": {
+			opl:  OldProductionLogger{},
 			l:    output.Info,
 			args: args{msg: "debug", fields: map[string]any{}},
 			want: "",
 		},
 		"debug": {
-			l: output.Debug,
+			opl: OldProductionLogger{},
+			l:   output.Debug,
 			args: args{msg: "debug message", fields: map[string]any{
 				"field1":  "value1",
 				"field2":  2,
@@ -127,6 +134,7 @@ func Test_simpleLogger_Debug(t *testing.T) {
 			want: "level=debug msg=\"debug message\" field 9=false field1=value1 field2=2 field3=true field4=\"[val1 val2]\" field5=\"this is a mistake\" field6=\"map[a:1 b b:2]\" field7=\".*\" field8=\"a b c\"\n",
 		},
 		"trace": {
+			opl:  OldProductionLogger{},
 			l:    output.Trace,
 			args: args{msg: "debug", fields: map[string]any{}},
 			want: "level=debug msg=debug\n",
@@ -135,65 +143,72 @@ func Test_simpleLogger_Debug(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			buffer := &bytes.Buffer{}
-			writerGetter = func(_ output.Bus) io.Writer {
+			OldWriterGetter = func(_ output.Bus) io.Writer {
 				return buffer
 			}
-			InitLoggingWithLevel(nil, tt.l)
-			ProductionLogger.Debug(tt.args.msg, tt.args.fields)
+			OldInitLoggingWithLevel(nil, tt.l)
+			tt.opl.Debug(tt.args.msg, tt.args.fields)
 			if got := buffer.String(); got != tt.want {
 				if got != "" {
 					if tt.want == "" || !strings.HasSuffix(got, tt.want) {
-						t.Errorf("simpleLogger.Debug() got %q want %q", got, tt.want)
+						t.Errorf("OldProductionLogger.Debug() got %q want %q", got, tt.want)
 					}
 				} else {
-					t.Errorf("simpleLogger.Debug() got %q want %q", got, tt.want)
+					t.Errorf("OldProductionLogger.Debug() got %q want %q", got, tt.want)
 				}
 			}
 		})
 	}
 }
 
-func Test_simpleLogger_Error(t *testing.T) {
-	savedGetWriterFunc := writerGetter
+func TestOldProductionLogger_Error(t *testing.T) {
+	oldoldSavedGetWriterFunc := OldWriterGetter
 	defer func() {
-		writerGetter = savedGetWriterFunc
+		OldWriterGetter = oldoldSavedGetWriterFunc
 	}()
 	type args struct {
 		msg    string
 		fields map[string]any
 	}
 	tests := map[string]struct {
-		l output.Level
+		opl OldProductionLogger
+		l   output.Level
 		args
 		want string
 	}{
 		"panic": {
+			opl:  OldProductionLogger{},
 			l:    output.Panic,
 			args: args{msg: "error", fields: map[string]any{}},
 			want: "",
 		},
 		"fatal": {
+			opl:  OldProductionLogger{},
 			l:    output.Fatal,
 			args: args{msg: "error", fields: map[string]any{}},
 			want: "",
 		},
 		"error": {
+			opl:  OldProductionLogger{},
 			l:    output.Error,
 			args: args{msg: "error", fields: map[string]any{}},
 			want: "level=error msg=error\n",
 		},
 		"warn": {
+			opl:  OldProductionLogger{},
 			l:    output.Warning,
 			args: args{msg: "error", fields: map[string]any{}},
 			want: "level=error msg=error\n",
 		},
 		"info": {
+			opl:  OldProductionLogger{},
 			l:    output.Info,
 			args: args{msg: "error", fields: nil},
 			want: "level=error msg=error\n",
 		},
 		"debug": {
-			l: output.Debug,
+			opl: OldProductionLogger{},
+			l:   output.Debug,
 			args: args{msg: "error", fields: map[string]any{
 				"field1":  "value1",
 				"field2":  2,
@@ -208,6 +223,7 @@ func Test_simpleLogger_Error(t *testing.T) {
 			want: "level=error msg=error field 9=false field1=value1 field2=2 field3=true field4=\"[val1 val2]\" field5=\"this is a mistake\" field6=\"map[a:1 b b:2]\" field7=\".*\" field8=\"a b c\"\n",
 		},
 		"trace": {
+			opl:  OldProductionLogger{},
 			l:    output.Trace,
 			args: args{msg: "error", fields: map[string]any{}},
 			want: "level=error msg=error\n",
@@ -216,72 +232,72 @@ func Test_simpleLogger_Error(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			buffer := &bytes.Buffer{}
-			writerGetter = func(_ output.Bus) io.Writer {
+			OldWriterGetter = func(_ output.Bus) io.Writer {
 				return buffer
 			}
-			InitLoggingWithLevel(nil, tt.l)
-			ProductionLogger.Error(tt.args.msg, tt.args.fields)
+			OldInitLoggingWithLevel(nil, tt.l)
+			tt.opl.Error(tt.args.msg, tt.args.fields)
 			if got := buffer.String(); got != tt.want {
 				if got != "" {
 					if tt.want == "" || !strings.HasSuffix(got, tt.want) {
-						t.Errorf("simpleLogger.Error() got %q want %q", got, tt.want)
+						t.Errorf("OldProductionLogger.Error() got %q want %q", got, tt.want)
 					}
 				} else {
-					t.Errorf("simpleLogger.Error() got %q want %q", got, tt.want)
+					t.Errorf("OldProductionLogger.Error() got %q want %q", got, tt.want)
 				}
 			}
 		})
 	}
 }
 
-func Test_simpleLogger_Fatal(t *testing.T) {
-	savedGetWriterFunc := writerGetter
-	savedExit := ProductionLogger.ExitFunc()
+func TestOldProductionLogger_Fatal(t *testing.T) {
+	oldoldSavedGetWriterFunc := OldWriterGetter
 	defer func() {
-		writerGetter = savedGetWriterFunc
-		ProductionLogger.SetExitFunc(savedExit)
+		OldWriterGetter = oldoldSavedGetWriterFunc
 	}()
-	var exited = false
-	pretendToExit := func(_ int) {
-		exited = true
-	}
-	ProductionLogger.SetExitFunc(pretendToExit)
 	type args struct {
 		msg    string
 		fields map[string]any
 	}
 	tests := map[string]struct {
-		l output.Level
+		opl OldProductionLogger
+		l   output.Level
 		args
 		want string
 	}{
 		"panic": {
+			opl:  OldProductionLogger{},
 			l:    output.Panic,
 			args: args{msg: "fatal", fields: map[string]any{}},
-			want: "level=fatal msg=fatal\n",
+			want: "",
 		},
 		"fatal": {
+			opl:  OldProductionLogger{},
 			l:    output.Fatal,
 			args: args{msg: "fatal", fields: map[string]any{}},
 			want: "level=fatal msg=fatal\n",
 		},
 		"error": {
+			opl:  OldProductionLogger{},
 			l:    output.Error,
 			args: args{msg: "fatal", fields: map[string]any{}},
 			want: "level=fatal msg=fatal\n",
 		},
 		"warn": {
+			opl:  OldProductionLogger{},
 			l:    output.Warning,
 			args: args{msg: "fatal", fields: map[string]any{}},
 			want: "level=fatal msg=fatal\n",
 		},
 		"info": {
+			opl:  OldProductionLogger{},
 			l:    output.Info,
 			args: args{msg: "fatal", fields: nil},
 			want: "level=fatal msg=fatal\n",
 		},
 		"debug": {
-			l: output.Debug,
+			opl: OldProductionLogger{},
+			l:   output.Debug,
 			args: args{msg: "fatal message", fields: map[string]any{
 				"field1":  "value1",
 				"field2":  2,
@@ -296,6 +312,7 @@ func Test_simpleLogger_Fatal(t *testing.T) {
 			want: "level=fatal msg=\"fatal message\" field 9=false field1=value1 field2=2 field3=true field4=\"[val1 val2]\" field5=\"this is a mistake\" field6=\"map[a:1 b b:2]\" field7=\".*\" field8=\"a b c\"\n",
 		},
 		"trace": {
+			opl:  OldProductionLogger{},
 			l:    output.Trace,
 			args: args{msg: "fatal", fields: map[string]any{}},
 			want: "level=fatal msg=fatal\n",
@@ -304,73 +321,83 @@ func Test_simpleLogger_Fatal(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			buffer := &bytes.Buffer{}
-			writerGetter = func(_ output.Bus) io.Writer {
+			OldWriterGetter = func(_ output.Bus) io.Writer {
 				return buffer
 			}
-			InitLoggingWithLevel(nil, tt.l)
-			exited = false
-			f := ProductionLogger.ExitFunc()
-			if f == nil {
-				t.Errorf("ProductionLogger has no exit function")
-			}
-			ProductionLogger.Fatal(tt.args.msg, tt.args.fields)
+			OldInitLoggingWithLevel(nil, tt.l)
+			savedExit := tt.opl.ExitFunc()
+			defer func() {
+				tt.opl.SetExitFunc(savedExit)
+			}()
+			exited := false
+			tt.opl.SetExitFunc(func(_ int) {
+				exited = true
+			})
+			tt.opl.Fatal(tt.args.msg, tt.args.fields)
 			if !exited {
-				t.Errorf("simpleLogger.Fatal() did not attempt to exit!")
+				t.Errorf("OldProductionLogger.Fatal() did not attempt to exit!")
 			}
 			if got := buffer.String(); got != tt.want {
 				if got != "" {
 					if tt.want == "" || !strings.HasSuffix(got, tt.want) {
-						t.Errorf("simpleLogger.Fatal() got %q want %q", got, tt.want)
+						t.Errorf("OldProductionLogger.Fatal() got %q want %q", got, tt.want)
 					}
 				} else {
-					t.Errorf("simpleLogger.Fatal() got %q want %q", got, tt.want)
+					t.Errorf("OldProductionLogger.Fatal() got %q want %q", got, tt.want)
 				}
 			}
 		})
 	}
 }
 
-func Test_simpleLogger_Info(t *testing.T) {
-	savedGetWriterFunc := writerGetter
+func TestOldProductionLogger_Info(t *testing.T) {
+	oldSavedGetWriterFunc := OldWriterGetter
 	defer func() {
-		writerGetter = savedGetWriterFunc
+		OldWriterGetter = oldSavedGetWriterFunc
 	}()
 	type args struct {
 		msg    string
 		fields map[string]any
 	}
 	tests := map[string]struct {
-		l output.Level
+		opl OldProductionLogger
+		l   output.Level
 		args
 		want string
 	}{
 		"panic": {
+			opl:  OldProductionLogger{},
 			l:    output.Panic,
 			args: args{msg: "info", fields: map[string]any{}},
 			want: "",
 		},
 		"fatal": {
+			opl:  OldProductionLogger{},
 			l:    output.Fatal,
 			args: args{msg: "info", fields: map[string]any{}},
 			want: "",
 		},
 		"error": {
+			opl:  OldProductionLogger{},
 			l:    output.Error,
 			args: args{msg: "info", fields: map[string]any{}},
 			want: "",
 		},
 		"warn": {
+			opl:  OldProductionLogger{},
 			l:    output.Warning,
 			args: args{msg: "info", fields: map[string]any{}},
 			want: "",
 		},
 		"info": {
+			opl:  OldProductionLogger{},
 			l:    output.Info,
 			args: args{msg: "info", fields: nil},
 			want: "level=info msg=info\n",
 		},
 		"debug": {
-			l: output.Debug,
+			opl: OldProductionLogger{},
+			l:   output.Debug,
 			args: args{msg: "info message", fields: map[string]any{
 				"field1":  "value1",
 				"field2":  2,
@@ -385,6 +412,7 @@ func Test_simpleLogger_Info(t *testing.T) {
 			want: "level=info msg=\"info message\" field 9=false field1=value1 field2=2 field3=true field4=\"[val1 val2]\" field5=\"this is a mistake\" field6=\"map[a:1 b b:2]\" field7=\".*\" field8=\"a b c\"\n",
 		},
 		"trace": {
+			opl:  OldProductionLogger{},
 			l:    output.Trace,
 			args: args{msg: "info", fields: map[string]any{}},
 			want: "level=info msg=info\n",
@@ -393,65 +421,72 @@ func Test_simpleLogger_Info(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			buffer := &bytes.Buffer{}
-			writerGetter = func(_ output.Bus) io.Writer {
+			OldWriterGetter = func(_ output.Bus) io.Writer {
 				return buffer
 			}
-			InitLoggingWithLevel(nil, tt.l)
-			ProductionLogger.Info(tt.args.msg, tt.args.fields)
+			OldInitLoggingWithLevel(nil, tt.l)
+			tt.opl.Info(tt.args.msg, tt.args.fields)
 			if got := buffer.String(); got != tt.want {
 				if got != "" {
 					if tt.want == "" || !strings.HasSuffix(got, tt.want) {
-						t.Errorf("simpleLogger.Info() got %q want %q", got, tt.want)
+						t.Errorf("OldProductionLogger.Info() got %q want %q", got, tt.want)
 					}
 				} else {
-					t.Errorf("simpleLogger.Info() got %q want %q", got, tt.want)
+					t.Errorf("OldProductionLogger.Info() got %q want %q", got, tt.want)
 				}
 			}
 		})
 	}
 }
 
-func Test_simpleLogger_Panic(t *testing.T) {
-	savedGetWriterFunc := writerGetter
+func TestOldProductionLogger_Panic(t *testing.T) {
+	oldSavedGetWriterFunc := OldWriterGetter
 	defer func() {
-		writerGetter = savedGetWriterFunc
+		OldWriterGetter = oldSavedGetWriterFunc
 	}()
 	type args struct {
 		msg    string
 		fields map[string]any
 	}
 	tests := map[string]struct {
-		l output.Level
+		pl OldProductionLogger
+		l  output.Level
 		args
 		want string
 	}{
 		"panic": {
+			pl:   OldProductionLogger{},
 			l:    output.Panic,
 			args: args{msg: "panic", fields: map[string]any{}},
 			want: "level=panic msg=panic\n",
 		},
 		"fatal": {
+			pl:   OldProductionLogger{},
 			l:    output.Fatal,
 			args: args{msg: "panic", fields: map[string]any{}},
 			want: "level=panic msg=panic\n",
 		},
 		"error": {
+			pl:   OldProductionLogger{},
 			l:    output.Error,
 			args: args{msg: "panic", fields: map[string]any{}},
 			want: "level=panic msg=panic\n",
 		},
 		"warn": {
+			pl:   OldProductionLogger{},
 			l:    output.Warning,
 			args: args{msg: "panic", fields: map[string]any{}},
 			want: "level=panic msg=panic\n",
 		},
 		"info": {
+			pl:   OldProductionLogger{},
 			l:    output.Info,
 			args: args{msg: "panic", fields: nil},
 			want: "level=panic msg=panic\n",
 		},
 		"debug": {
-			l: output.Debug,
+			pl: OldProductionLogger{},
+			l:  output.Debug,
 			args: args{msg: "panic message", fields: map[string]any{
 				"field1":  "value1",
 				"field2":  2,
@@ -466,6 +501,7 @@ func Test_simpleLogger_Panic(t *testing.T) {
 			want: "level=panic msg=\"panic message\" field 9=false field1=value1 field2=2 field3=true field4=\"[val1 val2]\" field5=\"this is a mistake\" field6=\"map[a:1 b b:2]\" field7=\".*\" field8=\"a b c\"\n",
 		},
 		"trace": {
+			pl:   OldProductionLogger{},
 			l:    output.Trace,
 			args: args{msg: "panic", fields: map[string]any{}},
 			want: "level=panic msg=panic\n",
@@ -474,70 +510,77 @@ func Test_simpleLogger_Panic(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			buffer := &bytes.Buffer{}
-			writerGetter = func(_ output.Bus) io.Writer {
+			OldWriterGetter = func(_ output.Bus) io.Writer {
 				return buffer
 			}
-			InitLoggingWithLevel(nil, tt.l)
+			OldInitLoggingWithLevel(nil, tt.l)
 			defer func(t *testing.T) {
 				if r := recover(); r == nil {
-					t.Errorf("simpleLogger.Panic() did not panic")
+					t.Errorf("OldProductionLogger.Panic() did not panic")
 				}
 			}(t)
-			ProductionLogger.Panic(tt.args.msg, tt.args.fields)
+			tt.pl.Panic(tt.args.msg, tt.args.fields)
 			if got := buffer.String(); got != tt.want {
 				if got != "" {
 					if tt.want == "" || !strings.HasSuffix(got, tt.want) {
-						t.Errorf("simpleLogger.Panic() got %q want %q", got, tt.want)
+						t.Errorf("OldProductionLogger.Panic() got %q want %q", got, tt.want)
 					}
 				} else {
-					t.Errorf("simpleLogger.Panic() got %q want %q", got, tt.want)
+					t.Errorf("OldProductionLogger.Panic() got %q want %q", got, tt.want)
 				}
 			}
 		})
 	}
 }
 
-func Test_simpleLogger_Trace(t *testing.T) {
-	savedGetWriterFunc := writerGetter
+func TestOldProductionLogger_Trace(t *testing.T) {
+	oldSavedGetWriterFunc := OldWriterGetter
 	defer func() {
-		writerGetter = savedGetWriterFunc
+		OldWriterGetter = oldSavedGetWriterFunc
 	}()
 	type args struct {
 		msg    string
 		fields map[string]any
 	}
 	tests := map[string]struct {
-		l output.Level
+		pl OldProductionLogger
+		l  output.Level
 		args
 		want string
 	}{
 		"panic": {
+			pl:   OldProductionLogger{},
 			l:    output.Panic,
 			args: args{msg: "trace", fields: map[string]any{}},
 			want: "",
 		},
 		"fatal": {
+			pl:   OldProductionLogger{},
 			l:    output.Fatal,
 			args: args{msg: "trace", fields: map[string]any{}},
 			want: "",
 		},
 		"error": {
+			pl:   OldProductionLogger{},
 			l:    output.Error,
 			args: args{msg: "trace", fields: map[string]any{}},
 			want: "",
 		},
 		"warn": {
+			pl:   OldProductionLogger{},
 			l:    output.Warning,
 			args: args{msg: "trace", fields: map[string]any{}},
 			want: "",
 		},
 		"info": {
+			pl:   OldProductionLogger{},
 			l:    output.Info,
 			args: args{msg: "trace", fields: nil},
 			want: "",
 		},
 		"debug": {
-			l: output.Debug,
+			pl: OldProductionLogger{},
+			l:  output.Debug,
 			args: args{msg: "trace message", fields: map[string]any{
 				"field1":  "value1",
 				"field2":  2,
@@ -552,6 +595,7 @@ func Test_simpleLogger_Trace(t *testing.T) {
 			want: "",
 		},
 		"trace": {
+			pl:   OldProductionLogger{},
 			l:    output.Trace,
 			args: args{msg: "trace", fields: map[string]any{}},
 			want: "level=trace msg=trace\n",
@@ -560,65 +604,72 @@ func Test_simpleLogger_Trace(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			buffer := &bytes.Buffer{}
-			writerGetter = func(_ output.Bus) io.Writer {
+			OldWriterGetter = func(_ output.Bus) io.Writer {
 				return buffer
 			}
-			InitLoggingWithLevel(nil, tt.l)
-			ProductionLogger.Trace(tt.args.msg, tt.args.fields)
+			OldInitLoggingWithLevel(nil, tt.l)
+			tt.pl.Trace(tt.args.msg, tt.args.fields)
 			if got := buffer.String(); got != tt.want {
 				if got != "" {
 					if tt.want == "" || !strings.HasSuffix(got, tt.want) {
-						t.Errorf("simpleLogger.Trace() got %q want %q", got, tt.want)
+						t.Errorf("OldProductionLogger.Trace() got %q want %q", got, tt.want)
 					}
 				} else {
-					t.Errorf("simpleLogger.Trace() got %q want %q", got, tt.want)
+					t.Errorf("OldProductionLogger.Trace() got %q want %q", got, tt.want)
 				}
 			}
 		})
 	}
 }
 
-func Test_simpleLogger_Warning(t *testing.T) {
-	savedGetWriterFunc := writerGetter
+func TestOldProductionLogger_Warning(t *testing.T) {
+	oldSavedGetWriterFunc := OldWriterGetter
 	defer func() {
-		writerGetter = savedGetWriterFunc
+		OldWriterGetter = oldSavedGetWriterFunc
 	}()
 	type args struct {
 		msg    string
 		fields map[string]any
 	}
 	tests := map[string]struct {
-		l output.Level
+		pl OldProductionLogger
+		l  output.Level
 		args
 		want string
 	}{
 		"panic": {
+			pl:   OldProductionLogger{},
 			l:    output.Panic,
 			args: args{msg: "warn", fields: map[string]any{}},
 			want: "",
 		},
 		"fatal": {
+			pl:   OldProductionLogger{},
 			l:    output.Fatal,
 			args: args{msg: "warn", fields: map[string]any{}},
 			want: "",
 		},
 		"error": {
+			pl:   OldProductionLogger{},
 			l:    output.Error,
 			args: args{msg: "warn", fields: map[string]any{}},
 			want: "",
 		},
 		"warn": {
+			pl:   OldProductionLogger{},
 			l:    output.Warning,
 			args: args{msg: "warn", fields: map[string]any{}},
 			want: "level=warning msg=warn\n",
 		},
 		"info": {
+			pl:   OldProductionLogger{},
 			l:    output.Info,
 			args: args{msg: "warn", fields: nil},
 			want: "level=warning msg=warn\n",
 		},
 		"debug": {
-			l: output.Debug,
+			pl: OldProductionLogger{},
+			l:  output.Debug,
 			args: args{msg: "warn message", fields: map[string]any{
 				"field1":  "value1",
 				"field2":  2,
@@ -633,6 +684,7 @@ func Test_simpleLogger_Warning(t *testing.T) {
 			want: "level=warning msg=\"warn message\" field 9=false field1=value1 field2=2 field3=true field4=\"[val1 val2]\" field5=\"this is a mistake\" field6=\"map[a:1 b b:2]\" field7=\".*\" field8=\"a b c\"\n",
 		},
 		"trace": {
+			pl:   OldProductionLogger{},
 			l:    output.Trace,
 			args: args{msg: "warn", fields: map[string]any{}},
 			want: "level=warning msg=warn\n",
@@ -641,135 +693,19 @@ func Test_simpleLogger_Warning(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			buffer := &bytes.Buffer{}
-			writerGetter = func(_ output.Bus) io.Writer {
+			OldWriterGetter = func(_ output.Bus) io.Writer {
 				return buffer
 			}
-			InitLoggingWithLevel(nil, tt.l)
-			ProductionLogger.Warning(tt.args.msg, tt.args.fields)
+			OldInitLoggingWithLevel(nil, tt.l)
+			tt.pl.Warning(tt.args.msg, tt.args.fields)
 			if got := buffer.String(); got != tt.want {
 				if got != "" {
 					if tt.want == "" || !strings.HasSuffix(got, tt.want) {
-						t.Errorf("simpleLogger.Warn() got %q want %q", got, tt.want)
+						t.Errorf("OldProductionLogger.Warn() got %q want %q", got, tt.want)
 					}
 				} else {
-					t.Errorf("simpleLogger.Warn() got %q want %q", got, tt.want)
+					t.Errorf("OldProductionLogger.Warn() got %q want %q", got, tt.want)
 				}
-			}
-		})
-	}
-}
-
-func Test_simpleLogger_willLog(t *testing.T) {
-	type args struct {
-		l output.Level
-	}
-	tests := map[string]struct {
-		cl output.Level
-		args
-		want bool
-	}{
-		"debug/debug":     {cl: output.Debug, args: args{l: output.Debug}, want: true},
-		"debug/error":     {cl: output.Debug, args: args{l: output.Error}, want: true},
-		"debug/fatal":     {cl: output.Debug, args: args{l: output.Fatal}, want: true},
-		"debug/info":      {cl: output.Debug, args: args{l: output.Info}, want: true},
-		"debug/panic":     {cl: output.Debug, args: args{l: output.Panic}, want: true},
-		"debug/trace":     {cl: output.Debug, args: args{l: output.Trace}, want: false},
-		"debug/warning":   {cl: output.Debug, args: args{l: output.Warning}, want: true},
-		"error/debug":     {cl: output.Error, args: args{l: output.Debug}, want: false},
-		"error/error":     {cl: output.Error, args: args{l: output.Error}, want: true},
-		"error/fatal":     {cl: output.Error, args: args{l: output.Fatal}, want: true},
-		"error/info":      {cl: output.Error, args: args{l: output.Info}, want: false},
-		"error/panic":     {cl: output.Error, args: args{l: output.Panic}, want: true},
-		"error/trace":     {cl: output.Error, args: args{l: output.Trace}, want: false},
-		"error/warning":   {cl: output.Error, args: args{l: output.Warning}, want: false},
-		"fatal/debug":     {cl: output.Fatal, args: args{l: output.Debug}, want: false},
-		"fatal/error":     {cl: output.Fatal, args: args{l: output.Error}, want: false},
-		"fatal/fatal":     {cl: output.Fatal, args: args{l: output.Fatal}, want: true},
-		"fatal/info":      {cl: output.Fatal, args: args{l: output.Info}, want: false},
-		"fatal/panic":     {cl: output.Fatal, args: args{l: output.Panic}, want: false},
-		"fatal/trace":     {cl: output.Fatal, args: args{l: output.Trace}, want: false},
-		"fatal/warning":   {cl: output.Fatal, args: args{l: output.Warning}, want: false},
-		"info/debug":      {cl: output.Info, args: args{l: output.Debug}, want: false},
-		"info/error":      {cl: output.Info, args: args{l: output.Error}, want: true},
-		"info/fatal":      {cl: output.Info, args: args{l: output.Fatal}, want: true},
-		"info/info":       {cl: output.Info, args: args{l: output.Info}, want: true},
-		"info/panic":      {cl: output.Info, args: args{l: output.Panic}, want: true},
-		"info/trace":      {cl: output.Info, args: args{l: output.Trace}, want: false},
-		"info/warning":    {cl: output.Info, args: args{l: output.Warning}, want: true},
-		"panic/debug":     {cl: output.Panic, args: args{l: output.Debug}, want: false},
-		"panic/error":     {cl: output.Panic, args: args{l: output.Error}, want: false},
-		"panic/fatal":     {cl: output.Panic, args: args{l: output.Fatal}, want: true},
-		"panic/info":      {cl: output.Panic, args: args{l: output.Info}, want: false},
-		"panic/panic":     {cl: output.Panic, args: args{l: output.Panic}, want: true},
-		"panic/trace":     {cl: output.Panic, args: args{l: output.Trace}, want: false},
-		"panic/warning":   {cl: output.Panic, args: args{l: output.Warning}, want: false},
-		"trace/debug":     {cl: output.Trace, args: args{l: output.Debug}, want: true},
-		"trace/error":     {cl: output.Trace, args: args{l: output.Error}, want: true},
-		"trace/fatal":     {cl: output.Trace, args: args{l: output.Fatal}, want: true},
-		"trace/info":      {cl: output.Trace, args: args{l: output.Info}, want: true},
-		"trace/panic":     {cl: output.Trace, args: args{l: output.Panic}, want: true},
-		"trace/trace":     {cl: output.Trace, args: args{l: output.Trace}, want: true},
-		"trace/warning":   {cl: output.Trace, args: args{l: output.Warning}, want: true},
-		"warning/debug":   {cl: output.Warning, args: args{l: output.Debug}, want: false},
-		"warning/error":   {cl: output.Warning, args: args{l: output.Error}, want: true},
-		"warning/fatal":   {cl: output.Warning, args: args{l: output.Fatal}, want: true},
-		"warning/info":    {cl: output.Warning, args: args{l: output.Info}, want: false},
-		"warning/panic":   {cl: output.Warning, args: args{l: output.Panic}, want: true},
-		"warning/trace":   {cl: output.Warning, args: args{l: output.Trace}, want: false},
-		"warning/warning": {cl: output.Warning, args: args{l: output.Warning}, want: true},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			pl := simpleLogger{currentLogLevel: tt.cl}
-			if got := pl.willLog(tt.args.l); got != tt.want {
-				t.Errorf("simpleLogger.willLog() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_requiresQuotes(t *testing.T) {
-	tests := map[string]struct {
-		s    string
-		want bool
-	}{
-		"empty":         {s: "", want: true},
-		"alphanumerics": {s: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", want: false},
-		"specials":      {s: "-._/@^+", want: false},
-		"others":        {s: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._/@^+ ", want: true},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			if got := requiresQuotes(tt.s); got != tt.want {
-				t.Errorf("requiresQuotes() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_toString(t *testing.T) {
-	tests := map[string]struct {
-		v    any
-		want string
-	}{
-		"empty":              {v: "", want: `""`},
-		"number":             {v: 1, want: "1"},
-		"true":               {v: true, want: "true"},
-		"false":              {v: false, want: "false"},
-		"plain string":       {v: "hello", want: "hello"},
-		"string with spaces": {v: "hello fencepost", want: `"hello fencepost"`},
-		"array":              {v: []string{"foo", "bar"}, want: `"[foo bar]"`},
-		"regexp":             {v: typicalChars, want: fmt.Sprintf("%q", typicalChars)},
-		"error":              {v: fmt.Errorf("this is a mistake"), want: `"this is a mistake"`},
-		"map":                {v: map[string]int{"a": 1, "b b": 2}, want: `"map[a:1 b b:2]"`},
-		/*
-			fmt.Errorf("this is a mistake"),
-							"field6":  map[string]int{"a": 1, "b b": 2},		*/
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			if got := toString(tt.v); got != tt.want {
-				t.Errorf("toString() = %v, want %v", got, tt.want)
 			}
 		})
 	}
