@@ -15,6 +15,13 @@ func TestInitLogging(t *testing.T) {
 	tests := map[string]struct {
 		writerGetter func(o output.Bus) io.Writer
 		want         bool
+		logsDebug    bool
+		logsError    bool
+		logsFatal    bool
+		logsInfo     bool
+		logsPanic    bool
+		logsTrace    bool
+		logsWarning  bool
 	}{
 		"no writer available": {
 			writerGetter: func(o output.Bus) io.Writer { return nil },
@@ -23,6 +30,13 @@ func TestInitLogging(t *testing.T) {
 		"success": {
 			writerGetter: func(o output.Bus) io.Writer { return &bytes.Buffer{} },
 			want:         true,
+			logsDebug:    false,
+			logsError:    true,
+			logsFatal:    true,
+			logsInfo:     true,
+			logsPanic:    true,
+			logsTrace:    false,
+			logsWarning:  true,
 		},
 	}
 	for name, tt := range tests {
@@ -32,8 +46,32 @@ func TestInitLogging(t *testing.T) {
 				writerGetter = oldFunc
 			}()
 			writerGetter = tt.writerGetter
-			if got := InitLogging(nil); got != tt.want {
+			got := InitLogging(nil)
+			if got != tt.want {
 				t.Errorf("InitLogging() = %v, want %v", got, tt.want)
+			}
+			if got {
+				if truth := ProductionLogger.willLog(output.Debug); truth != tt.logsDebug {
+					t.Errorf("InitLogging() will log at debug, got %t, want %t", truth, tt.logsDebug)
+				}
+				if truth := ProductionLogger.willLog(output.Error); truth != tt.logsError {
+					t.Errorf("InitLogging() will log at error, got %t, want %t", truth, tt.logsError)
+				}
+				if truth := ProductionLogger.willLog(output.Fatal); truth != tt.logsFatal {
+					t.Errorf("InitLogging() will log at fatal, got %t, want %t", truth, tt.logsFatal)
+				}
+				if truth := ProductionLogger.willLog(output.Info); truth != tt.logsInfo {
+					t.Errorf("InitLogging() will log at info, got %t, want %t", truth, tt.logsInfo)
+				}
+				if truth := ProductionLogger.willLog(output.Panic); truth != tt.logsPanic {
+					t.Errorf("InitLogging() will log at panic, got %t, want %t", truth, tt.logsPanic)
+				}
+				if truth := ProductionLogger.willLog(output.Trace); truth != tt.logsTrace {
+					t.Errorf("InitLogging() will log at trace, got %t, want %t", truth, tt.logsTrace)
+				}
+				if truth := ProductionLogger.willLog(output.Warning); truth != tt.logsWarning {
+					t.Errorf("InitLogging() will log at warning, got %t, want %t", truth, tt.logsWarning)
+				}
 			}
 		})
 	}
@@ -50,7 +88,9 @@ func TestInitLoggingWithLevel(t *testing.T) {
 	// only going to vary the logging level - TestInitLogging handles the error
 	// cases where a writer cannot be obtained. This ensures that we don't
 	// introduce a programming error when the underlying log implementation
-	// cannot be initialized with the specified log level
+	// cannot be initialized with the specified log level. Also, the various
+	// Test_simpleLogger_[Level] tests verify the expected behavior as to what
+	// is and is not logged after initialization with each log level.
 	tests := map[string]struct {
 		l      output.Level
 		wantOk bool
