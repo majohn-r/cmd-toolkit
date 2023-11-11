@@ -10,7 +10,7 @@ jobs:
       - name: Fetch go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.21.x
+          go-version: 1.21.4
       - name: Install linter
         run: go install -v github.com/go-critic/go-critic/cmd/gocritic@latest
       - name: Run linter
