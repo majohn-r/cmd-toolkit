@@ -927,3 +927,24 @@ func TestConfiguration_IntValue(t *testing.T) {
 		})
 	}
 }
+
+func TestSetFlagIndicator(t *testing.T) {
+	originalIndicator := flagIndicator
+	defer func() {
+		flagIndicator = originalIndicator
+	}()
+	tests := map[string]struct {
+		val string
+	}{
+		"-":  {val: "-"},
+		"--": {val: "--"},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			SetFlagIndicator(tt.val)
+			if got := FlagIndicator(); got != tt.val {
+				t.Errorf("SetFlagIndicator got %q want %q", got, tt.val)
+			}
+		})
+	}
+}

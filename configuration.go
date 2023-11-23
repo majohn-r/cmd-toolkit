@@ -13,7 +13,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var defaultConfigFileName = "defaults.yaml"
+var (
+	defaultConfigFileName = "defaults.yaml"
+	flagIndicator         = "-"
+)
 
 // Configuration defines the data structure for configuration information.
 type Configuration struct {
@@ -35,6 +38,16 @@ type IntBounds struct {
 // contains defaults for the commands
 func DefaultConfigFileName() string {
 	return defaultConfigFileName
+}
+
+// FlagIndicator returns the current flag indicator, typically "-" or "--"
+func FlagIndicator() string {
+	return flagIndicator
+}
+
+// SetFlagIndicator sets the flag indicator to the specified value
+func SetFlagIndicator(val string) {
+	flagIndicator = val
 }
 
 // EmptyConfiguration creates an empty Configuration instance
@@ -194,7 +207,7 @@ func (c *Configuration) BoolDefault(key string, defaultValue bool) (b bool, err 
 			default:
 				// note: deliberately imitating flags behavior when parsing an
 				// invalid boolean
-				err = fmt.Errorf("invalid boolean value \"%d\" for -%s: parse error", value, key)
+				err = fmt.Errorf("invalid boolean value \"%d\" for %s%s: parse error", value, FlagIndicator(), key)
 			}
 		} else {
 			// True values may be specified as "t", "T", "true", "TRUE", or "True"
@@ -207,10 +220,10 @@ func (c *Configuration) BoolDefault(key string, defaultValue bool) (b bool, err 
 					} else {
 						// note: deliberately imitating flags behavior when parsing
 						// an invalid boolean
-						err = fmt.Errorf("invalid boolean value %q for -%s: parse error", value, key)
+						err = fmt.Errorf("invalid boolean value %q for %s%s: parse error", value, FlagIndicator(), key)
 					}
 				} else {
-					err = fmt.Errorf("invalid boolean value %q for -%s: %v", value, key, dereferenceErr)
+					err = fmt.Errorf("invalid boolean value %q for %s%s: %v", value, FlagIndicator(), key, dereferenceErr)
 				}
 			}
 		}
@@ -245,10 +258,10 @@ func (c *Configuration) IntDefault(key string, b *IntBounds) (i int, err error) 
 				} else {
 					// note: deliberately imitating flags behavior when parsing an
 					// invalid int
-					err = fmt.Errorf("invalid value %q for flag -%s: parse error", rawValue, key)
+					err = fmt.Errorf("invalid value %q for flag %s%s: parse error", rawValue, FlagIndicator(), key)
 				}
 			} else {
-				err = fmt.Errorf("invalid value %q for flag -%s: %v", rawValue, key, dereferenceErr)
+				err = fmt.Errorf("invalid value %q for flag %s%s: %v", rawValue, FlagIndicator(), key, dereferenceErr)
 			}
 		}
 	}
@@ -269,12 +282,12 @@ func (c *Configuration) StringDefault(key, defaultValue string) (s string, err e
 		if value, ok := c.sMap[key]; ok {
 			s, dereferenceErr = DereferenceEnvVar(value)
 			if dereferenceErr != nil {
-				err = fmt.Errorf("invalid value %q for flag -%s: %v", value, key, dereferenceErr)
+				err = fmt.Errorf("invalid value %q for flag %s%s: %v", value, FlagIndicator(), key, dereferenceErr)
 				s = ""
 			}
 		}
 	} else {
-		err = fmt.Errorf("invalid value %q for flag -%s: %v", defaultValue, key, dereferenceErr)
+		err = fmt.Errorf("invalid value %q for flag %s%s: %v", defaultValue, FlagIndicator(), key, dereferenceErr)
 		s = ""
 	}
 	return
