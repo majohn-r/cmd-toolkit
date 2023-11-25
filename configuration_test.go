@@ -172,6 +172,7 @@ func TestReadConfigurationFile(t *testing.T) {
 			postTest: func() {
 				_ = os.RemoveAll(applicationPath)
 			},
+			wantC: EmptyConfiguration(),
 			WantedRecording: output.WantedRecording{
 				Error: "The configuration file \"configFileDir\\\\dir.yaml\" is a directory.\n",
 				Log:   "level='error' directory='configFileDir' fileName='dir.yaml' msg='file is a directory'\n",
@@ -202,6 +203,7 @@ func TestReadConfigurationFile(t *testing.T) {
 			postTest: func() {
 				_ = os.RemoveAll(applicationPath)
 			},
+			wantC: EmptyConfiguration(),
 			WantedRecording: output.WantedRecording{
 				Error: "The configuration file \"garbageDir\\\\trash.yaml\" is not well-formed YAML: yaml: control characters are not allowed.\n",
 				Log:   "level='error' directory='garbageDir' error='yaml: control characters are not allowed' fileName='trash.yaml' msg='cannot unmarshal yaml content'\n",

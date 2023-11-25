@@ -320,8 +320,35 @@ func (e entry) Type() fs.FileMode {
 	return e.mode
 }
 
+type fi struct {
+}
+
+func (f fi) Name() string {
+	return ""
+}
+
+func (f fi) Size() int64 {
+	return 0
+}
+
+func (f fi) Mode() fs.FileMode {
+	return 0
+}
+
+func (f fi) ModTime() time.Time {
+	return time.Now()
+}
+
+func (f fi) IsDir() bool {
+	return false
+}
+
+func (f fi) Sys() any {
+	return nil
+}
+
 func (e entry) Info() (fs.FileInfo, error) {
-	return nil, nil
+	return fi{}, nil
 }
 
 func Test_isLogFile(t *testing.T) {

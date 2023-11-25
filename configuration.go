@@ -103,12 +103,12 @@ func NewIntBounds(v1, v2, v3 int) *IntBounds {
 // a pointer to a cooked Configuration instance; if there is no such file, then
 // an empty Configuration is returned and ok is true
 func ReadConfigurationFile(o output.Bus) (c *Configuration, ok bool) {
+	c = EmptyConfiguration()
 	path := ApplicationPath()
 	file := filepath.Join(path, defaultConfigFileName)
 	if exists, err := verifyDefaultConfigFileExists(o, file); err != nil {
 		return
 	} else if !exists {
-		c = EmptyConfiguration()
 		ok = true
 		return
 	}

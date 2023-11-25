@@ -28,7 +28,7 @@ func Execute(o output.Bus, firstYear int, appName, appVersion, buildTimestamp st
 			"dependencies": BuildDependencies(),
 			"args":         cmdLine,
 		})
-		if cmd, args, ok := ProcessCommand(o, cmdLine); ok {
+		if cmd, args, ok := ProcessCommand(o, cmdLine); ok && cmd != nil {
 			if cmd.Exec(o, args) {
 				exitCode = 0
 			}

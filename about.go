@@ -47,7 +47,7 @@ func GoVersion() string {
 // InitBuildData captures information about how the program was compiled, the
 // version of the program, and the timestamp for when the program was built.
 func InitBuildData(version, creation string) {
-	if b, ok := buildInfoReader(); ok {
+	if b, ok := buildInfoReader(); ok && b != nil {
 		goVersion = b.GoVersion
 		for _, d := range b.Deps {
 			buildDependencies = append(buildDependencies, fmt.Sprintf("%s %s", d.Path, d.Version))

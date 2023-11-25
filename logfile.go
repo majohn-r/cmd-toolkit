@@ -62,15 +62,18 @@ func cleanup(o output.Bus, logPath string) (found, deleted int) {
 			}
 		}
 		found = len(times)
-		if found > maxLogFiles {
+		if found > maxLogFiles && len(times) > 0 {
 			sort.Slice(times, func(i, j int) bool {
 				return times[i].Before(times[j])
 			})
 			limit := len(times) - maxLogFiles
 			for k := 0; k < limit; k++ {
-				logFile := filepath.Join(logPath, fileMap[times[k]].Name())
-				if deleteLogFile(o, logFile) {
-					deleted++
+				entry := fileMap[times[k]]
+				if entry != nil {
+					logFile := filepath.Join(logPath, entry.Name())
+					if deleteLogFile(o, logFile) {
+						deleted++
+					}
 				}
 			}
 		}

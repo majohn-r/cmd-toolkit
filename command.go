@@ -127,7 +127,7 @@ func selectCommand(o output.Bus, defaultCmd string, c *Configuration, args []str
 	for name, description := range descriptions {
 		fSet := flag.NewFlagSet(name, flag.ContinueOnError)
 		cmd, cOk := description.Initializer(o, c, fSet)
-		if cOk {
+		if cOk && cmd != nil {
 			m[name] = cmd
 		} else {
 			allCmdsOk = false

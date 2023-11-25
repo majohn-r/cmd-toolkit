@@ -64,6 +64,16 @@ var (
 		},
 	})
 
+	_ = goyek.Define(goyek.Task{
+		Name: "nilaway",
+		Usage: "run nilaway on source code",
+		Action: func(a *goyek.A) {
+			unifiedOutput := &bytes.Buffer{}
+			cmd.Exec(a, "nilaway ./...", makeOptions(unifiedOutput)...)
+			printOutput(unifiedOutput)
+		},
+	})
+
 	tests = goyek.Define(goyek.Task{
 		Name:  "tests",
 		Usage: "run unit tests",
