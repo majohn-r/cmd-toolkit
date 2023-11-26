@@ -65,7 +65,7 @@ var (
 	})
 
 	_ = goyek.Define(goyek.Task{
-		Name: "nilaway",
+		Name:  "nilaway",
 		Usage: "run nilaway on source code",
 		Action: func(a *goyek.A) {
 			unifiedOutput := &bytes.Buffer{}

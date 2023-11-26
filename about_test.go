@@ -194,7 +194,7 @@ func Test_setFirstYear(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			setFirstYear(tt.args.i)
+			SetFirstYear(tt.args.i)
 			if got := firstYear; got != tt.want {
 				t.Errorf("setFirstYear() got %d want %d", got, tt.want)
 			}

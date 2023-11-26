@@ -66,7 +66,8 @@ func SetAuthor(s string) {
 	author = s
 }
 
-func setFirstYear(i int) {
+// SetFirstYear sets the first year of application development
+func SetFirstYear(i int) {
 	firstYear = i
 }
 
@@ -147,6 +148,12 @@ type aboutCmd struct {
 // returns true.
 func (a *aboutCmd) Exec(o output.Bus, args []string) (ok bool) {
 	LogCommandStart(o, aboutCommandName, map[string]any{})
+	GenerateAboutContent(o)
+	return true
+}
+
+// GenerateAboutContent writes 'about' content in a pretty format
+func GenerateAboutContent(o output.Bus) {
 	var s []string
 	if name, err := AppName(); err != nil {
 		o.Log(output.Error, "program error", map[string]any{"error": err})
@@ -161,7 +168,6 @@ func (a *aboutCmd) Exec(o output.Bus, args []string) (ok bool) {
 	}
 	s = append(s, formatBuildData()...)
 	reportAbout(o, s)
-	return true
 }
 
 func newAboutCmd(o output.Bus, _ *Configuration, _ *flag.FlagSet) (CommandProcessor, bool) {

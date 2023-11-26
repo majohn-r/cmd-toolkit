@@ -12,7 +12,7 @@ var (
 
 func Execute(o output.Bus, firstYear int, appName, appVersion, buildTimestamp string, cmdLine []string) (exitCode int) {
 	start := time.Now()
-	setFirstYear(firstYear)
+	SetFirstYear(firstYear)
 	exitCode = 1
 	if err := SetAppName(appName); err != nil {
 		o.WriteCanonicalError("A programming error has occurred - %v", err)
