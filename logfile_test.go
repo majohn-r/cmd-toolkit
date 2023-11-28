@@ -165,10 +165,9 @@ func Test_cleanup(t *testing.T) {
 				}
 				_ = os.RemoveAll("manyLogFiles")
 			},
-			args:            args{path: "manyLogFiles"},
-			wantFound:       maxLogFiles + 1,
-			wantDeleted:     1,
-			WantedRecording: output.WantedRecording{Log: "level='info' fileName='manyLogFiles\\_log_.0.log' msg='successfully deleted log file'\n"},
+			args:        args{path: "manyLogFiles"},
+			wantFound:   maxLogFiles + 1,
+			wantDeleted: 1,
 		},
 	}
 	for name, tt := range tests {
@@ -208,7 +207,6 @@ func Test_deleteLogFile(t *testing.T) {
 			args:     args{logFile: "no such file"},
 			WantedRecording: output.WantedRecording{
 				Error: "The log file \"no such file\" cannot be deleted: remove no such file: The system cannot find the file specified.\n",
-				Log:   "level='error' error='remove no such file: The system cannot find the file specified.' fileName='no such file' msg='cannot delete file'\n",
 			},
 		},
 		"success": {
@@ -219,8 +217,7 @@ func Test_deleteLogFile(t *testing.T) {
 			postTest: func() {
 				_ = os.RemoveAll("logs")
 			},
-			args:            args{logFile: filepath.Join("logs", "file.log")},
-			WantedRecording: output.WantedRecording{Log: "level='info' fileName='logs\\file.log' msg='successfully deleted log file'\n"},
+			args: args{logFile: filepath.Join("logs", "file.log")},
 		},
 	}
 	for name, tt := range tests {

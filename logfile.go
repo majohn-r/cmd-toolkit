@@ -83,13 +83,9 @@ func cleanup(o output.Bus, logPath string) (found, deleted int) {
 
 func deleteLogFile(o output.Bus, logFile string) (ok bool) {
 	if err := os.Remove(logFile); err != nil {
-		LogFileDeletionFailure(o, logFile, err)
 		o.WriteCanonicalError("The log file %q cannot be deleted: %v", logFile, err)
 	} else {
 		ok = true
-		o.Log(output.Info, "successfully deleted log file", map[string]any{
-			"fileName": logFile,
-		})
 	}
 	return
 }
