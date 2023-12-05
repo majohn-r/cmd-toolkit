@@ -246,7 +246,7 @@ func (c *Configuration) HasSubConfiguration(key string) bool {
 // IntDefault returns a default value for a specified key, which may or may not
 // be defined in the Configuration instance
 func (c *Configuration) IntDefault(key string, b *IntBounds) (i int, err error) {
-	i = b.defaultValue
+	i = b.Default()
 	if value, ok := c.iMap[key]; ok {
 		i = b.constrainedValue(value)
 	} else {
@@ -308,12 +308,27 @@ func (c *Configuration) SubConfiguration(key string) *Configuration {
 	return EmptyConfiguration()
 }
 
+// Default returns the default value for a bounded int
+func (b *IntBounds) Default() int {
+	return b.defaultValue
+}
+
+// Maximum returns the maximum value for a bounded int
+func (b *IntBounds) Maximum() int {
+	return b.maxValue
+}
+
+// Minimum returns the minimum value for a bounded int
+func (b *IntBounds) Minimum() int {
+	return b.minValue
+}
+
 func (b *IntBounds) constrainedValue(value int) (i int) {
 	switch {
-	case value < b.minValue:
-		i = b.minValue
-	case value > b.maxValue:
-		i = b.maxValue
+	case value < b.Minimum():
+		i = b.Minimum()
+	case value > b.Maximum():
+		i = b.Maximum()
 	default:
 		i = value
 	}
