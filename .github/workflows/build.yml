@@ -10,7 +10,7 @@ jobs:
       - name: Fetch go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.21.4
+          go-version: 1.21.6
       - name: Install linter
         run: go install -v github.com/go-critic/go-critic/cmd/gocritic@latest
       - name: Run linter
@@ -39,7 +39,7 @@ jobs:
       - name: Run vulnerability check
         uses: golang/govulncheck-action@v1
         with:
-          go-version-input: 1.21.4
+          go-version-input: 1.21.6
       - name: Execute unit tests with code coverage
         run: go test -coverprofile=coverage -covermode=atomic
       - name: Upload coverage to Codecov
