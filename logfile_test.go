@@ -15,15 +15,18 @@ func Test_initWriter(t *testing.T) {
 	savedTmp := NewEnvVarMemento("TMP")
 	savedTemp := NewEnvVarMemento("TEMP")
 	savedAppname := appname
+	savedLogPath := logPath
 	defer func() {
 		savedTmp.Restore()
 		savedTemp.Restore()
 		appname = savedAppname
+		logPath = savedLogPath
 	}()
 	tests := map[string]struct {
-		preTest  func()
-		postTest func()
-		wantNil  bool
+		preTest     func()
+		postTest    func()
+		wantNil     bool
+		wantLogPath string
 		output.WantedRecording
 	}{
 		"no temp folder defined": {
@@ -55,7 +58,8 @@ func Test_initWriter(t *testing.T) {
 			postTest: func() {
 				os.Remove("logs")
 			},
-			wantNil: true,
+			wantNil:     true,
+			wantLogPath: "logs\\myApp\\logs",
 			WantedRecording: output.WantedRecording{
 				Error: "The directory \"logs\\\\myApp\\\\logs\" cannot be created: mkdir logs: The system cannot find the path specified.\n",
 			},
@@ -78,16 +82,21 @@ func Test_initWriter(t *testing.T) {
 					}
 				}
 			},
-			wantNil: false,
+			wantNil:     false,
+			wantLogPath: "goodLogs\\myApp\\logs",
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
 			defer tt.postTest()
+			logPath = ""
 			o := output.NewRecorder()
 			if gotNil := initWriter(o) == nil; !gotNil == tt.wantNil {
 				t.Errorf("initWriter() gotNil= %t, wantNil %t", gotNil, tt.wantNil)
+			}
+			if got := LogPath(); got != tt.wantLogPath {
+				t.Errorf("initWriter() got logPath=%q, want %q", got, tt.wantLogPath)
 			}
 			if issues, ok := o.Verify(tt.WantedRecording); !ok {
 				for _, issue := range issues {

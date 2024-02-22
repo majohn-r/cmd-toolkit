@@ -20,8 +20,16 @@ const (
 	maxLogFiles      = 10
 )
 
-// exposed so that unit tests can close the writer!
-var logWriter io.WriteCloser
+var (
+	logPath string
+	// exposed so that unit tests can close the writer!
+	logWriter io.WriteCloser
+)
+
+// https://github.com/majohn-r/cmd-toolkit/issues/16
+func LogPath() string {
+	return logPath
+}
 
 func initWriter(o output.Bus) io.Writer {
 	var tmpFolder string
@@ -35,7 +43,7 @@ func initWriter(o output.Bus) io.Writer {
 		o.WriteCanonicalError("A programming error has occurred: %v", err)
 		return nil
 	}
-	logPath := filepath.Join(tmp, logDirName)
+	logPath = filepath.Join(tmp, logDirName)
 	if err = os.MkdirAll(logPath, StdDirPermissions); err != nil {
 		WriteDirectoryCreationError(o, logPath, err)
 		return nil
