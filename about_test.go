@@ -313,7 +313,7 @@ func Test_formatCopyright(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			author = tt.author
-			if got := formatCopyright(tt.args.firstYear, tt.args.lastYear); got != tt.want {
+			if got := formatCopyright(tt.args.firstYear, tt.args.lastYear, author); got != tt.want {
 				t.Errorf("formatCopyright() = %v, want %v", got, tt.want)
 			}
 		})

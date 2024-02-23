@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/majohn-r/output"
@@ -47,17 +48,22 @@ func GoVersion() string {
 // InitBuildData captures information about how the program was compiled, the
 // version of the program, and the timestamp for when the program was built.
 func InitBuildData(version, creation string) {
-	if b, ok := buildInfoReader(); ok && b != nil {
-		goVersion = b.GoVersion
-		for _, d := range b.Deps {
-			buildDependencies = append(buildDependencies, fmt.Sprintf("%s %s", d.Path, d.Version))
-		}
-	} else {
-		goVersion = "unknown"
-		buildDependencies = nil
-	}
+	goVersion, buildDependencies = InterpretBuildData()
 	appVersion = version
 	buildTimestamp = creation
+}
+
+// https://github.com/majohn-r/cmd-toolkit/issues/16
+func InterpretBuildData() (version string, dependencies []string) {
+	if b, ok := buildInfoReader(); ok && b != nil {
+		version = b.GoVersion
+		for _, d := range b.Deps {
+			dependencies = append(dependencies, fmt.Sprintf("%s %s", d.Path, d.Version))
+		}
+	} else {
+		version = "unknown"
+	}
+	return
 }
 
 // SetAuthor is used to override the default value of author, in case someone
@@ -86,15 +92,33 @@ func finalYear(o output.Bus, timestamp string) int {
 }
 
 func formatBuildData() []string {
-	var s []string
-	s = append(s, "Build Information", fmt.Sprintf(" - Go version: %s", goVersion))
-	for _, dep := range buildDependencies {
-		s = append(s, fmt.Sprintf(" - Dependency: %s", dep))
-	}
-	return s
+	s := []string{}
+	s = append(s, BuildInformationHeader(), FormatGoVersion(goVersion))
+	return append(s, FormatBuildDependencies(buildDependencies)...)
 }
 
-func formatCopyright(firstYear, lastYear int) string {
+// https://github.com/majohn-r/cmd-toolkit/issues/16
+func BuildInformationHeader() string {
+	return "Build Information"
+}
+
+// https://github.com/majohn-r/cmd-toolkit/issues/16
+func FormatBuildDependencies(dependencies []string) []string {
+	formatted := make([]string, len(dependencies))
+	index := 0
+	for _, dep := range dependencies {
+		formatted[index] = fmt.Sprintf(" - Dependency: %s", dep)
+		index++
+	}
+	return formatted
+}
+
+// https://github.com/majohn-r/cmd-toolkit/issues/16
+func FormatGoVersion(version string) string {
+	return fmt.Sprintf(" - Go version: %s", version)
+}
+
+func formatCopyright(firstYear, lastYear int, owner string) string {
 	if lastYear <= firstYear {
 		return fmt.Sprintf("Copyright © %d %s", firstYear, author)
 	}
@@ -102,35 +126,33 @@ func formatCopyright(firstYear, lastYear int) string {
 }
 
 func reportAbout(o output.Bus, lines []string) {
-	max := 0
+	o.WriteConsole(strings.Join(FlowerBox(lines), "\n"))
+}
+
+// https://github.com/majohn-r/cmd-toolkit/issues/16
+func FlowerBox(lines []string) []string {
+	maxRunesPerLine := 0
 	for _, s := range lines {
-		if len(s) > max {
-			max = len([]rune(s))
-		}
+		maxRunesPerLine = max(maxRunesPerLine, len([]rune(s)))
 	}
-	var formatted []string
-	for _, s := range lines {
-		b := make([]rune, max)
-		i := 0
-		for _, s1 := range s {
-			b[i] = s1
-			i++
-		}
-		for ; i < max; i++ {
-			b[i] = ' '
-		}
-		formatted = append(formatted, string(b))
-	}
-	headerRunes := make([]rune, max)
-	for i := 0; i < max; i++ {
+	headerRunes := make([]rune, maxRunesPerLine+4)
+	headerRunes[0] = '+'
+	for i := 1; i < maxRunesPerLine+3; i++ {
 		headerRunes[i] = '-'
 	}
-	header := string(headerRunes)
-	o.WriteConsole("+-%s-+\n", header)
-	for _, s := range formatted {
-		o.WriteConsole("| %s |\n", s)
+	headerRunes[maxRunesPerLine+3] = '+'
+	hLine := string(headerRunes)
+	// size: 2 for horizontal lines + 1 for empty string at the end + 1 per line
+	formattedLines := make([]string, 3+len(lines))
+	formattedLines[0] = hLine
+	index := 1
+	for _, s := range lines {
+		formattedLines[index] = fmt.Sprintf("| %s%*s |", s, maxRunesPerLine-len([]rune(s)), "")
+		index++
 	}
-	o.WriteConsole("+-%s-+\n", header)
+	formattedLines[index] = hLine
+	formattedLines[index+1] = ""
+	return formattedLines
 }
 
 func translateTimestamp(s string) string {
@@ -154,20 +176,30 @@ func (a *aboutCmd) Exec(o output.Bus, args []string) (ok bool) {
 
 // GenerateAboutContent writes 'about' content in a pretty format
 func GenerateAboutContent(o output.Bus) {
-	var s []string
+	s := []string{}
 	if name, err := AppName(); err != nil {
 		o.Log(output.Error, "program error", map[string]any{"error": err})
 		s = append(s,
-			fmt.Sprintf("unknown application name version %s, built on %s", appVersion, translateTimestamp(buildTimestamp)),
-			formatCopyright(firstYear, finalYear(o, buildTimestamp)))
+			DecoratedAppName("unknown application name", appVersion, buildTimestamp),
+			Copyright(o, firstYear, buildTimestamp, author))
 
 	} else {
-		s = append(s,
-			fmt.Sprintf("%s version %s, built on %s", name, appVersion, translateTimestamp(buildTimestamp)),
-			formatCopyright(firstYear, finalYear(o, buildTimestamp)))
+		s = append(s, DecoratedAppName(name, appVersion, buildTimestamp),
+			Copyright(o, firstYear, buildTimestamp, author))
 	}
 	s = append(s, formatBuildData()...)
 	reportAbout(o, s)
+}
+
+// https://github.com/majohn-r/cmd-toolkit/issues/16
+func DecoratedAppName(applicationName, applicationVersion, timestamp string) string {
+	return fmt.Sprintf("%s version %s, built on %s", applicationName, applicationVersion,
+		translateTimestamp(timestamp))
+}
+
+// https://github.com/majohn-r/cmd-toolkit/issues/16
+func Copyright(o output.Bus, first int, timestamp, owner string) string {
+	return formatCopyright(first, finalYear(o, buildTimestamp), owner)
 }
 
 func newAboutCmd(o output.Bus, _ *Configuration, _ *flag.FlagSet) (CommandProcessor, bool) {
