@@ -619,7 +619,8 @@ func TestDecoratedAppName(t *testing.T) {
 	}
 	tests := map[string]struct {
 		args
-		want string
+		want  string
+		want2 string
 	}{
 		"bad timestamp": {
 			args: args{
@@ -627,7 +628,8 @@ func TestDecoratedAppName(t *testing.T) {
 				applicationVersion: "0.4.0",
 				timestamp:          "today",
 			},
-			want: "myApp version 0.4.0, built on today",
+			want:  "myApp version 0.4.0, built on today",
+			want2: "myApp version 0.4.0, built on today",
 		},
 		"good timestamp": {
 			args: args{
@@ -635,13 +637,16 @@ func TestDecoratedAppName(t *testing.T) {
 				applicationVersion: "1.0.4",
 				timestamp:          "2024-02-24T15:40:00-05:00",
 			},
-			want: "goodApp version 1.0.4, built on Saturday, February 24 2024, 15:40:00 EST",
+			want:  "goodApp version 1.0.4, built on Saturday, February 24 2024, 15:40:00 EST",
+			want2: "goodApp version 1.0.4, built on Saturday, February 24 2024, 15:40:00 -0500",
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			if got := DecoratedAppName(tt.args.applicationName, tt.args.applicationVersion, tt.args.timestamp); got != tt.want {
-				t.Errorf("DecoratedAppName() = %v, want %v", got, tt.want)
+				if got != tt.want2 {
+					t.Errorf("DecoratedAppName() = %q, want %q, would also accept %q", got, tt.want, tt.want2)
+				}
 			}
 		})
 	}
