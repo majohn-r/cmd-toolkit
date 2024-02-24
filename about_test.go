@@ -556,3 +556,93 @@ func Test_newAboutCmd(t *testing.T) {
 		})
 	}
 }
+
+func TestCopyright(t *testing.T) {
+	type args struct {
+		first     int
+		timestamp string
+		owner     string
+	}
+	tests := map[string]struct {
+		args
+		want string
+		output.WantedRecording
+	}{
+		"bad time": {
+			args: args{first: 2020, timestamp: "today", owner: "no one"},
+			want: "Copyright © 2020-2024 no one",
+			WantedRecording: output.WantedRecording{
+				Error: "The build time \"today\" cannot be parsed: parsing time \"today\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"today\" as \"2006\".\n",
+				Log: "" +
+					"level='error'" +
+					" error='parsing time \"today\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"today\" as \"2006\"'" +
+					" value='today'" +
+					" msg='parse error'\n",
+			},
+		},
+		"current year": {
+			args:            args{first: 2024, timestamp: "2024-01-02T15:04:05+05:00", owner: "me, myself, and I"},
+			want:            "Copyright © 2024 me, myself, and I",
+			WantedRecording: output.WantedRecording{},
+		},
+		"previous year": {
+			args:            args{first: 2024, timestamp: "2023-01-02T15:04:05+05:00", owner: "me, myself, and I"},
+			want:            "Copyright © 2024 me, myself, and I",
+			WantedRecording: output.WantedRecording{},
+		},
+		"subsequent year": {
+			args:            args{first: 2024, timestamp: "2025-01-02T15:04:05+05:00", owner: "me, myself, and I"},
+			want:            "Copyright © 2024-2025 me, myself, and I",
+			WantedRecording: output.WantedRecording{},
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			o := output.NewRecorder()
+			if got := Copyright(o, tt.args.first, tt.args.timestamp, tt.args.owner); got != tt.want {
+				t.Errorf("Copyright() = %v, want %v", got, tt.want)
+			}
+			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+				for _, issue := range issues {
+					t.Errorf("Copyright() %s", issue)
+				}
+			}
+		})
+	}
+}
+
+func TestDecoratedAppName(t *testing.T) {
+	type args struct {
+		applicationName    string
+		applicationVersion string
+		timestamp          string
+	}
+	tests := map[string]struct {
+		args
+		want string
+	}{
+		"bad timestamp": {
+			args: args{
+				applicationName:    "myApp",
+				applicationVersion: "0.4.0",
+				timestamp:          "today",
+			},
+			want: "myApp version 0.4.0, built on today",
+		},
+		"good timestamp": {
+			args: args{
+				applicationName:    "goodApp",
+				applicationVersion: "1.0.4",
+				timestamp:          "2024-02-24T15:40:00-05:00",
+			},
+			want: "goodApp version 1.0.4, built on Saturday, February 24 2024, 15:40:00 EST",
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := DecoratedAppName(tt.args.applicationName, tt.args.applicationVersion, tt.args.timestamp); got != tt.want {
+				t.Errorf("DecoratedAppName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

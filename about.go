@@ -53,7 +53,7 @@ func InitBuildData(version, creation string) {
 	buildTimestamp = creation
 }
 
-// https://github.com/majohn-r/cmd-toolkit/issues/16
+// https://github.com/majohn-r/cmd-toolkit/issues/17
 func InterpretBuildData() (version string, dependencies []string) {
 	if b, ok := buildInfoReader(); ok && b != nil {
 		version = b.GoVersion
@@ -97,12 +97,12 @@ func formatBuildData() []string {
 	return append(s, FormatBuildDependencies(buildDependencies)...)
 }
 
-// https://github.com/majohn-r/cmd-toolkit/issues/16
+// https://github.com/majohn-r/cmd-toolkit/issues/17
 func BuildInformationHeader() string {
 	return "Build Information"
 }
 
-// https://github.com/majohn-r/cmd-toolkit/issues/16
+// https://github.com/majohn-r/cmd-toolkit/issues/17
 func FormatBuildDependencies(dependencies []string) []string {
 	formatted := make([]string, len(dependencies))
 	index := 0
@@ -113,23 +113,23 @@ func FormatBuildDependencies(dependencies []string) []string {
 	return formatted
 }
 
-// https://github.com/majohn-r/cmd-toolkit/issues/16
+// https://github.com/majohn-r/cmd-toolkit/issues/17
 func FormatGoVersion(version string) string {
 	return fmt.Sprintf(" - Go version: %s", version)
 }
 
 func formatCopyright(firstYear, lastYear int, owner string) string {
 	if lastYear <= firstYear {
-		return fmt.Sprintf("Copyright © %d %s", firstYear, author)
+		return fmt.Sprintf("Copyright © %d %s", firstYear, owner)
 	}
-	return fmt.Sprintf("Copyright © %d-%d %s", firstYear, lastYear, author)
+	return fmt.Sprintf("Copyright © %d-%d %s", firstYear, lastYear, owner)
 }
 
 func reportAbout(o output.Bus, lines []string) {
 	o.WriteConsole(strings.Join(FlowerBox(lines), "\n"))
 }
 
-// https://github.com/majohn-r/cmd-toolkit/issues/16
+// https://github.com/majohn-r/cmd-toolkit/issues/17
 func FlowerBox(lines []string) []string {
 	maxRunesPerLine := 0
 	for _, s := range lines {
@@ -191,15 +191,15 @@ func GenerateAboutContent(o output.Bus) {
 	reportAbout(o, s)
 }
 
-// https://github.com/majohn-r/cmd-toolkit/issues/16
+// https://github.com/majohn-r/cmd-toolkit/issues/17
 func DecoratedAppName(applicationName, applicationVersion, timestamp string) string {
 	return fmt.Sprintf("%s version %s, built on %s", applicationName, applicationVersion,
 		translateTimestamp(timestamp))
 }
 
-// https://github.com/majohn-r/cmd-toolkit/issues/16
+// https://github.com/majohn-r/cmd-toolkit/issues/17
 func Copyright(o output.Bus, first int, timestamp, owner string) string {
-	return formatCopyright(first, finalYear(o, buildTimestamp), owner)
+	return formatCopyright(first, finalYear(o, timestamp), owner)
 }
 
 func newAboutCmd(o output.Bus, _ *Configuration, _ *flag.FlagSet) (CommandProcessor, bool) {
