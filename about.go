@@ -160,7 +160,8 @@ func translateTimestamp(s string) string {
 	if err != nil {
 		return s
 	}
-	return t.Format("Monday, January 2 2006, 15:04:05 MST")
+	// https://github.com/majohn-r/cmd-toolkit/issues/18
+	return t.Format("Monday, January 2 2006, 15:04:05 -0700")
 }
 
 type aboutCmd struct {
