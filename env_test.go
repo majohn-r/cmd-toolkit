@@ -197,7 +197,10 @@ func Test_findReferences(t *testing.T) {
 		args
 		want []string
 	}{
-		"no references": {args: args{s: "no references here, not even this: %VAR1"}},
+		"no references": {
+			args: args{s: "no references here, not even this: %VAR1"},
+			want: make([]string, 0),
+		},
 		"many references": {
 			args: args{s: "$VAR1 $VAR11 $VAR111 $VAR1 %VAR2% %VAR22% %VAR222% %VAR222%"},
 			want: []string{"$VAR111", "$VAR11", "$VAR1", "%VAR2%", "%VAR22%", "%VAR222%"}},

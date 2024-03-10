@@ -84,7 +84,7 @@ func determineDefaultCommand(o output.Bus, c *Configuration) (defaultCommand str
 		}
 	default:
 		// common case: there is more than 1 command defined
-		var defaultCmds []string
+		defaultCmds := make([]string, 0, len(descriptions))
 		for name, d := range descriptions {
 			if d.IsDefault {
 				defaultCmds = append(defaultCmds, name)
@@ -109,7 +109,7 @@ func determineDefaultCommand(o output.Bus, c *Configuration) (defaultCommand str
 }
 
 func describedCommandNames(defaultCommand string) []string {
-	var names []string
+	names := make([]string, 0, len(descriptions))
 	for name := range descriptions {
 		if name == defaultCommand {
 			names = append(names, fmt.Sprintf("%s (default)", name))

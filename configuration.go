@@ -176,7 +176,7 @@ func verifyDefaultConfigFileExists(o output.Bus, path string) (ok bool, err erro
 }
 
 func (c *Configuration) String() string {
-	var s []string
+	s := make([]string, 0, 4)
 	if len(c.bMap) != 0 {
 		s = append(s, fmt.Sprintf("%v", c.bMap))
 	}

@@ -53,7 +53,7 @@ func DereferenceEnvVar(s string) (string, error) {
 	if len(refs) == 0 {
 		return s, nil
 	}
-	var missing []string
+	missing := make([]string, 0, len(refs))
 	for _, ref := range refs {
 		var envVar string
 		if strings.HasPrefix(ref, "$") {
@@ -108,7 +108,7 @@ func findReferences(s string) []string {
 		for _, name := range s {
 			found[name] = true
 		}
-		var keys []string
+		keys := make([]string, 0, len(found))
 		for key := range found {
 			keys = append(keys, key)
 		}

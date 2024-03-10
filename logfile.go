@@ -59,7 +59,7 @@ func initWriter(o output.Bus) io.Writer {
 func cleanup(o output.Bus, logPath string) (found, deleted int) {
 	if files, ok := ReadDirectory(o, logPath); ok {
 		var fileMap map[time.Time]fs.DirEntry = make(map[time.Time]fs.DirEntry)
-		var times []time.Time
+		times := make([]time.Time, 0, len(files))
 		for _, file := range files {
 			if isLogFile(file) {
 				if f, fErr := file.Info(); fErr == nil {

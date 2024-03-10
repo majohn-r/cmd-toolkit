@@ -87,7 +87,7 @@ func (sl *simpleLogger) log(l output.Level, msg string, fields map[string]any) {
 		return
 	}
 	var fieldMap map[string]string = map[string]string{}
-	var fieldKeys []string
+	fieldKeys := make([]string, 0, len(fields))
 	if len(fields) > 0 {
 		for k, v := range fields {
 			fieldKeys = append(fieldKeys, k)
@@ -100,7 +100,11 @@ func (sl *simpleLogger) log(l output.Level, msg string, fields map[string]any) {
 	sl.lock.Lock()
 	defer sl.lock.Unlock()
 	tValue := time.Now().Format(time.RFC3339)
-	loggedFields := []string{fmt.Sprintf("time=%q", tValue), fmt.Sprintf("level=%s", levelValue), fmt.Sprintf("msg=%s", msgValue)}
+	loggedFields := make([]string, 3+len(fieldKeys))
+	loggedFields = append(loggedFields,
+		fmt.Sprintf("time=%q", tValue),
+		fmt.Sprintf("level=%s", levelValue),
+		fmt.Sprintf("msg=%s", msgValue))
 	for _, k := range fieldKeys {
 		loggedFields = append(loggedFields, fmt.Sprintf("%s=%s", k, fieldMap[k]))
 	}

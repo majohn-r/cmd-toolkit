@@ -57,6 +57,7 @@ func InitBuildData(version, creation string) {
 func InterpretBuildData() (version string, dependencies []string) {
 	if b, ok := buildInfoReader(); ok && b != nil {
 		version = b.GoVersion
+		dependencies = make([]string, 0, len(b.Deps))
 		for _, d := range b.Deps {
 			dependencies = append(dependencies, fmt.Sprintf("%s %s", d.Path, d.Version))
 		}
@@ -92,7 +93,7 @@ func finalYear(o output.Bus, timestamp string) int {
 }
 
 func formatBuildData() []string {
-	s := []string{}
+	s := make([]string, 0, 2+len(buildDependencies))
 	s = append(s, BuildInformationHeader(), FormatGoVersion(goVersion))
 	return append(s, FormatBuildDependencies(buildDependencies)...)
 }
@@ -177,7 +178,8 @@ func (a *aboutCmd) Exec(o output.Bus, args []string) (ok bool) {
 
 // GenerateAboutContent writes 'about' content in a pretty format
 func GenerateAboutContent(o output.Bus) {
-	s := []string{}
+	formattedBuildData := formatBuildData()
+	s := make([]string, 0, 2+len(formattedBuildData))
 	if name, err := AppName(); err != nil {
 		o.Log(output.Error, "program error", map[string]any{"error": err})
 		s = append(s,
@@ -188,7 +190,7 @@ func GenerateAboutContent(o output.Bus) {
 		s = append(s, DecoratedAppName(name, appVersion, buildTimestamp),
 			Copyright(o, firstYear, buildTimestamp, author))
 	}
-	s = append(s, formatBuildData()...)
+	s = append(s, formattedBuildData...)
 	reportAbout(o, s)
 }
 
