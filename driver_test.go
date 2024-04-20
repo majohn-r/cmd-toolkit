@@ -63,11 +63,13 @@ func TestExecute(t *testing.T) {
 		output.WantedRecording
 	}{
 		"set app name fails": {
-			appname:         "myApp",
-			preTest:         func() {},
-			postTest:        func() {},
-			wantExitCode:    1,
-			WantedRecording: output.WantedRecording{Error: "A programming error has occurred - app name has already been initialized: myApp.\n"},
+			appname:      "myApp",
+			preTest:      func() {},
+			postTest:     func() {},
+			wantExitCode: 1,
+			WantedRecording: output.WantedRecording{
+				Error: "A programming error has occurred - cannot initialize app name with an empty string.\n",
+			},
 		},
 		"logInit fails": {
 			preTest: func() {

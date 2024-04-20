@@ -39,14 +39,15 @@ func CopyFile(src, dest string) (err error) {
 }
 
 // CreateFile creates a file; it returns an error if the file already exists
-func CreateFile(fileName string, content []byte) (err error) {
-	_, err = os.Stat(fileName) // error on illegal name (such as, one containing a nul)
+func CreateFile(fileName string, content []byte) error {
+	_, err := os.Stat(fileName) // error on illegal name (such as, one containing a nul)
 	if err == nil {
-		err = fmt.Errorf("file %q already exists", fileName)
-	} else if errors.Is(err, os.ErrNotExist) {
-		err = os.WriteFile(fileName, content, StdFilePermissions) // bad path
+		return fmt.Errorf("file %q already exists", fileName)
 	}
-	return
+	if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return os.WriteFile(fileName, content, StdFilePermissions) // bad path
 }
 
 // CreateFileInDirectory creates a file in a specified directory. It returns an
@@ -154,11 +155,11 @@ func ReportFileDeletionFailure(o output.Bus, file string, e error) {
 
 // SecureAbsolutePath returns a path's absolute value
 func SecureAbsolutePath(path string) string {
-	if absPath, err := filepath.Abs(path); err != nil {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
 		return ""
-	} else {
-		return absPath
 	}
+	return absPath
 }
 
 // WriteDirectoryCreationError writes a suitable error message to the user when

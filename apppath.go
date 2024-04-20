@@ -25,30 +25,29 @@ func ApplicationPath() string {
 }
 
 // InitApplicationPath ensures that the application path exists
-func InitApplicationPath(o output.Bus) (initialized bool) {
-	if value, ok := os.LookupEnv(ApplicationDataEnvVarName); ok {
-		if dir, err := CreateAppSpecificPath(value); err == nil {
-			applicationPath = dir
-			if DirExists(applicationPath) {
-				initialized = true
-			} else {
-				if err := Mkdir(applicationPath); err == nil {
-					initialized = true
-				} else {
-					WriteDirectoryCreationError(o, applicationPath, err)
-					o.Log(output.Error, "cannot create directory", map[string]any{
-						"directory": applicationPath,
-						"error":     err,
-					})
-				}
-			}
-		} else {
-			o.Log(output.Error, "program error", map[string]any{"error": err})
-		}
-	} else {
+func InitApplicationPath(o output.Bus) bool {
+	value, ok := os.LookupEnv(ApplicationDataEnvVarName)
+	if !ok {
 		o.Log(output.Error, "not set", map[string]any{"environmentVariable": ApplicationDataEnvVarName})
+		return false
 	}
-	return
+	dir, err := CreateAppSpecificPath(value)
+	if err != nil {
+		o.Log(output.Error, "program error", map[string]any{"error": err})
+		return false
+	}
+	// Mkdir does nothing and succeeds if applicationPath is an existing
+	// directory
+	if err := Mkdir(dir); err != nil {
+		WriteDirectoryCreationError(o, dir, err)
+		o.Log(output.Error, "cannot create directory", map[string]any{
+			"directory": dir,
+			"error":     err,
+		})
+		return false
+	}
+	applicationPath = dir
+	return true
 }
 
 // SetApplicationPath is used to set applicationPath to a known value; intent is for use in tesing scenarios

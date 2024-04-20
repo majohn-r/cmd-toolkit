@@ -54,15 +54,16 @@ func InitBuildData(version, creation string) {
 }
 
 // https://github.com/majohn-r/cmd-toolkit/issues/17
-func InterpretBuildData() (version string, dependencies []string) {
-	if b, ok := buildInfoReader(); ok && b != nil {
-		version = b.GoVersion
-		dependencies = make([]string, 0, len(b.Deps))
-		for _, d := range b.Deps {
-			dependencies = append(dependencies, fmt.Sprintf("%s %s", d.Path, d.Version))
-		}
-	} else {
-		version = "unknown"
+func InterpretBuildData() (v string, dependencies []string) {
+	b, ok := buildInfoReader()
+	if !ok || b == nil {
+		v = "unknown"
+		return
+	}
+	v = b.GoVersion
+	dependencies = make([]string, 0, len(b.Deps))
+	for _, d := range b.Deps {
+		dependencies = append(dependencies, fmt.Sprintf("%s %s", d.Path, d.Version))
 	}
 	return
 }
@@ -79,17 +80,16 @@ func SetFirstYear(i int) {
 }
 
 func finalYear(o output.Bus, timestamp string) int {
-	var y = firstYear
-	if t, err := time.Parse(time.RFC3339, timestamp); err != nil {
+	t, err := time.Parse(time.RFC3339, timestamp)
+	if err != nil {
 		o.WriteCanonicalError("The build time %q cannot be parsed: %v", timestamp, err)
 		o.Log(output.Error, "parse error", map[string]any{
 			"error": err,
 			"value": timestamp,
 		})
-	} else {
-		y = t.Year()
+		return firstYear
 	}
-	return y
+	return t.Year()
 }
 
 func formatBuildData() []string {
@@ -180,16 +180,13 @@ func (a *aboutCmd) Exec(o output.Bus, args []string) (ok bool) {
 func GenerateAboutContent(o output.Bus) {
 	formattedBuildData := formatBuildData()
 	s := make([]string, 0, 2+len(formattedBuildData))
-	if name, err := AppName(); err != nil {
+	name, err := AppName()
+	if err != nil {
 		o.Log(output.Error, "program error", map[string]any{"error": err})
-		s = append(s,
-			DecoratedAppName("unknown application name", appVersion, buildTimestamp),
-			Copyright(o, firstYear, buildTimestamp, author))
-
-	} else {
-		s = append(s, DecoratedAppName(name, appVersion, buildTimestamp),
-			Copyright(o, firstYear, buildTimestamp, author))
+		name = "unknown application name"
 	}
+	s = append(s, DecoratedAppName(name, appVersion, buildTimestamp),
+		Copyright(o, firstYear, buildTimestamp, author))
 	s = append(s, formattedBuildData...)
 	reportAbout(o, s)
 }

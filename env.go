@@ -37,11 +37,11 @@ func AppName() (string, error) {
 
 // CreateAppSpecificPath creates a path string for an app-related directory
 func CreateAppSpecificPath(topDir string) (string, error) {
-	if s, err := AppName(); err != nil {
+	s, err := AppName()
+	if err != nil {
 		return "", err
-	} else {
-		return filepath.Join(topDir, s), nil
 	}
+	return filepath.Join(topDir, s), nil
 }
 
 // DereferenceEnvVar scans a string for environment variable references, looks
@@ -56,15 +56,18 @@ func DereferenceEnvVar(s string) (string, error) {
 	missing := make([]string, 0, len(refs))
 	for _, ref := range refs {
 		var envVar string
-		if strings.HasPrefix(ref, "$") {
+		switch {
+		case strings.HasPrefix(ref, "$"):
 			envVar = ref[1:]
-		} else {
+		default:
 			envVar = ref[1 : len(ref)-1]
 		}
-		if value, ok := os.LookupEnv(envVar); !ok {
-			missing = append(missing, envVar)
-		} else {
+		value, ok := os.LookupEnv(envVar)
+		switch ok {
+		case true:
 			s = strings.ReplaceAll(s, ref, value)
+		case false:
+			missing = append(missing, envVar)
 		}
 	}
 	if len(missing) > 0 {
@@ -86,20 +89,17 @@ func NewEnvVarMemento(name string) *EnvVarMemento {
 }
 
 // SetAppName sets the name of the application, returning an error if the name
-// has already been set to a different value or if it is being set to an empty string
-func SetAppName(s string) (err error) {
-	if appname == "" {
-		if s == "" {
-			err = errors.New("cannot initialize app name with an empty string")
-		} else {
-			appname = s
-		}
-		return
+// has already been set to a different value or if it is being set to an empty
+// string
+func SetAppName(s string) error {
+	if s == "" {
+		return errors.New("cannot initialize app name with an empty string")
 	}
-	if appname != s {
-		err = fmt.Errorf("app name has already been initialized: %s", appname)
+	if appname != "" && appname != s {
+		return fmt.Errorf("app name has already been initialized: %s", appname)
 	}
-	return
+	appname = s
+	return nil
 }
 
 func findReferences(s string) []string {
@@ -147,9 +147,10 @@ func (bl byLength) Swap(i, j int) {
 
 // Restore resets a saved environment variable to its original state
 func (mem *EnvVarMemento) Restore() {
-	if mem.set {
+	switch mem.set {
+	case true:
 		os.Setenv(mem.name, mem.value)
-	} else {
+	case false:
 		os.Unsetenv(mem.name)
 	}
 }

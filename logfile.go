@@ -89,13 +89,12 @@ func cleanup(o output.Bus, logPath string) (found, deleted int) {
 	return
 }
 
-func deleteLogFile(o output.Bus, logFile string) (ok bool) {
+func deleteLogFile(o output.Bus, logFile string) bool {
 	if err := os.Remove(logFile); err != nil {
 		o.WriteCanonicalError("The log file %q cannot be deleted: %v", logFile, err)
-	} else {
-		ok = true
+		return false
 	}
-	return
+	return true
 }
 
 func findTemp(o output.Bus) (string, bool) {
@@ -117,9 +116,9 @@ func isLogFile(file fs.DirEntry) (ok bool) {
 }
 
 func logFilePrefix() string {
-	if s, err := AppName(); err != nil {
+	s, err := AppName()
+	if err != nil {
 		return "_log_."
-	} else {
-		return s + "."
 	}
+	return s + "."
 }

@@ -112,10 +112,9 @@ func describedCommandNames(defaultCommand string) []string {
 	names := make([]string, 0, len(descriptions))
 	for name := range descriptions {
 		if name == defaultCommand {
-			names = append(names, fmt.Sprintf("%s (default)", name))
-		} else {
-			names = append(names, name)
+			name = fmt.Sprintf("%s (default)", name)
 		}
+		names = append(names, name)
 	}
 	sort.Strings(names)
 	return names
@@ -123,18 +122,13 @@ func describedCommandNames(defaultCommand string) []string {
 
 func selectCommand(o output.Bus, defaultCmd string, c *Configuration, args []string) (cmd CommandProcessor, cmdArgs []string, ok bool) {
 	m := make(map[string]CommandProcessor)
-	allCmdsOk := true
 	for name, description := range descriptions {
 		fSet := flag.NewFlagSet(name, flag.ContinueOnError)
-		cmd, cOk := description.Initializer(o, c, fSet)
-		if cOk && cmd != nil {
-			m[name] = cmd
-		} else {
-			allCmdsOk = false
+		cmdProcessor, cOk := description.Initializer(o, c, fSet)
+		if !cOk || cmdProcessor == nil {
+			return
 		}
-	}
-	if !allCmdsOk {
-		return
+		m[name] = cmdProcessor
 	}
 	if len(args) < 2 {
 		// no arguments at all
