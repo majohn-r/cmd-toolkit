@@ -39,15 +39,16 @@ func initWriter(o output.Bus) io.Writer {
 	}
 	var tmp string
 	var err error
+	if PlainFileExists(tmpFolder) {
+		o.WriteCanonicalError("The temporary folder %q exists as a plain file", tmpFolder)
+		return nil
+	}
 	if tmp, err = CreateAppSpecificPath(tmpFolder); err != nil {
 		o.WriteCanonicalError("A programming error has occurred: %v", err)
 		return nil
 	}
 	logPath = filepath.Join(tmp, logDirName)
-	if err = os.MkdirAll(logPath, StdDirPermissions); err != nil {
-		WriteDirectoryCreationError(o, logPath, err)
-		return nil
-	}
+	fileSystem.MkdirAll(logPath, StdDirPermissions)
 	cleanup(o, logPath)
 	logWriter = cronowriter.MustNew(
 		filepath.Join(logPath, logFilePrefix()+"%Y%m%d"+logFileExtension),
@@ -58,15 +59,13 @@ func initWriter(o output.Bus) io.Writer {
 
 func cleanup(o output.Bus, logPath string) (found, deleted int) {
 	if files, ok := ReadDirectory(o, logPath); ok {
-		var fileMap map[time.Time]fs.DirEntry = make(map[time.Time]fs.DirEntry)
+		var fileMap map[time.Time]fs.FileInfo = make(map[time.Time]fs.FileInfo)
 		times := make([]time.Time, 0, len(files))
 		for _, file := range files {
 			if isLogFile(file) {
-				if f, fErr := file.Info(); fErr == nil {
-					modificationTime := f.ModTime()
-					fileMap[modificationTime] = file
-					times = append(times, modificationTime)
-				}
+				modificationTime := file.ModTime()
+				fileMap[modificationTime] = file
+				times = append(times, modificationTime)
 			}
 		}
 		found = len(times)
@@ -90,7 +89,7 @@ func cleanup(o output.Bus, logPath string) (found, deleted int) {
 }
 
 func deleteLogFile(o output.Bus, logFile string) bool {
-	if err := os.Remove(logFile); err != nil {
+	if err := fileSystem.Remove(logFile); err != nil {
 		o.WriteCanonicalError("The log file %q cannot be deleted: %v", logFile, err)
 		return false
 	}
@@ -107,8 +106,8 @@ func findTemp(o output.Bus) (string, bool) {
 	return "", false
 }
 
-func isLogFile(file fs.DirEntry) (ok bool) {
-	if file.Type().IsRegular() {
+func isLogFile(file fs.FileInfo) (ok bool) {
+	if file.Mode().IsRegular() {
 		fileName := file.Name()
 		ok = strings.HasPrefix(fileName, logFilePrefix()) && strings.HasSuffix(fileName, logFileExtension)
 	}

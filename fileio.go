@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"os"
 	"path/filepath"
 
 	"github.com/majohn-r/output"
+	"github.com/spf13/afero"
 )
 
 const (
@@ -19,17 +19,22 @@ const (
 // CopyFile copies a file. Adapted from
 // https://github.com/cleversoap/go-cp/blob/master/cp.go
 func CopyFile(src, dest string) (err error) {
-	src, _ = filepath.Abs(src)
-	dest, _ = filepath.Abs(dest)
-	if src == dest {
-		return fmt.Errorf("cannot copy file %q to itself", src)
+	absSrc, _ := filepath.Abs(src)
+	absDest, _ := filepath.Abs(dest)
+	if absSrc == absDest {
+		return fmt.Errorf("cannot copy file %q to itself", absSrc)
 	}
-	var r *os.File
-	r, err = os.Open(src) // error if source does not exist
+	var r afero.File
+	r, err = fileSystem.Open(src) // error if source does not exist
 	if err == nil {
 		defer r.Close()
-		var w *os.File
-		w, err = os.Create(dest) // error if destination is a directory
+		ok, _ := afero.IsDir(fileSystem, dest)
+		if ok {
+			err = fmt.Errorf("cannot overwrite a directory")
+			return
+		}
+		var w afero.File
+		w, err = fileSystem.Create(dest)
 		if err == nil {
 			defer w.Close()
 			_, _ = io.Copy(w, r)
@@ -40,14 +45,16 @@ func CopyFile(src, dest string) (err error) {
 
 // CreateFile creates a file; it returns an error if the file already exists
 func CreateFile(fileName string, content []byte) error {
-	_, err := os.Stat(fileName) // error on illegal name (such as, one containing a nul)
-	if err == nil {
+	ok, _ := afero.Exists(fileSystem, fileName)
+	if ok {
 		return fmt.Errorf("file %q already exists", fileName)
 	}
-	if !errors.Is(err, os.ErrNotExist) {
-		return err
+	dir := filepath.Dir(fileName)
+	ok, _ = afero.DirExists(fileSystem, dir)
+	if !ok {
+		return fmt.Errorf("%q does not exist or is not a directory", dir)
 	}
-	return os.WriteFile(fileName, content, StdFilePermissions) // bad path
+	return afero.WriteFile(fileSystem, fileName, content, StdFilePermissions) // bad path
 }
 
 // CreateFileInDirectory creates a file in a specified directory. It returns an
@@ -58,11 +65,8 @@ func CreateFileInDirectory(dir, name string, content []byte) error {
 
 // DirExists returns whether the specified file exists as a directory
 func DirExists(path string) bool {
-	f, err := os.Stat(path)
-	if err == nil {
-		return f.IsDir()
-	}
-	return !errors.Is(err, os.ErrNotExist)
+	ok, _ := afero.IsDir(fileSystem, path)
+	return ok
 }
 
 // LogFileDeletionFailure logs errors when a file cannot be deleted; does not
@@ -87,24 +91,25 @@ func LogUnreadableDirectory(o output.Bus, s string, e error) {
 
 // Mkdir makes the specified directory; succeeds if the directory already
 // exists. Fails if a plain file exists with the specified path.
-func Mkdir(dir string) (err error) {
-	status, err := os.Stat(dir)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			err = os.Mkdir(dir, StdDirPermissions)
-		}
-		return
+func Mkdir(dir string) error {
+	ok, err := afero.IsDir(fileSystem, dir)
+	if ok || (err != nil && !errors.Is(err, afero.ErrFileNotFound)) {
+		return err
 	}
-	if !status.IsDir() {
-		err = fmt.Errorf("file exists and is not a directory")
+	if PlainFileExists(dir) {
+		return fmt.Errorf("file exists and is not a directory")
 	}
-	return
+	parentIsDir, _ := afero.IsDir(fileSystem, filepath.Dir(dir))
+	if !parentIsDir {
+		return fmt.Errorf("parent directory is not a directory")
+	}
+	return fileSystem.Mkdir(dir, StdDirPermissions)
 }
 
 // PlainFileExists returns whether the specified file exists as a plain file
 // (i.e., not a directory)
 func PlainFileExists(path string) bool {
-	f, err := os.Stat(path)
+	f, err := fileSystem.Stat(path)
 	if err == nil {
 		return !f.IsDir()
 	}
@@ -112,9 +117,9 @@ func PlainFileExists(path string) bool {
 }
 
 // ReadDirectory returns the contents of a specified directory
-func ReadDirectory(o output.Bus, dir string) (files []fs.DirEntry, ok bool) {
+func ReadDirectory(o output.Bus, dir string) (files []fs.FileInfo, ok bool) {
 	var err error
-	if files, err = os.ReadDir(dir); err != nil {
+	if files, err = afero.ReadDir(fileSystem, dir); err != nil {
 		files = nil
 		LogUnreadableDirectory(o, dir, err)
 		o.WriteCanonicalError("The directory %q cannot be read: %v", dir, err)

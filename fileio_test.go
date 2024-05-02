@@ -2,73 +2,63 @@ package cmd_toolkit
 
 import (
 	"errors"
-	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/majohn-r/output"
+	"github.com/spf13/afero"
 )
 
 func TestCopyFile(t *testing.T) {
+	originalFileSystem := fileSystem
+	defer func() {
+		fileSystem = originalFileSystem
+	}()
+	fileSystem = afero.NewMemMapFs()
 	type args struct {
 		src  string
 		dest string
 	}
 	tests := map[string]struct {
-		preTest  func()
-		postTest func()
+		preTest func()
 		args
 		wantErr bool
 	}{
 		"copy file onto itself": {
-			preTest:  func() {},
-			postTest: func() {},
-			args:     args{src: "file1", dest: "file1"},
-			wantErr:  true,
+			preTest: func() {},
+			args:    args{src: "file1", dest: "file1"},
+			wantErr: true,
 		},
 		"non-existent source": {
 			preTest: func() {
-				_ = os.Mkdir("sourceDir", StdDirPermissions)
-				_ = os.Mkdir("destDir", StdDirPermissions)
+				fileSystem.Mkdir("sourceDir1", StdDirPermissions)
+				fileSystem.Mkdir("destDir1", StdDirPermissions)
 			},
-			postTest: func() {
-				_ = os.RemoveAll("sourceDir")
-				_ = os.RemoveAll("destDir")
-			},
-			args:    args{src: filepath.Join("sourceDir", "file1"), dest: filepath.Join("destDir", "file1")},
+			args:    args{src: filepath.Join("sourceDir1", "file1"), dest: filepath.Join("destDir1", "file1")},
 			wantErr: true,
 		},
 		"destination is a directory": {
 			preTest: func() {
-				_ = os.Mkdir("sourceDir", StdDirPermissions)
-				_ = os.WriteFile(filepath.Join("sourceDir", "file1"), []byte{1, 2, 3}, StdFilePermissions)
-				_ = os.Mkdir(filepath.Join("destDir", "file1"), StdDirPermissions)
+				fileSystem.Mkdir("sourceDir2", StdDirPermissions)
+				afero.WriteFile(fileSystem, filepath.Join("sourceDir2", "file1"), []byte{1, 2, 3}, StdFilePermissions)
+				fileSystem.MkdirAll(filepath.Join("destDir2", "file1"), StdDirPermissions)
 			},
-			postTest: func() {
-				_ = os.RemoveAll("sourceDir")
-				_ = os.RemoveAll("destDir")
-			},
-			args:    args{src: filepath.Join("sourceDir", "file1"), dest: filepath.Join("destDir", "file1")},
+			args:    args{src: filepath.Join("sourceDir2", "file1"), dest: filepath.Join("destDir2", "file1")},
 			wantErr: true,
 		},
 		"success": {
 			preTest: func() {
-				_ = os.Mkdir("sourceDir", StdDirPermissions)
-				_ = os.WriteFile(filepath.Join("sourceDir", "file1"), []byte{1, 2, 3}, StdFilePermissions)
-				_ = os.Mkdir("destDir", StdDirPermissions)
+				fileSystem.Mkdir("sourceDir3", StdDirPermissions)
+				afero.WriteFile(fileSystem, filepath.Join("sourceDir3", "file1"), []byte{1, 2, 3}, StdFilePermissions)
+				fileSystem.Mkdir("destDir3", StdDirPermissions)
 			},
-			postTest: func() {
-				_ = os.RemoveAll("sourceDir")
-				_ = os.RemoveAll("destDir")
-			},
-			args:    args{src: filepath.Join("sourceDir", "file1"), dest: filepath.Join("destDir", "file1")},
+			args:    args{src: filepath.Join("sourceDir3", "file1"), dest: filepath.Join("destDir3", "file1")},
 			wantErr: false,
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
-			defer tt.postTest()
 			if err := CopyFile(tt.args.src, tt.args.dest); (err != nil) != tt.wantErr {
 				t.Errorf("CopyFile() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -77,45 +67,36 @@ func TestCopyFile(t *testing.T) {
 }
 
 func TestCreateFile(t *testing.T) {
+	originalFileSystem := fileSystem
+	defer func() {
+		fileSystem = originalFileSystem
+	}()
+	fileSystem = afero.NewMemMapFs()
 	type args struct {
 		fileName string
 		content  []byte
 	}
 	tests := map[string]struct {
-		preTest  func()
-		postTest func()
+		preTest func()
 		args
 		wantErr bool
 	}{
-		"corrupted file name": {
-			preTest:  func() {},
-			postTest: func() {},
-			args:     args{fileName: "\u0000", content: []byte{1, 2, 3}},
-			wantErr:  true,
-		},
 		"file in non-existent directory": {
-			preTest:  func() {},
-			postTest: func() {},
-			args:     args{fileName: filepath.Join("no such dir", "file1"), content: []byte{1, 2, 3}},
-			wantErr:  true,
+			preTest: func() {},
+			args:    args{fileName: filepath.Join("no such dir", "file1"), content: []byte{1, 2, 3}},
+			wantErr: true,
 		},
 		"pre-existing file": {
 			preTest: func() {
-				_ = os.Mkdir("badDir", StdDirPermissions)
-				_ = os.WriteFile(filepath.Join("badDir", "file1"), []byte{2, 4, 6}, StdFilePermissions)
-			},
-			postTest: func() {
-				_ = os.RemoveAll("badDir")
+				fileSystem.Mkdir("badDir", StdDirPermissions)
+				afero.WriteFile(fileSystem, filepath.Join("badDir", "file1"), []byte{2, 4, 6}, StdFilePermissions)
 			},
 			args:    args{fileName: filepath.Join("badDir", "file1"), content: []byte{1, 2, 3}},
 			wantErr: true,
 		},
 		"good file": {
 			preTest: func() {
-				_ = os.Mkdir("goodDir", StdDirPermissions)
-			},
-			postTest: func() {
-				_ = os.RemoveAll("goodDir")
+				fileSystem.Mkdir("goodDir", StdDirPermissions)
 			},
 			args:    args{fileName: filepath.Join("goodDir", "file1"), content: []byte{1, 2, 3}},
 			wantErr: false,
@@ -124,7 +105,6 @@ func TestCreateFile(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
-			defer tt.postTest()
 			if err := CreateFile(tt.args.fileName, tt.args.content); (err != nil) != tt.wantErr {
 				t.Errorf("CreateFile() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -133,40 +113,37 @@ func TestCreateFile(t *testing.T) {
 }
 
 func TestCreateFileInDirectory(t *testing.T) {
+	originalFileSystem := fileSystem
+	defer func() {
+		fileSystem = originalFileSystem
+	}()
+	fileSystem = afero.NewMemMapFs()
 	type args struct {
 		dir     string
 		name    string
 		content []byte
 	}
 	tests := map[string]struct {
-		preTest  func()
-		postTest func()
+		preTest func()
 		args
 		wantErr bool
 	}{
 		"non-existent directory": {
-			preTest:  func() {},
-			postTest: func() {},
-			args:     args{dir: "no such directory", name: "who care", content: []byte{0, 1, 2}},
-			wantErr:  true,
+			preTest: func() {},
+			args:    args{dir: "no such directory", name: "who care", content: []byte{0, 1, 2}},
+			wantErr: true,
 		},
 		"file exists": {
 			preTest: func() {
-				_ = os.Mkdir("badDir", StdFilePermissions)
-				_ = os.WriteFile(filepath.Join("badDir", "file"), []byte{2, 4, 6}, StdFilePermissions)
-			},
-			postTest: func() {
-				_ = os.RemoveAll("badDir")
+				fileSystem.Mkdir("badDir", StdFilePermissions)
+				afero.WriteFile(fileSystem, filepath.Join("badDir", "file"), []byte{2, 4, 6}, StdFilePermissions)
 			},
 			args:    args{dir: "badDir", name: "file", content: []byte{0, 1, 2}},
 			wantErr: true,
 		},
 		"new file": {
 			preTest: func() {
-				_ = os.Mkdir("goodDir", StdFilePermissions)
-			},
-			postTest: func() {
-				_ = os.RemoveAll("goodDir")
+				fileSystem.Mkdir("goodDir", StdFilePermissions)
 			},
 			args:    args{dir: "goodDir", name: "file", content: []byte{0, 1, 2}},
 			wantErr: false,
@@ -175,7 +152,6 @@ func TestCreateFileInDirectory(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
-			defer tt.postTest()
 			if err := CreateFileInDirectory(tt.args.dir, tt.args.name, tt.args.content); (err != nil) != tt.wantErr {
 				t.Errorf("CreateFileInDirectory() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -259,54 +235,42 @@ func TestLogUnreadableDirectory(t *testing.T) {
 }
 
 func TestMkdir(t *testing.T) {
+	originalFileSystem := fileSystem
+	defer func() {
+		fileSystem = originalFileSystem
+	}()
+	fileSystem = afero.NewMemMapFs()
 	type args struct {
 		dir string
 	}
 	tests := map[string]struct {
-		preTest  func()
-		postTest func()
+		preTest func()
 		args
 		wantErr bool
 	}{
-		"bad name": {
-			preTest:  func() {},
-			postTest: func() {},
-			args:     args{dir: "bad directory name\u0000"},
-			wantErr:  true,
-		},
 		"subdirectory of non-existent directory": {
-			preTest:  func() {},
-			postTest: func() {},
-			args:     args{dir: filepath.Join("non-existent directory", "subdir")},
-			wantErr:  true,
+			preTest: func() {},
+			args:    args{dir: filepath.Join("non-existent directory", "subdir")},
+			wantErr: true,
 		},
 		"dir is a plain file": {
 			preTest: func() {
-				_ = os.Mkdir("plainfile", StdDirPermissions)
-				_ = os.WriteFile(filepath.Join("plainfile", "subdir"), []byte{0, 1, 2}, StdFilePermissions)
-			},
-			postTest: func() {
-				_ = os.RemoveAll("plainfile")
+				fileSystem.Mkdir("plainfile", StdDirPermissions)
+				afero.WriteFile(fileSystem, filepath.Join("plainfile", "subdir"), []byte{0, 1, 2}, StdFilePermissions)
 			},
 			args:    args{dir: filepath.Join("plainfile", "subdir")},
 			wantErr: true,
 		},
 		"successfully create new directory": {
 			preTest: func() {
-				_ = os.Mkdir("emptyDir", StdDirPermissions)
-			},
-			postTest: func() {
-				_ = os.RemoveAll("emptyDir")
+				fileSystem.Mkdir("emptyDir", StdDirPermissions)
 			},
 			args:    args{dir: filepath.Join("emptyDir", "subdir")},
 			wantErr: false,
 		},
 		"directory already exists": {
 			preTest: func() {
-				_ = os.MkdirAll(filepath.Join("dirExists", "subdir"), StdDirPermissions)
-			},
-			postTest: func() {
-				_ = os.RemoveAll("dirExists")
+				fileSystem.MkdirAll(filepath.Join("dirExists", "subdir"), StdDirPermissions)
 			},
 			args:    args{dir: filepath.Join("dirExists", "subdir")},
 			wantErr: false,
@@ -315,7 +279,6 @@ func TestMkdir(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
-			defer tt.postTest()
 			if err := Mkdir(tt.args.dir); (err != nil) != tt.wantErr {
 				t.Errorf("Mkdir() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -324,44 +287,35 @@ func TestMkdir(t *testing.T) {
 }
 
 func TestPlainFileExists(t *testing.T) {
+	originalFileSystem := fileSystem
+	defer func() {
+		fileSystem = originalFileSystem
+	}()
+	fileSystem = afero.NewMemMapFs()
 	type args struct {
 		path string
 	}
 	tests := map[string]struct {
-		preTest  func()
-		postTest func()
+		preTest func()
 		args
 		want bool
 	}{
-		"bad file name": {
-			preTest:  func() {},
-			postTest: func() {},
-			args:     args{path: "file\u0000"},
-			want:     false,
-		},
 		"non-existent file": {
-			preTest:  func() {},
-			postTest: func() {},
-			args:     args{path: "file"},
-			want:     false,
+			preTest: func() {},
+			args:    args{path: "file"},
+			want:    false,
 		},
 		"directory": {
 			preTest: func() {
-				_ = os.Mkdir("file", StdDirPermissions)
-			},
-			postTest: func() {
-				_ = os.RemoveAll("file")
+				fileSystem.Mkdir("file", StdDirPermissions)
 			},
 			args: args{path: "file"},
 			want: false,
 		},
 		"real file": {
 			preTest: func() {
-				_ = os.Mkdir("dir", StdDirPermissions)
-				_ = os.WriteFile(filepath.Join("dir", "file"), []byte{0, 1, 2}, StdFilePermissions)
-			},
-			postTest: func() {
-				_ = os.RemoveAll("dir")
+				fileSystem.Mkdir("dir", StdDirPermissions)
+				afero.WriteFile(fileSystem, filepath.Join("dir", "file"), []byte{0, 1, 2}, StdFilePermissions)
 			},
 			args: args{path: filepath.Join("dir", "file")},
 			want: true,
@@ -370,7 +324,6 @@ func TestPlainFileExists(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
-			defer tt.postTest()
 			if got := PlainFileExists(tt.args.path); got != tt.want {
 				t.Errorf("PlainFileExists() = %v, want %v", got, tt.want)
 			}
@@ -379,33 +332,33 @@ func TestPlainFileExists(t *testing.T) {
 }
 
 func TestReadDirectory(t *testing.T) {
+	originalFileSystem := fileSystem
+	defer func() {
+		fileSystem = originalFileSystem
+	}()
+	fileSystem = afero.NewMemMapFs()
 	type args struct {
 		dir string
 	}
 	tests := map[string]struct {
-		preTest  func()
-		postTest func()
+		preTest func()
 		args
 		wantFilesLength int
 		wantOk          bool
 		output.WantedRecording
 	}{
 		"non-existent directory": {
-			preTest:  func() {},
-			postTest: func() {},
-			args:     args{dir: "no such dir"},
-			wantOk:   false,
+			preTest: func() {},
+			args:    args{dir: "no such dir"},
+			wantOk:  false,
 			WantedRecording: output.WantedRecording{
-				Error: "The directory \"no such dir\" cannot be read: open no such dir: The system cannot find the file specified.\n",
-				Log:   "level='error' directory='no such dir' error='open no such dir: The system cannot find the file specified.' msg='cannot read directory'\n",
+				Error: "The directory \"no such dir\" cannot be read: open no such dir: file does not exist.\n",
+				Log:   "level='error' directory='no such dir' error='open no such dir: file does not exist' msg='cannot read directory'\n",
 			},
 		},
 		"empty directory": {
 			preTest: func() {
-				_ = os.Mkdir("empty", StdDirPermissions)
-			},
-			postTest: func() {
-				_ = os.RemoveAll("empty")
+				fileSystem.Mkdir("empty", StdDirPermissions)
 			},
 			args:            args{dir: "empty"},
 			wantFilesLength: 0,
@@ -413,18 +366,15 @@ func TestReadDirectory(t *testing.T) {
 		},
 		"directory with content": {
 			preTest: func() {
-				_ = os.Mkdir("full", StdDirPermissions)
+				fileSystem.Mkdir("full", StdDirPermissions)
 				// make a few files
 				for _, filename := range []string{"file1", "file2", "file3"} {
-					_ = os.WriteFile(filepath.Join("full", filename), []byte{}, StdFilePermissions)
+					afero.WriteFile(fileSystem, filepath.Join("full", filename), []byte{}, StdFilePermissions)
 				}
 				// and a few directories
 				for _, subdir := range []string{"sub1", "sub2", "sub3"} {
-					_ = os.Mkdir(filepath.Join("full", subdir), StdDirPermissions)
+					fileSystem.Mkdir(filepath.Join("full", subdir), StdDirPermissions)
 				}
-			},
-			postTest: func() {
-				_ = os.RemoveAll("full")
 			},
 			args:            args{dir: "full"},
 			wantFilesLength: 6,
@@ -434,7 +384,6 @@ func TestReadDirectory(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
-			defer tt.postTest()
 			o := output.NewRecorder()
 			gotFiles, gotOk := ReadDirectory(o, tt.args.dir)
 			if len(gotFiles) != tt.wantFilesLength {

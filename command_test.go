@@ -2,12 +2,12 @@ package cmd_toolkit
 
 import (
 	"flag"
-	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/majohn-r/output"
+	"github.com/spf13/afero"
 )
 
 func TestAddCommandData(t *testing.T) {
@@ -99,18 +99,20 @@ func (d *dummyCommand) Exec(_ output.Bus, _ []string) bool {
 }
 
 func TestProcessCommand(t *testing.T) {
-	savedApplicationPath := applicationPath
-	savedDescriptions := descriptions
+	originalApplicationPath := applicationPath
+	originalDescriptions := descriptions
+	originalFileSystem := fileSystem
 	defer func() {
-		applicationPath = savedApplicationPath
-		descriptions = savedDescriptions
+		applicationPath = originalApplicationPath
+		descriptions = originalDescriptions
+		fileSystem = originalFileSystem
 	}()
+	fileSystem = afero.NewMemMapFs()
 	type args struct {
 		args []string
 	}
 	tests := map[string]struct {
-		preTest  func()
-		postTest func()
+		preTest func()
 		args
 		wantCmd     bool
 		wantCmdArgs []string
@@ -119,13 +121,10 @@ func TestProcessCommand(t *testing.T) {
 	}{
 		"fail to get configuration file": {
 			preTest: func() {
-				applicationPath = filepath.Join(".", "badConfigfile")
-				_ = Mkdir(applicationPath)
+				applicationPath = "badConfigfile"
+				fileSystem.Mkdir(applicationPath, StdDirPermissions)
 				fileName := filepath.Join(applicationPath, defaultConfigFileName)
-				_ = os.WriteFile(fileName, []byte{1, 2, 3}, StdFilePermissions) // this will not read well as YAML
-			},
-			postTest: func() {
-				os.RemoveAll(filepath.Join(".", "badConfigfile"))
+				afero.WriteFile(fileSystem, fileName, []byte{1, 2, 3}, StdFilePermissions) // this will not read well as YAML
 			},
 			args: args{},
 			WantedRecording: output.WantedRecording{
@@ -135,12 +134,9 @@ func TestProcessCommand(t *testing.T) {
 		},
 		"non-existent configuration file, no commands registered": {
 			preTest: func() {
-				applicationPath = filepath.Join(".", "noConfigfile")
-				_ = Mkdir(applicationPath)
+				applicationPath = "noConfigfile"
+				fileSystem.Mkdir(applicationPath, StdDirPermissions)
 				descriptions = map[string]*CommandDescription{}
-			},
-			postTest: func() {
-				os.RemoveAll(filepath.Join(".", "noConfigfile"))
 			},
 			WantedRecording: output.WantedRecording{
 				Error: "A programming error has occurred - there are no commands registered!\n",
@@ -151,8 +147,8 @@ func TestProcessCommand(t *testing.T) {
 		},
 		"non-existent configuration file, bad command initialization": {
 			preTest: func() {
-				applicationPath = filepath.Join(".", "noConfigfile")
-				_ = Mkdir(applicationPath)
+				applicationPath = "noConfigfile"
+				fileSystem.Mkdir(applicationPath, StdDirPermissions)
 				descriptions = map[string]*CommandDescription{
 					"about": {
 						Initializer: func(_ output.Bus, _ *Configuration, _ *flag.FlagSet) (CommandProcessor, bool) {
@@ -161,15 +157,12 @@ func TestProcessCommand(t *testing.T) {
 					},
 				}
 			},
-			postTest: func() {
-				os.RemoveAll(filepath.Join(".", "noConfigfile"))
-			},
 			WantedRecording: output.WantedRecording{Log: "level='info' directory='noConfigfile' fileName='defaults.yaml' msg='file does not exist'\n"},
 		},
 		"success": {
 			preTest: func() {
-				applicationPath = filepath.Join(".", "noConfigfile")
-				_ = Mkdir(applicationPath)
+				applicationPath = "noConfigfile"
+				fileSystem.Mkdir(applicationPath, StdDirPermissions)
 				descriptions = map[string]*CommandDescription{
 					"about": {
 						Initializer: func(_ output.Bus, _ *Configuration, _ *flag.FlagSet) (CommandProcessor, bool) {
@@ -177,9 +170,6 @@ func TestProcessCommand(t *testing.T) {
 						},
 					},
 				}
-			},
-			postTest: func() {
-				os.RemoveAll(filepath.Join(".", "noConfigfile"))
 			},
 			args:            args{args: []string{"cmd", "-flag1", "-flag2"}},
 			wantCmd:         true,
@@ -191,7 +181,6 @@ func TestProcessCommand(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
-			defer tt.postTest()
 			o := output.NewRecorder()
 			gotCmd, gotCmdArgs, gotOk := ProcessCommand(o, tt.args.args)
 			if (gotCmd != nil) != tt.wantCmd {

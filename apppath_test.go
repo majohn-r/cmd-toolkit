@@ -2,10 +2,10 @@ package cmd_toolkit
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/majohn-r/output"
+	"github.com/spf13/afero"
 )
 
 func TestApplicationPath(t *testing.T) {
@@ -28,8 +28,9 @@ func TestApplicationPath(t *testing.T) {
 }
 
 func TestInitApplicationPath(t *testing.T) {
-	savedAppname := appname
-	savedApplicationPath := applicationPath
+	originalAppname := appname
+	originalApplicationPath := applicationPath
+	originalFileSystem := fileSystem
 	var appDataWasSet bool
 	var savedAppDataValue string
 	if value, ok := os.LookupEnv(ApplicationDataEnvVarName); ok {
@@ -37,21 +38,22 @@ func TestInitApplicationPath(t *testing.T) {
 		savedAppDataValue = value
 	}
 	defer func() {
-		appname = savedAppname
-		applicationPath = savedApplicationPath
+		appname = originalAppname
+		applicationPath = originalApplicationPath
 		if appDataWasSet {
 			os.Setenv(ApplicationDataEnvVarName, savedAppDataValue)
 		} else {
 			os.Unsetenv(ApplicationDataEnvVarName)
 		}
+		fileSystem = originalFileSystem
 	}()
+	fileSystem = afero.NewMemMapFs()
 	tests := map[string]struct {
 		appname         string
 		appDataValue    string
 		appDataSet      bool
 		wantInitialized bool
 		preTest         func() // things to do before calling
-		postTest        func() // things to after calling
 		output.WantedRecording
 	}{
 		"no appdata": {
@@ -59,7 +61,6 @@ func TestInitApplicationPath(t *testing.T) {
 			appDataSet:      false,
 			wantInitialized: false,
 			preTest:         func() {},
-			postTest:        func() {},
 			WantedRecording: output.WantedRecording{Log: "level='error' environmentVariable='APPDATA' msg='not set'\n"},
 		},
 		"no app name": {
@@ -68,7 +69,6 @@ func TestInitApplicationPath(t *testing.T) {
 			appDataValue:    "foo", // doesn't matter ...
 			wantInitialized: false,
 			preTest:         func() {},
-			postTest:        func() {},
 			WantedRecording: output.WantedRecording{Log: "level='error' error='app name has not been initialized' msg='program error'\n"},
 		},
 		"appData not a directory": {
@@ -77,57 +77,47 @@ func TestInitApplicationPath(t *testing.T) {
 			appDataValue:    "apppath_test.go",
 			wantInitialized: false,
 			preTest:         func() {},
-			postTest:        func() {},
 			WantedRecording: output.WantedRecording{
-				Error: "The directory \"apppath_test.go\\\\myApp\" cannot be created: mkdir apppath_test.go\\myApp: The system cannot find the path specified.\n",
-				Log:   "level='error' directory='apppath_test.go\\myApp' error='mkdir apppath_test.go\\myApp: The system cannot find the path specified.' msg='cannot create directory'\n",
+				Error: "The directory \"apppath_test.go\\\\myApp\" cannot be created: parent directory is not a directory.\n",
+				Log: "" +
+					"level='error'" +
+					" directory='apppath_test.go\\myApp'" +
+					" error='parent directory is not a directory'" +
+					" msg='cannot create directory'\n",
 			},
 		},
 		"cannot create subdirectory": {
-			appname:         "myApp",
+			appname:         "myApp1",
 			appDataSet:      true,
 			appDataValue:    ".",
 			wantInitialized: false,
 			preTest: func() {
-				fileName := filepath.Join(".", "myApp")
-				_ = os.WriteFile(fileName, []byte{1, 2, 3}, StdFilePermissions)
-			},
-			postTest: func() {
-				fileName := filepath.Join(".", "myApp")
-				_ = os.Remove(fileName)
+				afero.WriteFile(fileSystem, "myApp1", []byte{1, 2, 3}, StdFilePermissions)
 			},
 			WantedRecording: output.WantedRecording{
-				Error: "The directory \"myApp\" cannot be created: file exists and is not a directory.\n",
-				Log:   "level='error' directory='myApp' error='file exists and is not a directory' msg='cannot create directory'\n",
+				Error: "The directory \"myApp1\" cannot be created: file exists and is not a directory.\n",
+				Log: "" +
+					"level='error'" +
+					" directory='myApp1'" +
+					" error='file exists and is not a directory'" +
+					" msg='cannot create directory'\n",
 			},
 		},
 		"subdirectory already exists": {
-			appname:         "myApp",
+			appname:         "myApp2",
 			appDataSet:      true,
 			appDataValue:    ".",
 			wantInitialized: true,
 			preTest: func() {
-				fileName := filepath.Join(".", "myApp")
-				_ = os.Mkdir(fileName, StdDirPermissions)
-			},
-			postTest: func() {
-				fileName := filepath.Join(".", "myApp")
-				_ = os.Remove(fileName)
+				fileSystem.Mkdir("myApp2", StdDirPermissions)
 			},
 		},
 		"subdirectory does not yet exist": {
-			appname:         "myApp",
+			appname:         "myApp3",
 			appDataSet:      true,
 			appDataValue:    ".",
 			wantInitialized: true,
-			preTest: func() {
-				fileName := filepath.Join(".", "myApp")
-				_ = os.Remove(fileName)
-			},
-			postTest: func() {
-				fileName := filepath.Join(".", "myApp")
-				_ = os.Remove(fileName)
-			},
+			preTest:         func() {},
 		},
 	}
 	for name, tt := range tests {
@@ -140,7 +130,6 @@ func TestInitApplicationPath(t *testing.T) {
 				os.Unsetenv(ApplicationDataEnvVarName)
 			}
 			tt.preTest()
-			defer tt.postTest()
 			o := output.NewRecorder()
 			if gotInitialized := InitApplicationPath(o); gotInitialized != tt.wantInitialized {
 				t.Errorf("InitApplicationPath() = %v, want %v", gotInitialized, tt.wantInitialized)

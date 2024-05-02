@@ -26,23 +26,25 @@ func (*unhappyCommand) Exec(o output.Bus, _ []string) bool {
 }
 
 func TestExecute(t *testing.T) {
-	savedAppname := appname
-	savedAppDataValue, savedAppDataSet := os.LookupEnv(ApplicationDataEnvVarName)
-	savedDescriptions := descriptions
-	savedLogInitializer := logInitializer
-	savedBuildInfoReader := buildInfoReader
-	savedFirstYear := firstYear
+	originalAppname := appname
+	originalAppDataValue, originalAppDataSet := os.LookupEnv(ApplicationDataEnvVarName)
+	originalDescriptions := descriptions
+	originalLogInitializer := logInitializer
+	originalBuildInfoReader := buildInfoReader
+	originalFirstYear := firstYear
+	originalFileSystem := fileSystem
 	defer func() {
-		appname = savedAppname
-		if savedAppDataSet {
-			os.Setenv(ApplicationDataEnvVarName, savedAppDataValue)
+		appname = originalAppname
+		if originalAppDataSet {
+			os.Setenv(ApplicationDataEnvVarName, originalAppDataValue)
 		} else {
 			os.Unsetenv(ApplicationDataEnvVarName)
 		}
-		descriptions = savedDescriptions
-		logInitializer = savedLogInitializer
-		buildInfoReader = savedBuildInfoReader
-		firstYear = savedFirstYear
+		descriptions = originalDescriptions
+		logInitializer = originalLogInitializer
+		buildInfoReader = originalBuildInfoReader
+		firstYear = originalFirstYear
+		fileSystem = originalFileSystem
 	}()
 	type args struct {
 		firstYear      int
@@ -57,7 +59,6 @@ func TestExecute(t *testing.T) {
 		appDataSet   bool
 		descriptions map[string]*CommandDescription
 		preTest      func()
-		postTest     func()
 		args
 		wantExitCode int
 		output.WantedRecording
@@ -65,7 +66,6 @@ func TestExecute(t *testing.T) {
 		"set app name fails": {
 			appname:      "myApp",
 			preTest:      func() {},
-			postTest:     func() {},
 			wantExitCode: 1,
 			WantedRecording: output.WantedRecording{
 				Error: "A programming error has occurred - cannot initialize app name with an empty string.\n",
@@ -78,7 +78,6 @@ func TestExecute(t *testing.T) {
 					return false
 				}
 			},
-			postTest: func() {},
 			args: args{
 				firstYear:      2021,
 				appName:        "myNewApp",
@@ -98,7 +97,6 @@ func TestExecute(t *testing.T) {
 					return true
 				}
 			},
-			postTest: func() {},
 			args: args{
 				firstYear:      2021,
 				appName:        "myNewApp",
@@ -112,22 +110,18 @@ func TestExecute(t *testing.T) {
 			},
 		},
 		"ProcessCommand fails": {
-			appDataValue: filepath.Join(".", "appdata"),
+			appDataValue: "appdata1",
 			appDataSet:   true,
 			descriptions: map[string]*CommandDescription{},
 			preTest: func() {
-				path := filepath.Join(".", "appdata", "myApp")
-				_ = os.MkdirAll(path, StdDirPermissions)
+				path := filepath.Join("appdata1", "myApp")
+				fileSystem.MkdirAll(path, StdDirPermissions)
 				logInitializer = func(_ output.Bus) bool {
 					return true
 				}
 				buildInfoReader = func() (*debug.BuildInfo, bool) {
 					return nil, false
 				}
-			},
-			postTest: func() {
-				path := filepath.Join(".", "appdata")
-				_ = os.RemoveAll(path)
 			},
 			args: args{
 				firstYear:      2021,
@@ -141,14 +135,27 @@ func TestExecute(t *testing.T) {
 					"A programming error has occurred - there are no commands registered!\n" +
 					"\"myNewApp\" version 0.0.1, created at today, failed.\n",
 				Log: "" +
-					"level='info' args='[]' dependencies='[]' goVersion='unknown' timeStamp='today' version='0.0.1' msg='execution starts'\n" +
-					"level='info' directory='appdata\\myNewApp' fileName='defaults.yaml' msg='file does not exist'\n" +
-					"level='error'  msg='no commands registered'\n" +
-					"level='info' duration='REDACTED' exitCode='1' msg='execution ends'\n",
+					"level='info'" +
+					" args='[]'" +
+					" dependencies='[]'" +
+					" goVersion='unknown'" +
+					" timeStamp='today'" +
+					" version='0.0.1'" +
+					" msg='execution starts'\n" +
+					"level='info'" +
+					" directory='appdata1\\myNewApp'" +
+					" fileName='defaults.yaml'" +
+					" msg='file does not exist'\n" +
+					"level='error'" +
+					"  msg='no commands registered'\n" +
+					"level='info'" +
+					" duration='REDACTED'" +
+					" exitCode='1'" +
+					" msg='execution ends'\n",
 			},
 		},
 		"command execution fails": {
-			appDataValue: filepath.Join(".", "appdata"),
+			appDataValue: "appdata2",
 			appDataSet:   true,
 			descriptions: map[string]*CommandDescription{
 				"unhappyCommand": {
@@ -158,18 +165,14 @@ func TestExecute(t *testing.T) {
 					},
 				}},
 			preTest: func() {
-				path := filepath.Join(".", "appdata", "myApp")
-				_ = os.MkdirAll(path, StdDirPermissions)
+				path := filepath.Join("appdata2", "myApp")
+				fileSystem.MkdirAll(path, StdDirPermissions)
 				logInitializer = func(_ output.Bus) bool {
 					return true
 				}
 				buildInfoReader = func() (*debug.BuildInfo, bool) {
 					return nil, false
 				}
-			},
-			postTest: func() {
-				path := filepath.Join(".", "appdata")
-				_ = os.RemoveAll(path)
 			},
 			args: args{
 				firstYear:      2021,
@@ -184,12 +187,12 @@ func TestExecute(t *testing.T) {
 					"\"myNewApp\" version 0.0.1, created at today, failed.\n",
 				Log: "" +
 					"level='info' args='[]' dependencies='[]' goVersion='unknown' timeStamp='today' version='0.0.1' msg='execution starts'\n" +
-					"level='info' directory='appdata\\myNewApp' fileName='defaults.yaml' msg='file does not exist'\n" +
+					"level='info' directory='appdata2\\myNewApp' fileName='defaults.yaml' msg='file does not exist'\n" +
 					"level='info' duration='REDACTED' exitCode='1' msg='execution ends'\n",
 			},
 		},
 		"success": {
-			appDataValue: filepath.Join(".", "appdata"),
+			appDataValue: "appdata3",
 			appDataSet:   true,
 			descriptions: map[string]*CommandDescription{
 				"happyCommand": {
@@ -199,18 +202,14 @@ func TestExecute(t *testing.T) {
 					},
 				}},
 			preTest: func() {
-				path := filepath.Join(".", "appdata", "myApp")
-				_ = os.MkdirAll(path, StdDirPermissions)
+				path := filepath.Join("appdata3", "myApp")
+				fileSystem.MkdirAll(path, StdDirPermissions)
 				logInitializer = func(_ output.Bus) bool {
 					return true
 				}
 				buildInfoReader = func() (*debug.BuildInfo, bool) {
 					return nil, false
 				}
-			},
-			postTest: func() {
-				path := filepath.Join(".", "appdata")
-				_ = os.RemoveAll(path)
 			},
 			args: args{
 				firstYear:      2021,
@@ -223,7 +222,7 @@ func TestExecute(t *testing.T) {
 				Console: "yay!\n",
 				Log: "" +
 					"level='info' args='[]' dependencies='[]' goVersion='unknown' timeStamp='today' version='0.0.1' msg='execution starts'\n" +
-					"level='info' directory='appdata\\myNewApp' fileName='defaults.yaml' msg='file does not exist'\n" +
+					"level='info' directory='appdata3\\myNewApp' fileName='defaults.yaml' msg='file does not exist'\n" +
 					"level='info' duration='REDACTED' exitCode='0' msg='execution ends'\n",
 			},
 		},
@@ -238,7 +237,6 @@ func TestExecute(t *testing.T) {
 			}
 			descriptions = tt.descriptions
 			tt.preTest()
-			defer tt.postTest()
 			o := output.NewRecorder()
 			if gotExitCode := Execute(o, tt.args.firstYear, tt.args.appName, tt.args.appVersion, tt.args.buildTimestamp, tt.args.cmdLine); gotExitCode != tt.wantExitCode {
 				t.Errorf("Execute() = %v, want %v", gotExitCode, tt.wantExitCode)

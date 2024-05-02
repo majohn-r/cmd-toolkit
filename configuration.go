@@ -3,19 +3,20 @@ package cmd_toolkit
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/majohn-r/output"
+	"github.com/spf13/afero"
 	"gopkg.in/yaml.v3"
 )
 
 var (
 	defaultConfigFileName = "defaults.yaml"
 	flagIndicator         = "-"
+	fileSystem            = afero.NewOsFs()
 )
 
 // Configuration defines the data structure for configuration information.
@@ -114,7 +115,8 @@ func ReadConfigurationFile(o output.Bus) (c *Configuration, ok bool) {
 		ok = true
 		return
 	}
-	rawYaml, _ := os.ReadFile(file) // only probable error circumvented by verifyFileExists failure
+	// only probable error circumvented by verifyFileExists failure
+	rawYaml, _ := afero.ReadFile(fileSystem, file)
 	data := map[string]any{}
 	err = yaml.Unmarshal(rawYaml, &data)
 	if err != nil {
@@ -154,7 +156,7 @@ func SetDefaultConfigFileName(s string) {
 }
 
 func verifyDefaultConfigFileExists(o output.Bus, path string) (ok bool, err error) {
-	f, err := os.Stat(path)
+	f, err := fileSystem.Stat(path)
 	switch {
 	case err == nil:
 		ok = !f.IsDir()
@@ -166,7 +168,7 @@ func verifyDefaultConfigFileExists(o output.Bus, path string) (ok bool, err erro
 			o.WriteCanonicalError("The configuration file %q is a directory", path)
 			err = fmt.Errorf("file exists but is a directory")
 		}
-	case errors.Is(err, os.ErrNotExist):
+	case errors.Is(err, afero.ErrFileNotFound):
 		o.Log(output.Info, "file does not exist", map[string]any{
 			"directory": filepath.Dir(path),
 			"fileName":  filepath.Base(path),

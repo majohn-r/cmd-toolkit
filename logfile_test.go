@@ -9,19 +9,23 @@ import (
 	"time"
 
 	"github.com/majohn-r/output"
+	"github.com/spf13/afero"
 )
 
 func Test_initWriter(t *testing.T) {
-	savedTmp := NewEnvVarMemento("TMP")
-	savedTemp := NewEnvVarMemento("TEMP")
-	savedAppname := appname
-	savedLogPath := logPath
+	originalTmp := NewEnvVarMemento("TMP")
+	originalTemp := NewEnvVarMemento("TEMP")
+	originalAppname := appname
+	originalLogPath := logPath
+	originalFileSystem := fileSystem
 	defer func() {
-		savedTmp.Restore()
-		savedTemp.Restore()
-		appname = savedAppname
-		logPath = savedLogPath
+		originalTmp.Restore()
+		originalTemp.Restore()
+		appname = originalAppname
+		logPath = originalLogPath
+		fileSystem = originalFileSystem
 	}()
+	fileSystem = afero.NewMemMapFs()
 	tests := map[string]struct {
 		preTest     func()
 		postTest    func()
@@ -53,15 +57,14 @@ func Test_initWriter(t *testing.T) {
 				os.Setenv("TMP", "logs")
 				os.Unsetenv("TEMP")
 				appname = "myApp"
-				_ = os.WriteFile("logs", []byte{}, StdFilePermissions)
+				afero.WriteFile(fileSystem, "logs", []byte{}, StdFilePermissions)
 			},
 			postTest: func() {
-				os.Remove("logs")
 			},
 			wantNil:     true,
-			wantLogPath: "logs\\myApp\\logs",
+			wantLogPath: "",
 			WantedRecording: output.WantedRecording{
-				Error: "The directory \"logs\\\\myApp\\\\logs\" cannot be created: mkdir logs: The system cannot find the path specified.\n",
+				Error: "The temporary folder \"logs\" exists as a plain file.\n",
 			},
 		},
 		"success": {
@@ -77,7 +80,10 @@ func Test_initWriter(t *testing.T) {
 				if err := logWriter.Close(); err != nil {
 					t.Errorf("error closing logWriter: %v", err)
 				} else {
-					if err := os.RemoveAll("goodLogs"); err != nil {
+					// this is necessary because the logging library creates the
+					// directory in the os file system, not in the one our tests
+					// use
+					if err := afero.NewOsFs().RemoveAll("goodLogs"); err != nil {
 						t.Errorf("Error removing goodLogs: %v", err)
 					}
 				}
@@ -108,6 +114,11 @@ func Test_initWriter(t *testing.T) {
 }
 
 func Test_cleanup(t *testing.T) {
+	originalFileSystem := fileSystem
+	defer func() {
+		fileSystem = originalFileSystem
+	}()
+	fileSystem = afero.NewMemMapFs()
 	type args struct {
 		path string
 	}
@@ -124,41 +135,37 @@ func Test_cleanup(t *testing.T) {
 			postTest: func(t *testing.T) {},
 			args:     args{path: "no such directory"},
 			WantedRecording: output.WantedRecording{
-				Error: "The directory \"no such directory\" cannot be read: open no such directory: The system cannot find the file specified.\n",
-				Log:   "level='error' directory='no such directory' error='open no such directory: The system cannot find the file specified.' msg='cannot read directory'\n",
+				Error: "The directory \"no such directory\" cannot be read: open no such directory: file does not exist.\n",
+				Log:   "level='error' directory='no such directory' error='open no such directory: file does not exist' msg='cannot read directory'\n",
 			},
 		},
 		"empty directory": {
 			preTest: func() {
-				_ = os.Mkdir("empty", StdDirPermissions)
+				fileSystem.Mkdir("empty", StdDirPermissions)
 			},
-			postTest: func(_ *testing.T) {
-				_ = os.RemoveAll("empty")
-			},
-			args: args{path: "empty"},
+			postTest: func(_ *testing.T) {},
+			args:     args{path: "empty"},
 		},
 		"maxLogFiles present": {
 			preTest: func() {
-				_ = os.Mkdir("maxLogFiles", StdDirPermissions)
+				fileSystem.Mkdir("maxLogFiles", StdDirPermissions)
 				prefix := logFilePrefix()
 				for k := 0; k < maxLogFiles; k++ {
 					fileName := fmt.Sprintf("%s%d%s", prefix, k, logFileExtension)
-					_ = os.WriteFile(filepath.Join("maxLogFiles", fileName), []byte{0, 1, 2}, StdFilePermissions)
+					afero.WriteFile(fileSystem, filepath.Join("maxLogFiles", fileName), []byte{0, 1, 2}, StdFilePermissions)
 				}
 			},
-			postTest: func(_ *testing.T) {
-				_ = os.RemoveAll("maxLogFiles")
-			},
+			postTest:  func(_ *testing.T) {},
 			args:      args{path: "maxLogFiles"},
 			wantFound: maxLogFiles,
 		},
 		"lots of files present": {
 			preTest: func() {
-				_ = os.Mkdir("manyLogFiles", StdDirPermissions)
+				fileSystem.Mkdir("manyLogFiles", StdDirPermissions)
 				prefix := logFilePrefix()
 				for k := 0; k < maxLogFiles+1; k++ {
 					fileName := fmt.Sprintf("%s%d%s", prefix, k, logFileExtension)
-					_ = os.WriteFile(filepath.Join("manyLogFiles", fileName), []byte{0, 1, 2}, StdFilePermissions)
+					afero.WriteFile(fileSystem, filepath.Join("manyLogFiles", fileName), []byte{0, 1, 2}, StdFilePermissions)
 					time.Sleep(100 * time.Millisecond)
 				}
 			},
@@ -172,7 +179,6 @@ func Test_cleanup(t *testing.T) {
 					}
 					t.Fail()
 				}
-				_ = os.RemoveAll("manyLogFiles")
 			},
 			args:        args{path: "manyLogFiles"},
 			wantFound:   maxLogFiles + 1,
@@ -201,30 +207,30 @@ func Test_cleanup(t *testing.T) {
 }
 
 func Test_deleteLogFile(t *testing.T) {
+	originalFileSystem := fileSystem
+	defer func() {
+		fileSystem = originalFileSystem
+	}()
+	fileSystem = afero.NewMemMapFs()
 	type args struct {
 		logFile string
 	}
 	tests := map[string]struct {
-		preTest  func()
-		postTest func()
+		preTest func()
 		args
 		output.WantedRecording
 	}{
 		"failure": {
-			preTest:  func() {},
-			postTest: func() {},
-			args:     args{logFile: "no such file"},
+			preTest: func() {},
+			args:    args{logFile: "no such file"},
 			WantedRecording: output.WantedRecording{
-				Error: "The log file \"no such file\" cannot be deleted: remove no such file: The system cannot find the file specified.\n",
+				Error: "The log file \"no such file\" cannot be deleted: remove no such file: file does not exist.\n",
 			},
 		},
 		"success": {
 			preTest: func() {
-				_ = os.Mkdir("logs", StdDirPermissions)
-				_ = os.WriteFile(filepath.Join("logs", "file.log"), []byte{}, StdFilePermissions)
-			},
-			postTest: func() {
-				_ = os.RemoveAll("logs")
+				fileSystem.Mkdir("logs", StdDirPermissions)
+				afero.WriteFile(fileSystem, filepath.Join("logs", "file.log"), []byte{}, StdFilePermissions)
 			},
 			args: args{logFile: filepath.Join("logs", "file.log")},
 		},
@@ -232,7 +238,6 @@ func Test_deleteLogFile(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
-			defer tt.postTest()
 			o := output.NewRecorder()
 			deleteLogFile(o, tt.args.logFile)
 			if issues, ok := o.Verify(tt.WantedRecording); !ok {
@@ -309,28 +314,13 @@ func Test_findTemp(t *testing.T) {
 	}
 }
 
-type entry struct {
+type fi struct {
 	name string
 	mode fs.FileMode
 }
 
-func (e entry) Name() string {
-	return e.name
-}
-
-func (e entry) IsDir() bool {
-	return e.mode.IsDir()
-}
-
-func (e entry) Type() fs.FileMode {
-	return e.mode
-}
-
-type fi struct {
-}
-
 func (f fi) Name() string {
-	return ""
+	return f.name
 }
 
 func (f fi) Size() int64 {
@@ -338,7 +328,7 @@ func (f fi) Size() int64 {
 }
 
 func (f fi) Mode() fs.FileMode {
-	return 0
+	return f.mode
 }
 
 func (f fi) ModTime() time.Time {
@@ -353,29 +343,25 @@ func (f fi) Sys() any {
 	return nil
 }
 
-func (e entry) Info() (fs.FileInfo, error) {
-	return fi{}, nil
-}
-
 func Test_isLogFile(t *testing.T) {
 	type args struct {
-		file fs.DirEntry
+		file fs.FileInfo
 	}
 	tests := map[string]struct {
 		args
 		wantOk bool
 	}{
 		"directory": {
-			args: args{file: entry{name: fmt.Sprintf("%s-dir-%s", logFilePrefix(), logFileExtension), mode: fs.ModeDir}},
+			args: args{file: fi{name: fmt.Sprintf("%s-dir-%s", logFilePrefix(), logFileExtension), mode: fs.ModeDir}},
 		},
 		"symbolic link": {
-			args: args{file: entry{name: fmt.Sprintf("%s-dir-%s", logFilePrefix(), logFileExtension), mode: fs.ModeSymlink}},
+			args: args{file: fi{name: fmt.Sprintf("%s-dir-%s", logFilePrefix(), logFileExtension), mode: fs.ModeSymlink}},
 		},
 		"badly named file": {
-			args: args{file: entry{name: "foo", mode: 0}},
+			args: args{file: fi{name: "foo", mode: 0}},
 		},
 		"well named file": {
-			args:   args{file: entry{name: fmt.Sprintf("%sxx%s", logFilePrefix(), logFileExtension), mode: 0}},
+			args:   args{file: fi{name: fmt.Sprintf("%sxx%s", logFilePrefix(), logFileExtension), mode: 0}},
 			wantOk: true,
 		},
 	}

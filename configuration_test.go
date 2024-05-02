@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/majohn-r/output"
+	"github.com/spf13/afero"
 )
 
 func TestDefaultConfigFileName(t *testing.T) {
@@ -150,27 +151,26 @@ func TestNewIntBounds(t *testing.T) {
 }
 
 func TestReadConfigurationFile(t *testing.T) {
-	savedApplicationPath := applicationPath
-	savedDefaultConfigFileName := defaultConfigFileName
+	originalFileSystem := fileSystem
+	originalApplicationPath := applicationPath
+	originalDefaultConfigFileName := defaultConfigFileName
 	defer func() {
-		applicationPath = savedApplicationPath
-		defaultConfigFileName = savedDefaultConfigFileName
+		fileSystem = originalFileSystem
+		applicationPath = originalApplicationPath
+		defaultConfigFileName = originalDefaultConfigFileName
 	}()
+	fileSystem = afero.NewMemMapFs()
 	tests := map[string]struct {
-		preTest  func()
-		postTest func()
-		wantC    *Configuration
-		wantOk   bool
+		preTest func()
+		wantC   *Configuration
+		wantOk  bool
 		output.WantedRecording
 	}{
 		"config file is a directory": {
 			preTest: func() {
-				applicationPath = filepath.Join(".", "configFileDir")
+				applicationPath = "configFileDir"
 				defaultConfigFileName = "dir.yaml"
-				_ = os.MkdirAll(filepath.Join(applicationPath, defaultConfigFileName), StdDirPermissions)
-			},
-			postTest: func() {
-				_ = os.RemoveAll(applicationPath)
+				fileSystem.MkdirAll(filepath.Join(applicationPath, defaultConfigFileName), StdDirPermissions)
 			},
 			wantC: EmptyConfiguration(),
 			WantedRecording: output.WantedRecording{
@@ -183,7 +183,6 @@ func TestReadConfigurationFile(t *testing.T) {
 				applicationPath = "non-existent directory"
 				defaultConfigFileName = "no such file.yaml"
 			},
-			postTest: func() {},
 			wantC: &Configuration{
 				bMap: map[string]bool{},
 				cMap: map[string]*Configuration{},
@@ -195,13 +194,10 @@ func TestReadConfigurationFile(t *testing.T) {
 		},
 		"config file contains bad data": {
 			preTest: func() {
-				applicationPath = filepath.Join(".", "garbageDir")
+				applicationPath = "garbageDir"
 				defaultConfigFileName = "trash.yaml"
-				_ = os.Mkdir(applicationPath, StdDirPermissions)
-				_ = os.WriteFile(filepath.Join(applicationPath, defaultConfigFileName), []byte{1, 2, 3}, StdFilePermissions)
-			},
-			postTest: func() {
-				_ = os.RemoveAll(applicationPath)
+				fileSystem.Mkdir(applicationPath, StdDirPermissions)
+				afero.WriteFile(fileSystem, filepath.Join(applicationPath, defaultConfigFileName), []byte{1, 2, 3}, StdFilePermissions)
 			},
 			wantC: EmptyConfiguration(),
 			WantedRecording: output.WantedRecording{
@@ -211,19 +207,16 @@ func TestReadConfigurationFile(t *testing.T) {
 		},
 		"config file contains usable data": {
 			preTest: func() {
-				applicationPath = filepath.Join(".", "happyDir")
+				applicationPath = "happyDir"
 				defaultConfigFileName = "good.yaml"
-				_ = os.Mkdir(applicationPath, StdDirPermissions)
+				fileSystem.Mkdir(applicationPath, StdDirPermissions)
 				content := "" +
 					"b: true\n" +
 					"i: 12\n" +
 					"s: hello\n" +
 					"command:\n" +
 					"  default: about\n"
-				_ = os.WriteFile(filepath.Join(applicationPath, defaultConfigFileName), []byte(content), StdFilePermissions)
-			},
-			postTest: func() {
-				_ = os.RemoveAll(applicationPath)
+				_ = afero.WriteFile(fileSystem, filepath.Join(applicationPath, defaultConfigFileName), []byte(content), StdFilePermissions)
 			},
 			wantC: &Configuration{
 				bMap: map[string]bool{"b": true},
@@ -247,7 +240,6 @@ func TestReadConfigurationFile(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
-			defer tt.postTest()
 			o := output.NewRecorder()
 			gotC, gotOk := ReadConfigurationFile(o)
 			if !reflect.DeepEqual(gotC, tt.wantC) {
@@ -325,12 +317,16 @@ func TestSetDefaultConfigFileName(t *testing.T) {
 }
 
 func Test_verifyDefaultConfigFileExists(t *testing.T) {
+	originalFileSystem := fileSystem
+	defer func() {
+		fileSystem = originalFileSystem
+	}()
+	fileSystem = afero.NewMemMapFs()
 	type args struct {
 		path string
 	}
 	tests := map[string]struct {
-		preTest  func()
-		postTest func()
+		preTest func()
 		args
 		wantOk  bool
 		wantErr bool
@@ -338,14 +334,9 @@ func Test_verifyDefaultConfigFileExists(t *testing.T) {
 	}{
 		"path is a directory": {
 			preTest: func() {
-				path := filepath.Join(".", "testpath")
-				_ = os.Mkdir(path, StdDirPermissions)
+				fileSystem.Mkdir("testpath", StdDirPermissions)
 			},
-			postTest: func() {
-				path := filepath.Join(".", "testpath")
-				_ = os.RemoveAll(path)
-			},
-			args:    args{path: filepath.Join(".", "testpath")},
+			args:    args{path: "testpath"},
 			wantErr: true,
 			WantedRecording: output.WantedRecording{
 				Error: "The configuration file \"testpath\" is a directory.\n",
@@ -354,28 +345,22 @@ func Test_verifyDefaultConfigFileExists(t *testing.T) {
 		},
 		"path does not exist": {
 			preTest:         func() {},
-			postTest:        func() {},
 			args:            args{path: filepath.Join(".", "non-existent-file.yaml")},
 			WantedRecording: output.WantedRecording{Log: "level='info' directory='.' fileName='non-existent-file.yaml' msg='file does not exist'\n"},
 		},
 		"path is a valid file": {
 			preTest: func() {
-				path := filepath.Join(".", "testpath")
-				_ = os.Mkdir(path, StdDirPermissions)
-				_ = os.WriteFile(filepath.Join(path, "happy.yaml"), []byte{}, StdFilePermissions)
+				path := "testpath2"
+				fileSystem.Mkdir(path, StdDirPermissions)
+				afero.WriteFile(fileSystem, filepath.Join(path, "happy.yaml"), []byte("boo"), StdFilePermissions)
 			},
-			postTest: func() {
-				path := filepath.Join(".", "testpath")
-				_ = os.RemoveAll(path)
-			},
-			args:   args{path: filepath.Join(".", "testpath", "happy.yaml")},
+			args:   args{path: filepath.Join("testpath2", "happy.yaml")},
 			wantOk: true,
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
-			defer tt.postTest()
 			o := output.NewRecorder()
 			gotOk, err := verifyDefaultConfigFileExists(o, tt.args.path)
 			if (err != nil) != tt.wantErr {
