@@ -19,6 +19,19 @@ var (
 	fileSystem            = afero.NewOsFs()
 )
 
+// FileSystem returns the current afero.Fs instance
+func FileSystem() afero.Fs {
+	return fileSystem
+}
+
+// AssignFileSystem sets the current afero.Fs instance and returns the original
+// pre-assignment value
+func AssignFileSystem(fs afero.Fs) afero.Fs {
+	originalFs := fileSystem
+	fileSystem = fs
+	return originalFs
+}
+
 // Configuration defines the data structure for configuration information.
 type Configuration struct {
 	sMap map[string]string

@@ -935,3 +935,26 @@ func TestSetFlagIndicator(t *testing.T) {
 		})
 	}
 }
+
+func TestAssignFileSystem(t *testing.T) {
+	originalFileSystem := FileSystem()
+	defer func() {
+		fileSystem = originalFileSystem
+	}()
+	type args struct {
+		fs afero.Fs
+	}
+	tests := map[string]struct {
+		args
+		want afero.Fs
+	}{
+		"simple": {args: args{fs: afero.NewMemMapFs()}, want: FileSystem()},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := AssignFileSystem(tt.args.fs); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("AssignFileSystem() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

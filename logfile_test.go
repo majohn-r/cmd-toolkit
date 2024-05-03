@@ -44,7 +44,7 @@ func Test_initWriter(t *testing.T) {
 		},
 		"uninitialized appname": {
 			preTest: func() {
-				os.Setenv("TMP", "logs")
+				os.Setenv("TMP", "logs1")
 				os.Unsetenv("TEMP")
 				appname = ""
 			},
@@ -54,17 +54,17 @@ func Test_initWriter(t *testing.T) {
 		},
 		"bad TMP setting": {
 			preTest: func() {
-				os.Setenv("TMP", "logs")
+				os.Setenv("TMP", "logs2")
 				os.Unsetenv("TEMP")
 				appname = "myApp"
-				afero.WriteFile(fileSystem, "logs", []byte{}, StdFilePermissions)
+				afero.WriteFile(fileSystem, "logs2", []byte{}, StdFilePermissions)
 			},
 			postTest: func() {
 			},
 			wantNil:     true,
 			wantLogPath: "",
 			WantedRecording: output.WantedRecording{
-				Error: "The temporary folder \"logs\" exists as a plain file.\n",
+				Error: "The temporary folder \"logs2\" exists as a plain file.\n",
 			},
 		},
 		"success": {
