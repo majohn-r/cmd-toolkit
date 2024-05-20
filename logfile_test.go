@@ -77,14 +77,14 @@ func Test_initWriter(t *testing.T) {
 				// critical to close logWriter, otherwise, "goodLogs" cannot be
 				// removed, as logWriter will continue hold the current log file
 				// open
-				if err := logWriter.Close(); err != nil {
-					t.Errorf("error closing logWriter: %v", err)
+				if closeErr := logWriter.Close(); closeErr != nil {
+					t.Errorf("error closing logWriter: %v", closeErr)
 				} else {
 					// this is necessary because the logging library creates the
 					// directory in the os file system, not in the one our tests
 					// use
-					if err := afero.NewOsFs().RemoveAll("goodLogs"); err != nil {
-						t.Errorf("Error removing goodLogs: %v", err)
+					if fileErr := afero.NewOsFs().RemoveAll("goodLogs"); fileErr != nil {
+						t.Errorf("Error removing goodLogs: %v", fileErr)
 					}
 				}
 			},
@@ -104,7 +104,7 @@ func Test_initWriter(t *testing.T) {
 			if got := LogPath(); got != tt.wantLogPath {
 				t.Errorf("initWriter() got logPath=%q, want %q", got, tt.wantLogPath)
 			}
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("initWriter() %s", issue)
 				}
@@ -197,7 +197,7 @@ func Test_cleanup(t *testing.T) {
 			if gotDeleted != tt.wantDeleted {
 				t.Errorf("cleanup() deleted %d want %d", gotDeleted, tt.wantDeleted)
 			}
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("cleanup() %s", issue)
 				}
@@ -240,7 +240,7 @@ func Test_deleteLogFile(t *testing.T) {
 			tt.preTest()
 			o := output.NewRecorder()
 			deleteLogFile(o, tt.args.logFile)
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("deleteLogFile() %s", issue)
 				}
@@ -305,7 +305,7 @@ func Test_findTemp(t *testing.T) {
 			if got1 != tt.want1 {
 				t.Errorf("findTemp() got1 = %v, want %v", got1, tt.want1)
 			}
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("findTemp() %s", issue)
 				}

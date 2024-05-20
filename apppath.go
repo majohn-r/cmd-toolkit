@@ -26,23 +26,23 @@ func ApplicationPath() string {
 
 // InitApplicationPath ensures that the application path exists
 func InitApplicationPath(o output.Bus) bool {
-	value, ok := os.LookupEnv(ApplicationDataEnvVarName)
-	if !ok {
+	value, varDefined := os.LookupEnv(ApplicationDataEnvVarName)
+	if !varDefined {
 		o.Log(output.Error, "not set", map[string]any{"environmentVariable": ApplicationDataEnvVarName})
 		return false
 	}
-	dir, err := CreateAppSpecificPath(value)
-	if err != nil {
-		o.Log(output.Error, "program error", map[string]any{"error": err})
+	dir, pathErr := CreateAppSpecificPath(value)
+	if pathErr != nil {
+		o.Log(output.Error, "program error", map[string]any{"error": pathErr})
 		return false
 	}
 	// Mkdir does nothing and succeeds if applicationPath is an existing
 	// directory
-	if err := Mkdir(dir); err != nil {
-		WriteDirectoryCreationError(o, dir, err)
+	if mkdirErr := Mkdir(dir); mkdirErr != nil {
+		WriteDirectoryCreationError(o, dir, mkdirErr)
 		o.Log(output.Error, "cannot create directory", map[string]any{
 			"directory": dir,
-			"error":     err,
+			"error":     mkdirErr,
 		})
 		return false
 	}

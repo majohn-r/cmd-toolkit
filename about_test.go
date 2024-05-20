@@ -234,7 +234,7 @@ func Test_finalYear(t *testing.T) {
 			if got := finalYear(o, tt.args.timestamp); got != tt.want {
 				t.Errorf("finalYear() = %v, want %v", got, tt.want)
 			}
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("finalYear() %s", issue)
 				}
@@ -384,7 +384,7 @@ func Test_reportAbout(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
 			reportAbout(o, tt.args.lines)
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("reportAbout() %s", issue)
 				}
@@ -518,7 +518,7 @@ func Test_aboutCmd_Exec(t *testing.T) {
 			if gotOk := a.Exec(o, tt.args.args); gotOk != tt.wantOk {
 				t.Errorf("aboutCmd.Exec() = %v, want %v", gotOk, tt.wantOk)
 			}
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("aboutCmd.Exec() %s", issue)
 				}
@@ -548,7 +548,7 @@ func Test_newAboutCmd(t *testing.T) {
 			if got1 != tt.want1 {
 				t.Errorf("newAboutCmd() got1 = %v, want %v", got1, tt.want1)
 			}
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("newAboutCmd() %s", issue)
 				}
@@ -602,7 +602,7 @@ func TestCopyright(t *testing.T) {
 			if got := Copyright(o, tt.args.first, tt.args.timestamp, tt.args.owner); got != tt.want {
 				t.Errorf("Copyright() = %v, want %v", got, tt.want)
 			}
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("Copyright() %s", issue)
 				}

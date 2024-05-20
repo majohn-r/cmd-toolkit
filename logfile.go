@@ -37,14 +37,13 @@ func initWriter(o output.Bus) io.Writer {
 	if tmpFolder, found = findTemp(o); !found {
 		return nil
 	}
-	var tmp string
-	var err error
 	if PlainFileExists(tmpFolder) {
 		o.WriteCanonicalError("The temporary folder %q exists as a plain file", tmpFolder)
 		return nil
 	}
-	if tmp, err = CreateAppSpecificPath(tmpFolder); err != nil {
-		o.WriteCanonicalError("A programming error has occurred: %v", err)
+	tmp, creationError := CreateAppSpecificPath(tmpFolder)
+	if creationError != nil {
+		o.WriteCanonicalError("A programming error has occurred: %v", creationError)
 		return nil
 	}
 	logPath = filepath.Join(tmp, logDirName)
@@ -58,7 +57,7 @@ func initWriter(o output.Bus) io.Writer {
 }
 
 func cleanup(o output.Bus, logPath string) (found, deleted int) {
-	if files, ok := ReadDirectory(o, logPath); ok {
+	if files, dirRead := ReadDirectory(o, logPath); dirRead {
 		var fileMap map[time.Time]fs.FileInfo = make(map[time.Time]fs.FileInfo)
 		times := make([]time.Time, 0, len(files))
 		for _, file := range files {
@@ -89,8 +88,8 @@ func cleanup(o output.Bus, logPath string) (found, deleted int) {
 }
 
 func deleteLogFile(o output.Bus, logFile string) bool {
-	if err := fileSystem.Remove(logFile); err != nil {
-		o.WriteCanonicalError("The log file %q cannot be deleted: %v", logFile, err)
+	if fileErr := fileSystem.Remove(logFile); fileErr != nil {
+		o.WriteCanonicalError("The log file %q cannot be deleted: %v", logFile, fileErr)
 		return false
 	}
 	return true
@@ -115,9 +114,9 @@ func isLogFile(file fs.FileInfo) (ok bool) {
 }
 
 func logFilePrefix() string {
-	s, err := AppName()
-	if err != nil {
+	prefix, appNameInitErr := AppName()
+	if appNameInitErr != nil {
 		return "_log_."
 	}
-	return s + "."
+	return prefix + "."
 }

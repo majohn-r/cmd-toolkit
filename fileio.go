@@ -18,40 +18,36 @@ const (
 
 // CopyFile copies a file. Adapted from
 // https://github.com/cleversoap/go-cp/blob/master/cp.go
-func CopyFile(src, dest string) (err error) {
+func CopyFile(src, dest string) error {
 	absSrc, _ := filepath.Abs(src)
 	absDest, _ := filepath.Abs(dest)
 	if absSrc == absDest {
 		return fmt.Errorf("cannot copy file %q to itself", absSrc)
 	}
-	var r afero.File
-	r, err = fileSystem.Open(src) // error if source does not exist
-	if err == nil {
-		defer r.Close()
-		ok, _ := afero.IsDir(fileSystem, dest)
-		if ok {
-			err = fmt.Errorf("cannot overwrite a directory")
-			return
-		}
-		var w afero.File
-		w, err = fileSystem.Create(dest)
-		if err == nil {
-			defer w.Close()
-			_, _ = io.Copy(w, r)
-		}
+	openedSrc, srcOpenErr := fileSystem.Open(src)
+	if srcOpenErr != nil {
+		return srcOpenErr
 	}
-	return
+	defer openedSrc.Close()
+	if destinationIsDir, _ := afero.IsDir(fileSystem, dest); destinationIsDir {
+		return fmt.Errorf("cannot overwrite a directory")
+	}
+	openedDest, destOpenErr := fileSystem.Create(dest)
+	if destOpenErr != nil {
+		return destOpenErr
+	}
+	defer openedDest.Close()
+	_, _ = io.Copy(openedDest, openedSrc)
+	return nil
 }
 
 // CreateFile creates a file; it returns an error if the file already exists
 func CreateFile(fileName string, content []byte) error {
-	ok, _ := afero.Exists(fileSystem, fileName)
-	if ok {
+	if fileExists, _ := afero.Exists(fileSystem, fileName); fileExists {
 		return fmt.Errorf("file %q already exists", fileName)
 	}
 	dir := filepath.Dir(fileName)
-	ok, _ = afero.DirExists(fileSystem, dir)
-	if !ok {
+	if dirExists, _ := afero.DirExists(fileSystem, dir); !dirExists {
 		return fmt.Errorf("%q does not exist or is not a directory", dir)
 	}
 	return afero.WriteFile(fileSystem, fileName, content, StdFilePermissions) // bad path
@@ -65,8 +61,8 @@ func CreateFileInDirectory(dir, name string, content []byte) error {
 
 // DirExists returns whether the specified file exists as a directory
 func DirExists(path string) bool {
-	ok, _ := afero.IsDir(fileSystem, path)
-	return ok
+	pathIsDir, _ := afero.IsDir(fileSystem, path)
+	return pathIsDir
 }
 
 // LogFileDeletionFailure logs errors when a file cannot be deleted; does not
@@ -91,42 +87,40 @@ func LogUnreadableDirectory(o output.Bus, s string, e error) {
 
 // Mkdir makes the specified directory; succeeds if the directory already
 // exists. Fails if a plain file exists with the specified path.
-func Mkdir(dir string) error {
-	ok, err := afero.IsDir(fileSystem, dir)
-	if ok || (err != nil && !errors.Is(err, afero.ErrFileNotFound)) {
+func Mkdir(path string) error {
+	pathIsDir, err := afero.IsDir(fileSystem, path)
+	if pathIsDir || (err != nil && !errors.Is(err, afero.ErrFileNotFound)) {
 		return err
 	}
-	if PlainFileExists(dir) {
+	if PlainFileExists(path) {
 		return fmt.Errorf("file exists and is not a directory")
 	}
-	parentIsDir, _ := afero.IsDir(fileSystem, filepath.Dir(dir))
+	parentIsDir, _ := afero.IsDir(fileSystem, filepath.Dir(path))
 	if !parentIsDir {
 		return fmt.Errorf("parent directory is not a directory")
 	}
-	return fileSystem.Mkdir(dir, StdDirPermissions)
+	return fileSystem.Mkdir(path, StdDirPermissions)
 }
 
 // PlainFileExists returns whether the specified file exists as a plain file
 // (i.e., not a directory)
 func PlainFileExists(path string) bool {
 	f, err := fileSystem.Stat(path)
-	if err == nil {
-		return !f.IsDir()
+	if err != nil {
+		return false
 	}
-	return false
+	return !f.IsDir()
 }
 
 // ReadDirectory returns the contents of a specified directory
-func ReadDirectory(o output.Bus, dir string) (files []fs.FileInfo, ok bool) {
-	var err error
-	if files, err = afero.ReadDir(fileSystem, dir); err != nil {
-		files = nil
-		LogUnreadableDirectory(o, dir, err)
-		o.WriteCanonicalError("The directory %q cannot be read: %v", dir, err)
-		return
+func ReadDirectory(o output.Bus, dir string) ([]fs.FileInfo, bool) {
+	files, fileErr := afero.ReadDir(fileSystem, dir)
+	if fileErr == nil {
+		return files, true
 	}
-	ok = true
-	return
+	LogUnreadableDirectory(o, dir, fileErr)
+	o.WriteCanonicalError("The directory %q cannot be read: %v", dir, fileErr)
+	return nil, false
 }
 
 // ReportDirectoryCreationFailure reports an error creating a directory to error
@@ -160,8 +154,8 @@ func ReportFileDeletionFailure(o output.Bus, file string, e error) {
 
 // SecureAbsolutePath returns a path's absolute value
 func SecureAbsolutePath(path string) string {
-	absPath, err := filepath.Abs(path)
-	if err != nil {
+	absPath, fileErr := filepath.Abs(path)
+	if fileErr != nil {
 		return ""
 	}
 	return absPath

@@ -10,57 +10,60 @@ import (
 )
 
 func TestCopyFile(t *testing.T) {
-	originalFileSystem := fileSystem
+	// note: use os filesystem - Create never returns an error in the
+	// memory-mapped file system
+	fileSystem.Mkdir("sourceDir1", StdDirPermissions)
+	fileSystem.Mkdir("sourceDir2", StdDirPermissions)
+	fileSystem.Mkdir("sourceDir3", StdDirPermissions)
+	fileSystem.Mkdir("sourceDir4", StdDirPermissions)
+	fileSystem.Mkdir("destDir1", StdDirPermissions)
+	fileSystem.MkdirAll(filepath.Join("destDir2", "file1"), StdDirPermissions)
+	fileSystem.Mkdir("destDir3", StdDirPermissions)
+	afero.WriteFile(fileSystem, filepath.Join("sourceDir2", "file1"), []byte{1, 2, 3}, StdFilePermissions)
+	afero.WriteFile(fileSystem, filepath.Join("sourceDir3", "file1"), []byte{1, 2, 3}, StdFilePermissions)
+	afero.WriteFile(fileSystem, filepath.Join("sourceDir4", "file1"), []byte{1, 2, 3}, StdFilePermissions)
 	defer func() {
-		fileSystem = originalFileSystem
+		fileSystem.RemoveAll("sourceDir1")
+		fileSystem.RemoveAll("sourceDir2")
+		fileSystem.RemoveAll("sourceDir3")
+		fileSystem.RemoveAll("sourceDir4")
+		fileSystem.RemoveAll("destDir1")
+		fileSystem.RemoveAll("destDir2")
+		fileSystem.RemoveAll("destDir3")
 	}()
-	fileSystem = afero.NewMemMapFs()
 	type args struct {
 		src  string
 		dest string
 	}
 	tests := map[string]struct {
-		preTest func()
 		args
 		wantErr bool
 	}{
 		"copy file onto itself": {
-			preTest: func() {},
 			args:    args{src: "file1", dest: "file1"},
 			wantErr: true,
 		},
 		"non-existent source": {
-			preTest: func() {
-				fileSystem.Mkdir("sourceDir1", StdDirPermissions)
-				fileSystem.Mkdir("destDir1", StdDirPermissions)
-			},
 			args:    args{src: filepath.Join("sourceDir1", "file1"), dest: filepath.Join("destDir1", "file1")},
 			wantErr: true,
 		},
 		"destination is a directory": {
-			preTest: func() {
-				fileSystem.Mkdir("sourceDir2", StdDirPermissions)
-				afero.WriteFile(fileSystem, filepath.Join("sourceDir2", "file1"), []byte{1, 2, 3}, StdFilePermissions)
-				fileSystem.MkdirAll(filepath.Join("destDir2", "file1"), StdDirPermissions)
-			},
 			args:    args{src: filepath.Join("sourceDir2", "file1"), dest: filepath.Join("destDir2", "file1")},
 			wantErr: true,
 		},
 		"success": {
-			preTest: func() {
-				fileSystem.Mkdir("sourceDir3", StdDirPermissions)
-				afero.WriteFile(fileSystem, filepath.Join("sourceDir3", "file1"), []byte{1, 2, 3}, StdFilePermissions)
-				fileSystem.Mkdir("destDir3", StdDirPermissions)
-			},
 			args:    args{src: filepath.Join("sourceDir3", "file1"), dest: filepath.Join("destDir3", "file1")},
 			wantErr: false,
+		},
+		"error writing to non-existent directory": {
+			args:    args{src: filepath.Join("sourceDir4", "file1"), dest: filepath.Join("destDir4", "file2")},
+			wantErr: true,
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			tt.preTest()
-			if err := CopyFile(tt.args.src, tt.args.dest); (err != nil) != tt.wantErr {
-				t.Errorf("CopyFile() error = %v, wantErr %v", err, tt.wantErr)
+			if gotErr := CopyFile(tt.args.src, tt.args.dest); (gotErr != nil) != tt.wantErr {
+				t.Errorf("CopyFile() error = %v, wantErr %v", gotErr, tt.wantErr)
 			}
 		})
 	}
@@ -105,8 +108,8 @@ func TestCreateFile(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
-			if err := CreateFile(tt.args.fileName, tt.args.content); (err != nil) != tt.wantErr {
-				t.Errorf("CreateFile() error = %v, wantErr %v", err, tt.wantErr)
+			if gotErr := CreateFile(tt.args.fileName, tt.args.content); (gotErr != nil) != tt.wantErr {
+				t.Errorf("CreateFile() error = %v, wantErr %v", gotErr, tt.wantErr)
 			}
 		})
 	}
@@ -152,8 +155,8 @@ func TestCreateFileInDirectory(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
-			if err := CreateFileInDirectory(tt.args.dir, tt.args.name, tt.args.content); (err != nil) != tt.wantErr {
-				t.Errorf("CreateFileInDirectory() error = %v, wantErr %v", err, tt.wantErr)
+			if gotErr := CreateFileInDirectory(tt.args.dir, tt.args.name, tt.args.content); (gotErr != nil) != tt.wantErr {
+				t.Errorf("CreateFileInDirectory() error = %v, wantErr %v", gotErr, tt.wantErr)
 			}
 		})
 	}
@@ -198,7 +201,7 @@ func TestLogFileDeletionFailure(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
 			LogFileDeletionFailure(o, tt.args.s, tt.args.e)
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("LogFileDeletionFailure() %s", issue)
 				}
@@ -225,7 +228,7 @@ func TestLogUnreadableDirectory(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
 			LogUnreadableDirectory(o, tt.args.s, tt.args.e)
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("LogUnreadableDirectory() %s", issue)
 				}
@@ -279,8 +282,8 @@ func TestMkdir(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
-			if err := Mkdir(tt.args.dir); (err != nil) != tt.wantErr {
-				t.Errorf("Mkdir() error = %v, wantErr %v", err, tt.wantErr)
+			if gotErr := Mkdir(tt.args.dir); (gotErr != nil) != tt.wantErr {
+				t.Errorf("Mkdir() error = %v, wantErr %v", gotErr, tt.wantErr)
 			}
 		})
 	}
@@ -392,7 +395,7 @@ func TestReadDirectory(t *testing.T) {
 			if gotOk != tt.wantOk {
 				t.Errorf("ReadDirectory() gotOk = %v, want %v", gotOk, tt.wantOk)
 			}
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("ReadDirectory() %s", issue)
 				}
@@ -423,7 +426,7 @@ func TestReportDirectoryCreationFailure(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
 			ReportDirectoryCreationFailure(o, tt.args.cmd, tt.args.dir, tt.args.e)
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("ReportDirectoryCreationFailure() %s", issue)
 				}
@@ -454,7 +457,7 @@ func TestReportFileCreationFailure(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
 			ReportFileCreationFailure(o, tt.args.cmd, tt.args.file, tt.args.e)
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("ReportFileCreationFailure() %s", issue)
 				}
@@ -484,7 +487,7 @@ func TestReportFileDeletionFailure(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
 			ReportFileDeletionFailure(o, tt.args.file, tt.args.e)
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("ReportFileDeletionFailure() %s", issue)
 				}
@@ -532,7 +535,7 @@ func TestWriteDirectoryCreationError(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
 			WriteDirectoryCreationError(o, tt.args.d, tt.args.e)
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("WriteDirectoryCreationError() %s", issue)
 				}

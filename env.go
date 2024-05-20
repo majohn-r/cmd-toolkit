@@ -37,9 +37,9 @@ func AppName() (string, error) {
 
 // CreateAppSpecificPath creates a path string for an app-related directory
 func CreateAppSpecificPath(topDir string) (string, error) {
-	s, err := AppName()
-	if err != nil {
-		return "", err
+	s, appNameInitErr := AppName()
+	if appNameInitErr != nil {
+		return "", appNameInitErr
 	}
 	return filepath.Join(topDir, s), nil
 }
@@ -62,8 +62,8 @@ func DereferenceEnvVar(s string) (string, error) {
 		default:
 			envVar = ref[1 : len(ref)-1]
 		}
-		value, ok := os.LookupEnv(envVar)
-		switch ok {
+		value, varDefined := os.LookupEnv(envVar)
+		switch varDefined {
 		case true:
 			s = strings.ReplaceAll(s, ref, value)
 		case false:
@@ -81,7 +81,7 @@ func DereferenceEnvVar(s string) (string, error) {
 // memento of its state
 func NewEnvVarMemento(name string) *EnvVarMemento {
 	s := &EnvVarMemento{name: name}
-	if value, ok := os.LookupEnv(name); ok {
+	if value, varDefined := os.LookupEnv(name); varDefined {
 		s.value = value
 		s.set = true
 	}

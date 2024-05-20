@@ -45,27 +45,27 @@ func DecorateStringFlagUsage(usage, defaultValue string) string {
 
 // ProcessArgs processes a slice of command line arguments and handles common
 // errors therein
-func ProcessArgs(o output.Bus, f *flag.FlagSet, rawArgs []string) (ok bool) {
+func ProcessArgs(o output.Bus, f *flag.FlagSet, rawArgs []string) (processed bool) {
 	args := make([]string, len(rawArgs))
-	ok = true
+	processed = true
 	for i, arg := range rawArgs {
-		var err error
-		args[i], err = DereferenceEnvVar(arg)
-		if err != nil {
-			o.WriteCanonicalError("The value for argument %q cannot be used: %v", arg, err)
+		var dereferenceErr error
+		args[i], dereferenceErr = DereferenceEnvVar(arg)
+		if dereferenceErr != nil {
+			o.WriteCanonicalError("The value for argument %q cannot be used: %v", arg, dereferenceErr)
 			o.Log(output.Error, "argument cannot be used", map[string]any{
 				"value": arg,
-				"error": err,
+				"error": dereferenceErr,
 			})
-			ok = false
+			processed = false
 		}
 	}
-	if ok {
+	if processed {
 		f.SetOutput(o.ErrorWriter())
 		// note: Parse outputs errors to o.ErrorWriter*()
-		if err := f.Parse(args); err != nil {
-			o.Log(output.Error, err.Error(), map[string]any{"arguments": args})
-			ok = false
+		if parseErr := f.Parse(args); parseErr != nil {
+			o.Log(output.Error, parseErr.Error(), map[string]any{"arguments": args})
+			processed = false
 		}
 	}
 	return

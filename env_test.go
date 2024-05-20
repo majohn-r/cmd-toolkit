@@ -23,9 +23,9 @@ func TestAppName(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			appname = tt.appname
-			got, err := AppName()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("AppName() error = %v, wantErr %v", err, tt.wantErr)
+			got, gotErr := AppName()
+			if (gotErr != nil) != tt.wantErr {
+				t.Errorf("AppName() error = %v, wantErr %v", gotErr, tt.wantErr)
 				return
 			}
 			if got != tt.want {
@@ -55,9 +55,9 @@ func TestCreateAppSpecificPath(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			appname = tt.appname
-			got, err := CreateAppSpecificPath(tt.args.topDir)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("CreateAppSpecificPath() error = %v, wantErr %v", err, tt.wantErr)
+			got, gotErr := CreateAppSpecificPath(tt.args.topDir)
+			if (gotErr != nil) != tt.wantErr {
+				t.Errorf("CreateAppSpecificPath() error = %v, wantErr %v", gotErr, tt.wantErr)
 				return
 			}
 			if got != tt.want {
@@ -113,9 +113,9 @@ func TestDereferenceEnvVar(t *testing.T) {
 					memento.Restore()
 				}
 			}()
-			got, err := DereferenceEnvVar(tt.args.s)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("DereferenceEnvVar() error = %v, wantErr %v", err, tt.wantErr)
+			got, gotErr := DereferenceEnvVar(tt.args.s)
+			if (gotErr != nil) != tt.wantErr {
+				t.Errorf("DereferenceEnvVar() error = %v, wantErr %v", gotErr, tt.wantErr)
 				return
 			}
 			if got != tt.want {
@@ -182,8 +182,8 @@ func TestSetAppName(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			appname = tt.appname
-			if err := SetAppName(tt.args.s); (err != nil) != tt.wantErr {
-				t.Errorf("SetAppName() error = %v, wantErr %v", err, tt.wantErr)
+			if gotErr := SetAppName(tt.args.s); (gotErr != nil) != tt.wantErr {
+				t.Errorf("SetAppName() error = %v, wantErr %v", gotErr, tt.wantErr)
 			}
 		})
 	}

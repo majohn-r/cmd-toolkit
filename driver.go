@@ -14,8 +14,8 @@ func Execute(o output.Bus, firstYear int, appName, appVersion, buildTimestamp st
 	start := time.Now()
 	SetFirstYear(firstYear)
 	exitCode = 1
-	if err := SetAppName(appName); err != nil {
-		o.WriteCanonicalError("A programming error has occurred - %v", err)
+	if appNameInitErr := SetAppName(appName); appNameInitErr != nil {
+		o.WriteCanonicalError("A programming error has occurred - %v", appNameInitErr)
 		return
 	}
 	if logInitializer(o) && InitApplicationPath(o) {
@@ -28,7 +28,7 @@ func Execute(o output.Bus, firstYear int, appName, appVersion, buildTimestamp st
 			"dependencies": BuildDependencies(),
 			"args":         cmdLine,
 		})
-		if cmd, args, ok := ProcessCommand(o, cmdLine); ok && cmd != nil {
+		if cmd, args, processed := ProcessCommand(o, cmdLine); processed && cmd != nil {
 			if cmd.Exec(o, args) {
 				exitCode = 0
 			}

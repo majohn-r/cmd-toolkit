@@ -33,7 +33,7 @@ func TestInitApplicationPath(t *testing.T) {
 	originalFileSystem := fileSystem
 	var appDataWasSet bool
 	var savedAppDataValue string
-	if value, ok := os.LookupEnv(ApplicationDataEnvVarName); ok {
+	if value, varDefined := os.LookupEnv(ApplicationDataEnvVarName); varDefined {
 		appDataWasSet = true
 		savedAppDataValue = value
 	}
@@ -134,7 +134,7 @@ func TestInitApplicationPath(t *testing.T) {
 			if gotInitialized := InitApplicationPath(o); gotInitialized != tt.wantInitialized {
 				t.Errorf("InitApplicationPath() = %v, want %v", gotInitialized, tt.wantInitialized)
 			}
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("InitApplicationPath() %s", issue)
 				}

@@ -115,7 +115,7 @@ func TestNewConfiguration(t *testing.T) {
 			if got := NewConfiguration(o, tt.args.data); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewConfiguration() = %v, want %v", got, tt.want)
 			}
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("NewConfiguration() %s", issue)
 				}
@@ -248,7 +248,7 @@ func TestReadConfigurationFile(t *testing.T) {
 			if gotOk != tt.wantOk {
 				t.Errorf("ReadConfigurationFile() gotOk = %v, want %v", gotOk, tt.wantOk)
 			}
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("ReadConfigurationFile() %s", issue)
 				}
@@ -285,7 +285,7 @@ func TestReportInvalidConfigurationData(t *testing.T) {
 			defaultConfigFileName = tt.defaultConfigFileName
 			o := output.NewRecorder()
 			ReportInvalidConfigurationData(o, tt.args.s, tt.args.e)
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("ReportInvalidConfigurationData() %s", issue)
 				}
@@ -362,15 +362,15 @@ func Test_verifyDefaultConfigFileExists(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
 			o := output.NewRecorder()
-			gotOk, err := verifyDefaultConfigFileExists(o, tt.args.path)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("verifyDefaultConfigFileExists() error = %v, wantErr %v", err, tt.wantErr)
+			gotOk, gotErr := verifyDefaultConfigFileExists(o, tt.args.path)
+			if (gotErr != nil) != tt.wantErr {
+				t.Errorf("verifyDefaultConfigFileExists() error = %v, wantErr %v", gotErr, tt.wantErr)
 				return
 			}
 			if gotOk != tt.wantOk {
 				t.Errorf("verifyDefaultConfigFileExists() = %v, want %v", gotOk, tt.wantOk)
 			}
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("verifyDefaultConfigFileExists() %s", issue)
 				}
@@ -536,9 +536,9 @@ func TestConfiguration_BoolDefault(t *testing.T) {
 			} else {
 				os.Unsetenv(envVar)
 			}
-			gotB, err := tt.c.BoolDefault(tt.args.key, tt.args.defaultValue)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Configuration.BoolDefault() error = %v, wantErr %v", err, tt.wantErr)
+			gotB, gotErr := tt.c.BoolDefault(tt.args.key, tt.args.defaultValue)
+			if (gotErr != nil) != tt.wantErr {
+				t.Errorf("Configuration.BoolDefault() error = %v, wantErr %v", gotErr, tt.wantErr)
 				return
 			}
 			if gotB != tt.wantB {
@@ -622,9 +622,9 @@ func TestConfiguration_IntDefault(t *testing.T) {
 			} else {
 				os.Unsetenv(envVar)
 			}
-			gotI, err := tt.c.IntDefault(tt.args.key, tt.args.b)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Configuration.IntDefault() error = %v, wantErr %v", err, tt.wantErr)
+			gotI, gotErr := tt.c.IntDefault(tt.args.key, tt.args.b)
+			if (gotErr != nil) != tt.wantErr {
+				t.Errorf("Configuration.IntDefault() error = %v, wantErr %v", gotErr, tt.wantErr)
 				return
 			}
 			if gotI != tt.wantI {
@@ -714,9 +714,9 @@ func TestConfiguration_StringDefault(t *testing.T) {
 			} else {
 				os.Unsetenv(envVar2)
 			}
-			gotS, err := tt.c.StringDefault(tt.args.key, tt.args.defaultValue)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Configuration.StringDefault() error = %v, wantErr %v", err, tt.wantErr)
+			gotS, gotErr := tt.c.StringDefault(tt.args.key, tt.args.defaultValue)
+			if (gotErr != nil) != tt.wantErr {
+				t.Errorf("Configuration.StringDefault() error = %v, wantErr %v", gotErr, tt.wantErr)
 				return
 			}
 			if gotS != tt.wantS {

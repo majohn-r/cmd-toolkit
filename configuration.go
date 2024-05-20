@@ -3,6 +3,7 @@ package cmd_toolkit
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -26,9 +27,9 @@ func FileSystem() afero.Fs {
 
 // AssignFileSystem sets the current afero.Fs instance and returns the original
 // pre-assignment value
-func AssignFileSystem(fs afero.Fs) afero.Fs {
+func AssignFileSystem(newFileSystem afero.Fs) afero.Fs {
 	originalFs := fileSystem
-	fileSystem = fs
+	fileSystem = newFileSystem
 	return originalFs
 }
 
@@ -116,30 +117,29 @@ func NewIntBounds(v1, v2, v3 int) *IntBounds {
 // ReadConfigurationFile reads defaults.yaml from the specified path and returns
 // a pointer to a cooked Configuration instance; if there is no such file, then
 // an empty Configuration is returned and ok is true
-func ReadConfigurationFile(o output.Bus) (c *Configuration, ok bool) {
-	c = EmptyConfiguration()
+func ReadConfigurationFile(o output.Bus) (*Configuration, bool) {
+	c := EmptyConfiguration()
 	path := ApplicationPath()
 	file := filepath.Join(path, defaultConfigFileName)
-	exists, err := verifyDefaultConfigFileExists(o, file)
-	if err != nil {
-		return
+	exists, fileError := verifyDefaultConfigFileExists(o, file)
+	if fileError != nil {
+		return c, false
 	}
 	if !exists {
-		ok = true
-		return
+		return c, true
 	}
 	// only probable error circumvented by verifyFileExists failure
 	rawYaml, _ := afero.ReadFile(fileSystem, file)
 	data := map[string]any{}
-	err = yaml.Unmarshal(rawYaml, &data)
-	if err != nil {
+	fileError = yaml.Unmarshal(rawYaml, &data)
+	if fileError != nil {
 		o.Log(output.Error, "cannot unmarshal yaml content", map[string]any{
 			"directory": path,
 			"fileName":  defaultConfigFileName,
-			"error":     err,
+			"error":     fileError,
 		})
-		o.WriteCanonicalError("The configuration file %q is not well-formed YAML: %v", file, err)
-		return
+		o.WriteCanonicalError("The configuration file %q is not well-formed YAML: %v", file, fileError)
+		return c, false
 	}
 	c = NewConfiguration(o, data)
 	o.Log(output.Info, "read configuration file", map[string]any{
@@ -147,8 +147,7 @@ func ReadConfigurationFile(o output.Bus) (c *Configuration, ok bool) {
 		"fileName":  defaultConfigFileName,
 		"value":     c,
 	})
-	ok = true
-	return
+	return c, true
 }
 
 // ReportInvalidConfigurationData handles errors found when attempting to parse
@@ -168,18 +167,20 @@ func SetDefaultConfigFileName(s string) {
 	defaultConfigFileName = s
 }
 
-func verifyDefaultConfigFileExists(o output.Bus, path string) (ok bool, err error) {
-	f, err := fileSystem.Stat(path)
+func verifyDefaultConfigFileExists(o output.Bus, path string) (exists bool, err error) {
+	var f fs.FileInfo
+	f, err = fileSystem.Stat(path)
 	switch {
 	case err == nil:
-		ok = !f.IsDir()
-		if !ok {
+		if f.IsDir() {
 			o.Log(output.Error, "file is a directory", map[string]any{
 				"directory": filepath.Dir(path),
 				"fileName":  filepath.Base(path),
 			})
 			o.WriteCanonicalError("The configuration file %q is a directory", path)
 			err = fmt.Errorf("file exists but is a directory")
+		} else {
+			exists = true
 		}
 	case errors.Is(err, afero.ErrFileNotFound):
 		o.Log(output.Info, "file does not exist", map[string]any{
@@ -209,129 +210,110 @@ func (c *Configuration) String() string {
 }
 
 // BoolDefault returns a boolean value for a specified key
-func (c *Configuration) BoolDefault(key string, defaultValue bool) (b bool, err error) {
-	if value, ok := c.bMap[key]; ok {
-		b = value
-		return
+func (c *Configuration) BoolDefault(key string, defaultValue bool) (bool, error) {
+	if value, valueDefined := c.bMap[key]; valueDefined {
+		return value, nil
 	}
-	if value, ok := c.iMap[key]; ok {
+	if value, valueDefined := c.iMap[key]; valueDefined {
 		switch value {
 		case 0:
-			b = false
+			return false, nil
 		case 1:
-			b = true
+			return true, nil
 		default:
 			// note: deliberately imitating flags behavior when parsing an
 			// invalid boolean
-			b = defaultValue
-			err = fmt.Errorf("invalid boolean value \"%d\" for %s%s: parse error", value, FlagIndicator(), key)
+			return defaultValue, fmt.Errorf("invalid boolean value \"%d\" for %s%s: parse error", value, FlagIndicator(), key)
 		}
-		return
 	}
 	// True values may be specified as "t", "T", "true", "TRUE", or "True"
 	// False values may be specified as "f", "F", "false", "FALSE", or "False"
-	value, ok := c.sMap[key]
-	if !ok {
-		b = defaultValue
-		return
+	value, valueDefined := c.sMap[key]
+	if !valueDefined {
+		return defaultValue, nil
 	}
 	rawValue, dereferenceErr := DereferenceEnvVar(value)
 	if dereferenceErr != nil {
-		b = defaultValue
-		err = fmt.Errorf("invalid boolean value %q for %s%s: %v", value, FlagIndicator(), key, dereferenceErr)
-		return
+		return defaultValue, fmt.Errorf("invalid boolean value %q for %s%s: %v", value, FlagIndicator(), key, dereferenceErr)
 	}
 	cookedValue, e := strconv.ParseBool(rawValue)
 	if e != nil {
 		// note: deliberately imitating flags behavior when parsing
 		// an invalid boolean
-		err = fmt.Errorf("invalid boolean value %q for %s%s: parse error", value, FlagIndicator(), key)
-		b = defaultValue
-		return
+		return defaultValue, fmt.Errorf("invalid boolean value %q for %s%s: parse error", value, FlagIndicator(), key)
 	}
-	b = cookedValue
-	return
+	return cookedValue, nil
 }
 
 // BooleanValue returns a boolean value and whether it exists
-func (c *Configuration) BooleanValue(key string) (value, ok bool) {
-	value, ok = c.bMap[key]
+func (c *Configuration) BooleanValue(key string) (value, exists bool) {
+	value, exists = c.bMap[key]
 	return
 }
 
 // HasSubConfiguration returns whether the specified subConfiguration exists
 func (c *Configuration) HasSubConfiguration(key string) bool {
-	_, ok := c.cMap[key]
-	return ok
+	_, exists := c.cMap[key]
+	return exists
 }
 
 // IntDefault returns a default value for a specified key, which may or may not
 // be defined in the Configuration instance
-func (c *Configuration) IntDefault(key string, b *IntBounds) (i int, err error) {
-	if value, ok := c.iMap[key]; ok {
-		i = b.constrainedValue(value)
-		return
+func (c *Configuration) IntDefault(key string, b *IntBounds) (int, error) {
+	if value, foundKey := c.iMap[key]; foundKey {
+		return b.constrainedValue(value), nil
 	}
-	value, ok := c.sMap[key]
-	if !ok {
-		i = b.Default()
-		return
+	value, foundKey := c.sMap[key]
+	if !foundKey {
+		return b.Default(), nil
 	}
 	rawValue, dereferenceErr := DereferenceEnvVar(value)
 	if dereferenceErr != nil {
-		err = fmt.Errorf("invalid value %q for flag %s%s: %v", rawValue, FlagIndicator(), key, dereferenceErr)
-		i = b.Default()
-		return
+		return b.Default(), fmt.Errorf("invalid value %q for flag %s%s: %v", rawValue, FlagIndicator(), key, dereferenceErr)
 	}
 	cookedValue, e := strconv.Atoi(rawValue)
 	if e != nil {
 		// note: deliberately imitating flags behavior when parsing an
 		// invalid int
-		err = fmt.Errorf("invalid value %q for flag %s%s: parse error", rawValue, FlagIndicator(), key)
-		i = b.Default()
-		return
+		return b.Default(), fmt.Errorf("invalid value %q for flag %s%s: parse error", rawValue, FlagIndicator(), key)
 	}
-	i = b.constrainedValue(cookedValue)
-	return
+	return b.constrainedValue(cookedValue), nil
 }
 
 // IntValue returns an int value and whether it exists
-func (c *Configuration) IntValue(key string) (value int, ok bool) {
-	value, ok = c.iMap[key]
+func (c *Configuration) IntValue(key string) (value int, exists bool) {
+	value, exists = c.iMap[key]
 	return
 }
 
 // StringDefault returns a string value for a specified key
-func (c *Configuration) StringDefault(key, defaultValue string) (s string, err error) {
+func (c *Configuration) StringDefault(key, defaultValue string) (string, error) {
+	var dereferencedDefault string
 	var dereferenceErr error
-	s, dereferenceErr = DereferenceEnvVar(defaultValue)
-	if dereferenceErr != nil {
-		err = fmt.Errorf("invalid value %q for flag %s%s: %v", defaultValue, FlagIndicator(), key, dereferenceErr)
-		s = ""
-		return
+	if dereferencedDefault, dereferenceErr = DereferenceEnvVar(defaultValue); dereferenceErr != nil {
+		return "", fmt.Errorf("invalid value %q for flag %s%s: %v", defaultValue, FlagIndicator(), key, dereferenceErr)
 	}
-	value, ok := c.sMap[key]
-	if !ok {
-		return
+	value, found := c.sMap[key]
+	if !found {
+		return dereferencedDefault, nil
 	}
-	s, dereferenceErr = DereferenceEnvVar(value)
-	if dereferenceErr != nil {
-		err = fmt.Errorf("invalid value %q for flag %s%s: %v", value, FlagIndicator(), key, dereferenceErr)
-		s = ""
+	var dereferencedValue string
+	if dereferencedValue, dereferenceErr = DereferenceEnvVar(value); dereferenceErr != nil {
+		return "", fmt.Errorf("invalid value %q for flag %s%s: %v", value, FlagIndicator(), key, dereferenceErr)
 	}
-	return
+	return dereferencedValue, nil
 }
 
-// StringValue returns the definition of the specified key and ok if the value
+// StringValue returns the definition of the specified key and whether the value
 // is defined
-func (c *Configuration) StringValue(key string) (value string, ok bool) {
-	value, ok = c.sMap[key]
+func (c *Configuration) StringValue(key string) (value string, found bool) {
+	value, found = c.sMap[key]
 	return
 }
 
 // SubConfiguration returns a specified sub-configuration
 func (c *Configuration) SubConfiguration(key string) *Configuration {
-	if configuration, ok := c.cMap[key]; ok {
+	if configuration, found := c.cMap[key]; found {
 		return configuration
 	}
 	return EmptyConfiguration()

@@ -41,7 +41,7 @@ func TestAddCommandData(t *testing.T) {
 			if got := len(descriptions); got != 1 {
 				t.Errorf("AddCommandData() got %d want 1", got)
 			}
-			if got, ok := descriptions[tt.name]; !ok {
+			if got, descriptionFound := descriptions[tt.name]; !descriptionFound {
 				t.Errorf("AddCommandData() could not find %q", tt.name)
 			} else if !reflect.DeepEqual(got, tt.d) {
 				t.Errorf("AddCommandData() retrieved %v want %v", got, tt.d)
@@ -83,7 +83,7 @@ func TestLogCommandStart(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
 			LogCommandStart(o, tt.args.name, tt.args.m)
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("LogCommandStart() %s", issue)
 				}
@@ -192,7 +192,7 @@ func TestProcessCommand(t *testing.T) {
 			if gotOk != tt.wantOk {
 				t.Errorf("ProcessCommand() gotOk = %v, want %v", gotOk, tt.wantOk)
 			}
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("ProcessCommand() %s", issue)
 				}
@@ -222,7 +222,7 @@ func TestReportNothingToDo(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
 			ReportNothingToDo(o, tt.args.cmd, tt.args.fields)
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("ReportNothingToDo() %s", issue)
 				}
@@ -318,7 +318,7 @@ func Test_determineDefaultCommand(t *testing.T) {
 			if gotOk != tt.wantOk {
 				t.Errorf("defaultSettings() gotOk = %v, want %v", gotOk, tt.wantOk)
 			}
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("defaultSettings() %s", issue)
 				}
@@ -483,7 +483,7 @@ func Test_selectCommand(t *testing.T) {
 			if gotOk != tt.wantOk {
 				t.Errorf("selectCommand() gotOk = %v, want %v", gotOk, tt.wantOk)
 			}
-			if issues, ok := o.Verify(tt.WantedRecording); !ok {
+			if issues, verified := o.Verify(tt.WantedRecording); !verified {
 				for _, issue := range issues {
 					t.Errorf("selectCommand() %s", issue)
 				}

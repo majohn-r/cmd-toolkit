@@ -54,15 +54,15 @@ func InitBuildData(version, creation string) {
 }
 
 // https://github.com/majohn-r/cmd-toolkit/issues/17
-func InterpretBuildData() (v string, dependencies []string) {
-	b, ok := buildInfoReader()
-	if !ok || b == nil {
-		v = "unknown"
+func InterpretBuildData() (goVersion string, dependencies []string) {
+	buildInfo, infoObtained := buildInfoReader()
+	if !infoObtained || buildInfo == nil {
+		goVersion = "unknown"
 		return
 	}
-	v = b.GoVersion
-	dependencies = make([]string, 0, len(b.Deps))
-	for _, d := range b.Deps {
+	goVersion = buildInfo.GoVersion
+	dependencies = make([]string, 0, len(buildInfo.Deps))
+	for _, d := range buildInfo.Deps {
 		dependencies = append(dependencies, fmt.Sprintf("%s %s", d.Path, d.Version))
 	}
 	return
@@ -80,11 +80,11 @@ func SetFirstYear(i int) {
 }
 
 func finalYear(o output.Bus, timestamp string) int {
-	t, err := time.Parse(time.RFC3339, timestamp)
-	if err != nil {
-		o.WriteCanonicalError("The build time %q cannot be parsed: %v", timestamp, err)
+	t, parseErr := time.Parse(time.RFC3339, timestamp)
+	if parseErr != nil {
+		o.WriteCanonicalError("The build time %q cannot be parsed: %v", timestamp, parseErr)
 		o.Log(output.Error, "parse error", map[string]any{
-			"error": err,
+			"error": parseErr,
 			"value": timestamp,
 		})
 		return firstYear
@@ -157,8 +157,8 @@ func FlowerBox(lines []string) []string {
 }
 
 func translateTimestamp(s string) string {
-	t, err := time.Parse(time.RFC3339, s)
-	if err != nil {
+	t, parseErr := time.Parse(time.RFC3339, s)
+	if parseErr != nil {
 		return s
 	}
 	// https://github.com/majohn-r/cmd-toolkit/issues/18
@@ -180,9 +180,9 @@ func (a *aboutCmd) Exec(o output.Bus, args []string) (ok bool) {
 func GenerateAboutContent(o output.Bus) {
 	formattedBuildData := formatBuildData()
 	s := make([]string, 0, 2+len(formattedBuildData))
-	name, err := AppName()
-	if err != nil {
-		o.Log(output.Error, "program error", map[string]any{"error": err})
+	name, appNameInitErr := AppName()
+	if appNameInitErr != nil {
+		o.Log(output.Error, "program error", map[string]any{"error": appNameInitErr})
 		name = "unknown application name"
 	}
 	s = append(s, DecoratedAppName(name, appVersion, buildTimestamp),

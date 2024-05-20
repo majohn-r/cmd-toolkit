@@ -31,22 +31,22 @@ func LogCommandStart(o output.Bus, name string, m map[string]any) {
 	if m == nil {
 		m = map[string]any{}
 	}
-	if _, ok := m["command"]; !ok {
+	if _, commandFound := m["command"]; !commandFound {
 		m["command"] = name
 	}
 	o.Log(output.Info, "executing command", m)
 }
 
 // ProcessCommand selects which command to be run and returns the relevant
-// CommandProcessor, command line arguments and ok status
-func ProcessCommand(o output.Bus, args []string) (cmd CommandProcessor, cmdArgs []string, ok bool) {
+// CommandProcessor, command line arguments and status
+func ProcessCommand(o output.Bus, args []string) (cmd CommandProcessor, cmdArgs []string, processed bool) {
 	var c *Configuration
-	if c, ok = ReadConfigurationFile(o); !ok {
+	if c, processed = ReadConfigurationFile(o); !processed {
 		return
 	}
 	var defaultCmd string
-	if defaultCmd, ok = determineDefaultCommand(o, c.SubConfiguration("command")); ok {
-		cmd, cmdArgs, ok = selectCommand(o, defaultCmd, c, args)
+	if defaultCmd, processed = determineDefaultCommand(o, c.SubConfiguration("command")); processed {
+		cmd, cmdArgs, processed = selectCommand(o, defaultCmd, c, args)
 	}
 	return
 }
@@ -59,12 +59,12 @@ func ReportNothingToDo(o output.Bus, cmd string, fields map[string]any) {
 	o.Log(output.Error, "the user disabled all functionality", fields)
 }
 
-func determineDefaultCommand(o output.Bus, c *Configuration) (defaultCommand string, ok bool) {
+func determineDefaultCommand(o output.Bus, c *Configuration) (defaultCommand string, defaultFound bool) {
 	// get the default command name from configuration, if it's defined
-	defaultCommand, ok = c.StringValue("default")
-	if ok { // there's a default command defined
-		_, ok = descriptions[defaultCommand]
-		if !ok {
+	defaultCommand, defaultFound = c.StringValue("default")
+	if defaultFound {
+		_, defaultFound = descriptions[defaultCommand]
+		if !defaultFound {
 			o.Log(output.Error, "invalid default command", map[string]any{"command": defaultCommand})
 			o.WriteCanonicalError("The configuration file specifies %q as the default command. There is no such command", defaultCommand)
 			defaultCommand = ""
@@ -79,7 +79,7 @@ func determineDefaultCommand(o output.Bus, c *Configuration) (defaultCommand str
 	case 1:
 		for name := range descriptions {
 			defaultCommand = name
-			ok = true
+			defaultFound = true
 			return
 		}
 	default:
@@ -94,15 +94,15 @@ func determineDefaultCommand(o output.Bus, c *Configuration) (defaultCommand str
 		case 0:
 			o.Log(output.Error, "No default command", map[string]any{"commands": describedCommandNames("")})
 			o.WriteCanonicalError("A programming error has occurred - none of the defined commands is defined as the default command.")
-			ok = false
+			defaultFound = false
 		case 1:
 			defaultCommand = defaultCmds[0]
-			ok = true
+			defaultFound = true
 		default:
 			sort.Strings(defaultCmds)
 			o.WriteCanonicalError("A programming error has occurred - multiple commands (%v) are defined as default commands.", defaultCmds)
 			o.Log(output.Error, "multiple default commands", map[string]any{"commands": defaultCmds})
-			ok = false
+			defaultFound = false
 		}
 	}
 	return
@@ -120,12 +120,12 @@ func describedCommandNames(defaultCommand string) []string {
 	return names
 }
 
-func selectCommand(o output.Bus, defaultCmd string, c *Configuration, args []string) (cmd CommandProcessor, cmdArgs []string, ok bool) {
+func selectCommand(o output.Bus, defaultCmd string, c *Configuration, args []string) (cmd CommandProcessor, cmdArgs []string, commandSelected bool) {
 	m := make(map[string]CommandProcessor)
 	for name, description := range descriptions {
 		fSet := flag.NewFlagSet(name, flag.ContinueOnError)
-		cmdProcessor, cOk := description.Initializer(o, c, fSet)
-		if !cOk || cmdProcessor == nil {
+		cmdProcessor, initialized := description.Initializer(o, c, fSet)
+		if !initialized || cmdProcessor == nil {
 			return
 		}
 		m[name] = cmdProcessor
@@ -134,7 +134,7 @@ func selectCommand(o output.Bus, defaultCmd string, c *Configuration, args []str
 		// no arguments at all
 		cmd = m[defaultCmd]
 		cmdArgs = []string{}
-		ok = true
+		commandSelected = true
 		return
 	}
 	firstArg := args[1]
@@ -142,7 +142,7 @@ func selectCommand(o output.Bus, defaultCmd string, c *Configuration, args []str
 		// first argument is a flag
 		cmd = m[defaultCmd]
 		cmdArgs = args[1:]
-		ok = true
+		commandSelected = true
 		return
 	}
 	var found bool
@@ -156,6 +156,6 @@ func selectCommand(o output.Bus, defaultCmd string, c *Configuration, args []str
 		return
 	}
 	cmdArgs = args[2:]
-	ok = true
+	commandSelected = true
 	return
 }
