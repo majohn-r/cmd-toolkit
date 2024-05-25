@@ -3,7 +3,7 @@ module github.com/majohn-r/cmd-toolkit
 go 1.22
 
 require (
-	github.com/majohn-r/output v0.3.4
+	github.com/majohn-r/output v0.4.0
 	github.com/spf13/afero v1.11.0
 	github.com/utahta/go-cronowriter v1.2.0
 	gopkg.in/yaml.v3 v3.0.1

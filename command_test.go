@@ -83,11 +83,7 @@ func TestLogCommandStart(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
 			LogCommandStart(o, tt.args.name, tt.args.m)
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("LogCommandStart() %s", issue)
-				}
-			}
+			o.Report(t, "LogCommandStart()", tt.WantedRecording)
 		})
 	}
 }
@@ -192,11 +188,7 @@ func TestProcessCommand(t *testing.T) {
 			if gotOk != tt.wantOk {
 				t.Errorf("ProcessCommand() gotOk = %v, want %v", gotOk, tt.wantOk)
 			}
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("ProcessCommand() %s", issue)
-				}
-			}
+			o.Report(t, "ProcessCommand()", tt.WantedRecording)
 		})
 	}
 }
@@ -222,11 +214,7 @@ func TestReportNothingToDo(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
 			ReportNothingToDo(o, tt.args.cmd, tt.args.fields)
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("ReportNothingToDo() %s", issue)
-				}
-			}
+			o.Report(t, "ReportNothingToDo()", tt.WantedRecording)
 		})
 	}
 }
@@ -313,16 +301,12 @@ func Test_determineDefaultCommand(t *testing.T) {
 			o := output.NewRecorder()
 			gotDefaultCommand, gotOk := determineDefaultCommand(o, tt.args.c)
 			if gotDefaultCommand != tt.wantDefaultCommand {
-				t.Errorf("defaultSettings() gotDefaultCommand = %v, want %v", gotDefaultCommand, tt.wantDefaultCommand)
+				t.Errorf("determineDefaultCommand() gotDefaultCommand = %v, want %v", gotDefaultCommand, tt.wantDefaultCommand)
 			}
 			if gotOk != tt.wantOk {
-				t.Errorf("defaultSettings() gotOk = %v, want %v", gotOk, tt.wantOk)
+				t.Errorf("determineDefaultCommand() gotOk = %v, want %v", gotOk, tt.wantOk)
 			}
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("defaultSettings() %s", issue)
-				}
-			}
+			o.Report(t, "determineDefaultCommand()", tt.WantedRecording)
 		})
 	}
 }
@@ -483,11 +467,7 @@ func Test_selectCommand(t *testing.T) {
 			if gotOk != tt.wantOk {
 				t.Errorf("selectCommand() gotOk = %v, want %v", gotOk, tt.wantOk)
 			}
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("selectCommand() %s", issue)
-				}
-			}
+			o.Report(t, "selectCommand()", tt.WantedRecording)
 		})
 	}
 }

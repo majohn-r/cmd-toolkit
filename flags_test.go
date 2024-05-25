@@ -128,11 +128,7 @@ func TestProcessArgs(t *testing.T) {
 			if gotOk := ProcessArgs(o, tt.args.f, tt.args.rawArgs); gotOk != tt.wantOk {
 				t.Errorf("ProcessArgs() = %v, want %v", gotOk, tt.wantOk)
 			}
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("ProcessArgs() %s", issue)
-				}
-			}
+			o.Report(t, "ProcessArgs()", tt.WantedRecording)
 		})
 	}
 }

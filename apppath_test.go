@@ -134,11 +134,7 @@ func TestInitApplicationPath(t *testing.T) {
 			if gotInitialized := InitApplicationPath(o); gotInitialized != tt.wantInitialized {
 				t.Errorf("InitApplicationPath() = %v, want %v", gotInitialized, tt.wantInitialized)
 			}
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("InitApplicationPath() %s", issue)
-				}
-			}
+			o.Report(t, "InitApplicationPath()", tt.WantedRecording)
 		})
 	}
 }

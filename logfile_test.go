@@ -104,11 +104,7 @@ func Test_initWriter(t *testing.T) {
 			if got := LogPath(); got != tt.wantLogPath {
 				t.Errorf("initWriter() got logPath=%q, want %q", got, tt.wantLogPath)
 			}
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("initWriter() %s", issue)
-				}
-			}
+			o.Report(t, "initWriter()", tt.WantedRecording)
 		})
 	}
 }
@@ -197,11 +193,7 @@ func Test_cleanup(t *testing.T) {
 			if gotDeleted != tt.wantDeleted {
 				t.Errorf("cleanup() deleted %d want %d", gotDeleted, tt.wantDeleted)
 			}
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("cleanup() %s", issue)
-				}
-			}
+			o.Report(t, "cleanup()", tt.WantedRecording)
 		})
 	}
 }
@@ -240,11 +232,7 @@ func Test_deleteLogFile(t *testing.T) {
 			tt.preTest()
 			o := output.NewRecorder()
 			deleteLogFile(o, tt.args.logFile)
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("deleteLogFile() %s", issue)
-				}
-			}
+			o.Report(t, "deleteLogFile()", tt.WantedRecording)
 		})
 	}
 }
@@ -305,11 +293,7 @@ func Test_findTemp(t *testing.T) {
 			if got1 != tt.want1 {
 				t.Errorf("findTemp() got1 = %v, want %v", got1, tt.want1)
 			}
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("findTemp() %s", issue)
-				}
-			}
+			o.Report(t, "findTemp()", tt.WantedRecording)
 		})
 	}
 }

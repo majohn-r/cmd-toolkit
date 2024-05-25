@@ -115,11 +115,7 @@ func TestNewConfiguration(t *testing.T) {
 			if got := NewConfiguration(o, tt.args.data); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewConfiguration() = %v, want %v", got, tt.want)
 			}
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("NewConfiguration() %s", issue)
-				}
-			}
+			o.Report(t, "NewConfiguration()", tt.WantedRecording)
 		})
 	}
 }
@@ -248,11 +244,7 @@ func TestReadConfigurationFile(t *testing.T) {
 			if gotOk != tt.wantOk {
 				t.Errorf("ReadConfigurationFile() gotOk = %v, want %v", gotOk, tt.wantOk)
 			}
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("ReadConfigurationFile() %s", issue)
-				}
-			}
+			o.Report(t, "ReadConfigurationFile()", tt.WantedRecording)
 		})
 	}
 }
@@ -285,11 +277,7 @@ func TestReportInvalidConfigurationData(t *testing.T) {
 			defaultConfigFileName = tt.defaultConfigFileName
 			o := output.NewRecorder()
 			ReportInvalidConfigurationData(o, tt.args.s, tt.args.e)
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("ReportInvalidConfigurationData() %s", issue)
-				}
-			}
+			o.Report(t, "ReportInvalidConfigurationData()", tt.WantedRecording)
 		})
 	}
 }
@@ -370,11 +358,7 @@ func Test_verifyDefaultConfigFileExists(t *testing.T) {
 			if gotOk != tt.wantOk {
 				t.Errorf("verifyDefaultConfigFileExists() = %v, want %v", gotOk, tt.wantOk)
 			}
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("verifyDefaultConfigFileExists() %s", issue)
-				}
-			}
+			o.Report(t, "verifyDefaultConfigFileExists()", tt.WantedRecording)
 		})
 	}
 }

@@ -201,11 +201,7 @@ func TestLogFileDeletionFailure(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
 			LogFileDeletionFailure(o, tt.args.s, tt.args.e)
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("LogFileDeletionFailure() %s", issue)
-				}
-			}
+			o.Report(t, "LogFileDeletionFailure()", tt.WantedRecording)
 		})
 	}
 }
@@ -228,11 +224,7 @@ func TestLogUnreadableDirectory(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
 			LogUnreadableDirectory(o, tt.args.s, tt.args.e)
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("LogUnreadableDirectory() %s", issue)
-				}
-			}
+			o.Report(t, "LogUnreadableDirectory()", tt.WantedRecording)
 		})
 	}
 }
@@ -395,11 +387,7 @@ func TestReadDirectory(t *testing.T) {
 			if gotOk != tt.wantOk {
 				t.Errorf("ReadDirectory() gotOk = %v, want %v", gotOk, tt.wantOk)
 			}
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("ReadDirectory() %s", issue)
-				}
-			}
+			o.Report(t, "ReadDirectory()", tt.WantedRecording)
 		})
 	}
 }
@@ -426,11 +414,7 @@ func TestReportDirectoryCreationFailure(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
 			ReportDirectoryCreationFailure(o, tt.args.cmd, tt.args.dir, tt.args.e)
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("ReportDirectoryCreationFailure() %s", issue)
-				}
-			}
+			o.Report(t, "ReportDirectoryCreationFailure()", tt.WantedRecording)
 		})
 	}
 }
@@ -457,11 +441,7 @@ func TestReportFileCreationFailure(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
 			ReportFileCreationFailure(o, tt.args.cmd, tt.args.file, tt.args.e)
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("ReportFileCreationFailure() %s", issue)
-				}
-			}
+			o.Report(t, "ReportFileCreationFailure()", tt.WantedRecording)
 		})
 	}
 }
@@ -487,11 +467,7 @@ func TestReportFileDeletionFailure(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
 			ReportFileDeletionFailure(o, tt.args.file, tt.args.e)
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("ReportFileDeletionFailure() %s", issue)
-				}
-			}
+			o.Report(t, "ReportFileDeletionFailure()", tt.WantedRecording)
 		})
 	}
 }
@@ -535,11 +511,7 @@ func TestWriteDirectoryCreationError(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
 			WriteDirectoryCreationError(o, tt.args.d, tt.args.e)
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("WriteDirectoryCreationError() %s", issue)
-				}
-			}
+			o.Report(t, "WriteDirectoryCreationError()", tt.WantedRecording)
 		})
 	}
 }

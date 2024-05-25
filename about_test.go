@@ -234,11 +234,7 @@ func Test_finalYear(t *testing.T) {
 			if got := finalYear(o, tt.args.timestamp); got != tt.want {
 				t.Errorf("finalYear() = %v, want %v", got, tt.want)
 			}
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("finalYear() %s", issue)
-				}
-			}
+			o.Report(t, "finalYear()", tt.WantedRecording)
 		})
 	}
 }
@@ -384,11 +380,7 @@ func Test_reportAbout(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
 			reportAbout(o, tt.args.lines)
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("reportAbout() %s", issue)
-				}
-			}
+			o.Report(t, "reportAbout()", tt.WantedRecording)
 		})
 	}
 }
@@ -518,11 +510,7 @@ func Test_aboutCmd_Exec(t *testing.T) {
 			if gotOk := a.Exec(o, tt.args.args); gotOk != tt.wantOk {
 				t.Errorf("aboutCmd.Exec() = %v, want %v", gotOk, tt.wantOk)
 			}
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("aboutCmd.Exec() %s", issue)
-				}
-			}
+			o.Report(t, "aboutCmd.Exec()", tt.WantedRecording)
 		})
 	}
 }
@@ -548,11 +536,7 @@ func Test_newAboutCmd(t *testing.T) {
 			if got1 != tt.want1 {
 				t.Errorf("newAboutCmd() got1 = %v, want %v", got1, tt.want1)
 			}
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("newAboutCmd() %s", issue)
-				}
-			}
+			o.Report(t, "newAboutCmd()", tt.WantedRecording)
 		})
 	}
 }
@@ -602,11 +586,7 @@ func TestCopyright(t *testing.T) {
 			if got := Copyright(o, tt.args.first, tt.args.timestamp, tt.args.owner); got != tt.want {
 				t.Errorf("Copyright() = %v, want %v", got, tt.want)
 			}
-			if issues, verified := o.Verify(tt.WantedRecording); !verified {
-				for _, issue := range issues {
-					t.Errorf("Copyright() %s", issue)
-				}
-			}
+			o.Report(t, "Copyright()", tt.WantedRecording)
 		})
 	}
 }
