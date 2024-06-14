@@ -40,22 +40,23 @@ func TestCreateAppSpecificPath(t *testing.T) {
 	defer func() {
 		appname = savedAppname
 	}()
-	type args struct {
-		topDir string
-	}
 	tests := map[string]struct {
 		appname string
-		args
+		topDir  string
 		want    string
 		wantErr bool
 	}{
 		"uninitialized appname": {wantErr: true},
-		"initialized appname":   {appname: "myApp", args: args{topDir: "dir"}, want: filepath.Join("dir", "myApp")},
+		"initialized appname": {
+			appname: "myApp",
+			topDir:  "dir",
+			want:    filepath.Join("dir", "myApp"),
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			appname = tt.appname
-			got, gotErr := CreateAppSpecificPath(tt.args.topDir)
+			got, gotErr := CreateAppSpecificPath(tt.topDir)
 			if (gotErr != nil) != tt.wantErr {
 				t.Errorf("CreateAppSpecificPath() error = %v, wantErr %v", gotErr, tt.wantErr)
 				return
@@ -68,23 +69,20 @@ func TestCreateAppSpecificPath(t *testing.T) {
 }
 
 func TestDereferenceEnvVar(t *testing.T) {
-	type args struct {
-		s string
-	}
 	tests := map[string]struct {
 		varSettings map[string]string
-		args
-		want    string
-		wantErr bool
+		s           string
+		want        string
+		wantErr     bool
 	}{
-		"no references": {args: args{s: "no references here"}, want: "no references here"},
+		"no references": {s: "no references here", want: "no references here"},
 		"many references": {
 			varSettings: map[string]string{
 				"VAR1":     "firstVar",
 				"VAR1USER": "secondVar",
 				"VAR2":     "thirdVar",
 			},
-			args: args{s: "$VAR1 $VAR1USER $VAR2 $VAR2, %VAR1% %VAR1USER% %VAR2%"},
+			s:    "$VAR1 $VAR1USER $VAR2 $VAR2, %VAR1% %VAR1USER% %VAR2%",
 			want: "firstVar secondVar thirdVar thirdVar, firstVar secondVar thirdVar",
 		},
 		"missing references": {
@@ -93,7 +91,7 @@ func TestDereferenceEnvVar(t *testing.T) {
 				"VAR1USER": "secondVar",
 				"VAR2":     "thirdVar",
 			},
-			args:    args{s: "$VAR1 $VAR1USER $VAR2 $VAR2 $VAR3, %VAR1% %VAR1USER% %VAR2% %VAR3%"},
+			s:       "$VAR1 $VAR1USER $VAR2 $VAR2 $VAR3, %VAR1% %VAR1USER% %VAR2% %VAR3%",
 			wantErr: true,
 		},
 	}
@@ -113,7 +111,7 @@ func TestDereferenceEnvVar(t *testing.T) {
 					memento.Restore()
 				}
 			}()
-			got, gotErr := DereferenceEnvVar(tt.args.s)
+			got, gotErr := DereferenceEnvVar(tt.s)
 			if (gotErr != nil) != tt.wantErr {
 				t.Errorf("DereferenceEnvVar() error = %v, wantErr %v", gotErr, tt.wantErr)
 				return
@@ -135,17 +133,28 @@ func TestNewEnvVarMemento(t *testing.T) {
 			os.Unsetenv(varName)
 		}
 	}()
-	type args struct {
-		name string
-	}
 	tests := map[string]struct {
 		value string
 		set   bool
-		args
-		want *EnvVarMemento
+		name  string
+		want  *EnvVarMemento
 	}{
-		"set":   {value: "the value", set: true, args: args{name: varName}, want: &EnvVarMemento{name: varName, value: "the value", set: true}},
-		"unset": {args: args{name: varName}, want: &EnvVarMemento{name: varName}},
+		"set": {
+			value: "the value",
+			set:   true,
+			name:  varName,
+			want: &EnvVarMemento{
+				name:  varName,
+				value: "the value",
+				set:   true,
+			},
+		},
+		"unset": {
+			name: varName,
+			want: &EnvVarMemento{
+				name: varName,
+			},
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -154,7 +163,7 @@ func TestNewEnvVarMemento(t *testing.T) {
 			} else {
 				os.Unsetenv(varName)
 			}
-			if got := NewEnvVarMemento(tt.args.name); !reflect.DeepEqual(got, tt.want) {
+			if got := NewEnvVarMemento(tt.name); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewEnvVarMemento() = %v, want %v", got, tt.want)
 			}
 		})
@@ -166,23 +175,20 @@ func TestSetAppName(t *testing.T) {
 	defer func() {
 		appname = savedAppname
 	}()
-	type args struct {
-		s string
-	}
 	tests := map[string]struct {
 		appname string
-		args
+		s       string
 		wantErr bool
 	}{
-		"unset, set to empty":         {args: args{}, wantErr: true},
-		"unset, set to non-empty":     {args: args{s: "myApp"}},
-		"set, set to same value":      {appname: "myApp", args: args{s: "myApp"}},
-		"set, set to different value": {appname: "myApp", args: args{s: "myOtherApp"}, wantErr: true},
+		"unset, set to empty":         {wantErr: true},
+		"unset, set to non-empty":     {s: "myApp"},
+		"set, set to same value":      {appname: "myApp", s: "myApp"},
+		"set, set to different value": {appname: "myApp", s: "myOtherApp", wantErr: true},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			appname = tt.appname
-			if gotErr := SetAppName(tt.args.s); (gotErr != nil) != tt.wantErr {
+			if gotErr := SetAppName(tt.s); (gotErr != nil) != tt.wantErr {
 				t.Errorf("SetAppName() error = %v, wantErr %v", gotErr, tt.wantErr)
 			}
 		})
@@ -190,24 +196,21 @@ func TestSetAppName(t *testing.T) {
 }
 
 func Test_findReferences(t *testing.T) {
-	type args struct {
-		s string
-	}
 	tests := map[string]struct {
-		args
+		s    string
 		want []string
 	}{
 		"no references": {
-			args: args{s: "no references here, not even this: %VAR1"},
+			s:    "no references here, not even this: %VAR1",
 			want: make([]string, 0),
 		},
 		"many references": {
-			args: args{s: "$VAR1 $VAR11 $VAR111 $VAR1 %VAR2% %VAR22% %VAR222% %VAR222%"},
+			s:    "$VAR1 $VAR11 $VAR111 $VAR1 %VAR2% %VAR22% %VAR222% %VAR222%",
 			want: []string{"$VAR111", "$VAR11", "$VAR1", "%VAR2%", "%VAR22%", "%VAR222%"}},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if got := findReferences(tt.args.s); !reflect.DeepEqual(got, tt.want) {
+			if got := findReferences(tt.s); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("findReferences() = %v, want %v", got, tt.want)
 			}
 		})

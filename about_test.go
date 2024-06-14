@@ -159,18 +159,15 @@ func TestSetAuthor(t *testing.T) {
 	defer func() {
 		author = savedAuthor
 	}()
-	type args struct {
-		s string
-	}
 	tests := map[string]struct {
-		args
+		s    string
 		want string
 	}{
-		"simple": {args: args{s: "a brilliant author"}, want: "a brilliant author"},
+		"simple": {s: "a brilliant author", want: "a brilliant author"},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			SetAuthor(tt.args.s)
+			SetAuthor(tt.s)
 			if got := author; got != tt.want {
 				t.Errorf("SetAuthor() got %q want %q", got, tt.want)
 			}
@@ -183,18 +180,15 @@ func Test_setFirstYear(t *testing.T) {
 	defer func() {
 		firstYear = savedFirstYear
 	}()
-	type args struct {
-		i int
-	}
 	tests := map[string]struct {
-		args
+		i    int
 		want int
 	}{
-		"simple": {args: args{i: 2022}, want: 2022},
+		"simple": {i: 2022, want: 2022},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			SetFirstYear(tt.args.i)
+			SetFirstYear(tt.i)
 			if got := firstYear; got != tt.want {
 				t.Errorf("setFirstYear() got %d want %d", got, tt.want)
 			}
@@ -207,31 +201,32 @@ func Test_finalYear(t *testing.T) {
 	defer func() {
 		firstYear = savedFirstYear
 	}()
-	type args struct {
-		timestamp string
-	}
 	tests := map[string]struct {
 		firstYear int
-		args
-		want int
+		timestamp string
+		want      int
 		output.WantedRecording
 	}{
 		"bad timestamp": {
 			firstYear: 1900,
-			args:      args{timestamp: "today"},
+			timestamp: "today",
 			want:      1900,
 			WantedRecording: output.WantedRecording{
 				Error: "The build time \"today\" cannot be parsed: parsing time \"today\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"today\" as \"2006\".\n",
 				Log:   "level='error' error='parsing time \"today\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"today\" as \"2006\"' value='today' msg='parse error'\n",
 			},
 		},
-		"good timestamp": {firstYear: 1999, args: args{timestamp: "2022-08-10T13:29:57-04:00"}, want: 2022},
+		"good timestamp": {
+			firstYear: 1999,
+			timestamp: "2022-08-10T13:29:57-04:00",
+			want:      2022,
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			firstYear = tt.firstYear
 			o := output.NewRecorder()
-			if got := finalYear(o, tt.args.timestamp); got != tt.want {
+			if got := finalYear(o, tt.timestamp); got != tt.want {
 				t.Errorf("finalYear() = %v, want %v", got, tt.want)
 			}
 			o.Report(t, "finalYear()", tt.WantedRecording)
@@ -317,16 +312,16 @@ func Test_formatCopyright(t *testing.T) {
 }
 
 func Test_reportAbout(t *testing.T) {
-	type args struct {
-		lines []string
-	}
 	tests := map[string]struct {
-		args
+		lines []string
 		output.WantedRecording
 	}{
-		"empty": {args: args{lines: nil}, WantedRecording: output.WantedRecording{Console: "+--+\n+--+\n"}},
+		"empty": {
+			lines:           nil,
+			WantedRecording: output.WantedRecording{Console: "+--+\n+--+\n"},
+		},
 		"typical": {
-			args: args{lines: []string{
+			lines: []string{
 				"mp3 version 0.33.4, built on Sunday, January 22 2023, 17:44:40 EST",
 				"Copyright © 2021-2023 Marc Johnson",
 				"Build Information",
@@ -347,7 +342,6 @@ func Test_reportAbout(t *testing.T) {
 				" - Dependency: golang.org/x/sys v0.4.0",
 				" - Dependency: golang.org/x/text v0.5.0",
 				" - Dependency: gopkg.in/yaml.v3 v3.0.1",
-			},
 			},
 			WantedRecording: output.WantedRecording{
 				Console: "" +
@@ -379,29 +373,32 @@ func Test_reportAbout(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
-			reportAbout(o, tt.args.lines)
+			reportAbout(o, tt.lines)
 			o.Report(t, "reportAbout()", tt.WantedRecording)
 		})
 	}
 }
 
 func Test_translateTimestamp(t *testing.T) {
-	type args struct {
-		s string
-	}
 	tests := map[string]struct {
-		args
 		// note, this is what the output should start with; for reasons I do not
 		// understand, there is some variation as to how the timezone is written
 		// at the end
+		s           string
 		wantMinusTZ string
 	}{
-		"bad input":  {args: args{s: "today"}, wantMinusTZ: "today"},
-		"good input": {args: args{s: "2022-08-10T13:29:57-04:00"}, wantMinusTZ: "Wednesday, August 10 2022, 13:29:57"},
+		"bad input": {
+			s:           "today",
+			wantMinusTZ: "today",
+		},
+		"good input": {
+			s:           "2022-08-10T13:29:57-04:00",
+			wantMinusTZ: "Wednesday, August 10 2022, 13:29:57",
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if got := translateTimestamp(tt.args.s); !strings.HasPrefix(got, tt.wantMinusTZ) {
+			if got := translateTimestamp(tt.s); !strings.HasPrefix(got, tt.wantMinusTZ) {
 				t.Errorf("translateTimestamp() = %v, want %v", got, tt.wantMinusTZ)
 			}
 		})
@@ -426,9 +423,6 @@ func Test_aboutCmd_Exec(t *testing.T) {
 		buildTimestamp = savedBuildTimestamp
 		firstYear = savedFirstYear
 	}()
-	type args struct {
-		args []string
-	}
 	tests := map[string]struct {
 		appname           string
 		goVersion         string
@@ -436,8 +430,8 @@ func Test_aboutCmd_Exec(t *testing.T) {
 		appVersion        string
 		buildTimestamp    string
 		firstYear         int
-		args
-		wantOk bool
+		args              []string
+		wantOk            bool
 		output.WantedRecording
 	}{
 		"no appname": {
@@ -447,7 +441,6 @@ func Test_aboutCmd_Exec(t *testing.T) {
 			appVersion:        "0.0.1beta",
 			buildTimestamp:    "whenever",
 			firstYear:         2020,
-			args:              args{},
 			wantOk:            true,
 			WantedRecording: output.WantedRecording{
 				Console: "" +
@@ -476,7 +469,6 @@ func Test_aboutCmd_Exec(t *testing.T) {
 			appVersion:     "1.2.3",
 			buildTimestamp: "today",
 			firstYear:      2021,
-			args:           args{},
 			wantOk:         true,
 			WantedRecording: output.WantedRecording{
 				Console: "" +
@@ -507,7 +499,7 @@ func Test_aboutCmd_Exec(t *testing.T) {
 			firstYear = tt.firstYear
 			a := makeAboutCmd()
 			o := output.NewRecorder()
-			if gotOk := a.Exec(o, tt.args.args); gotOk != tt.wantOk {
+			if gotOk := a.Exec(o, tt.args); gotOk != tt.wantOk {
 				t.Errorf("aboutCmd.Exec() = %v, want %v", gotOk, tt.wantOk)
 			}
 			o.Report(t, "aboutCmd.Exec()", tt.WantedRecording)

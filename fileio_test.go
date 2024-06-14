@@ -163,20 +163,17 @@ func TestCreateFileInDirectory(t *testing.T) {
 }
 
 func TestDirExists(t *testing.T) {
-	type args struct {
-		path string
-	}
 	tests := map[string]struct {
-		args
+		path string
 		want bool
 	}{
-		"dir":               {args: args{path: "."}, want: true},
-		"file":              {args: args{path: "fileio_test.go"}, want: false},
-		"non-existent file": {args: args{path: "no such dir"}, want: false},
+		"dir":               {path: ".", want: true},
+		"file":              {path: "fileio_test.go", want: false},
+		"non-existent file": {path: "no such dir", want: false},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if got := DirExists(tt.args.path); got != tt.want {
+			if got := DirExists(tt.path); got != tt.want {
 				t.Errorf("DirExists() = %v, want %v", got, tt.want)
 			}
 		})
@@ -235,17 +232,14 @@ func TestMkdir(t *testing.T) {
 		fileSystem = originalFileSystem
 	}()
 	fileSystem = afero.NewMemMapFs()
-	type args struct {
-		dir string
-	}
 	tests := map[string]struct {
 		preTest func()
-		args
+		dir     string
 		wantErr bool
 	}{
 		"subdirectory of non-existent directory": {
 			preTest: func() {},
-			args:    args{dir: filepath.Join("non-existent directory", "subdir")},
+			dir:     filepath.Join("non-existent directory", "subdir"),
 			wantErr: true,
 		},
 		"dir is a plain file": {
@@ -253,28 +247,28 @@ func TestMkdir(t *testing.T) {
 				fileSystem.Mkdir("plainfile", StdDirPermissions)
 				afero.WriteFile(fileSystem, filepath.Join("plainfile", "subdir"), []byte{0, 1, 2}, StdFilePermissions)
 			},
-			args:    args{dir: filepath.Join("plainfile", "subdir")},
+			dir:     filepath.Join("plainfile", "subdir"),
 			wantErr: true,
 		},
 		"successfully create new directory": {
 			preTest: func() {
 				fileSystem.Mkdir("emptyDir", StdDirPermissions)
 			},
-			args:    args{dir: filepath.Join("emptyDir", "subdir")},
+			dir:     filepath.Join("emptyDir", "subdir"),
 			wantErr: false,
 		},
 		"directory already exists": {
 			preTest: func() {
 				fileSystem.MkdirAll(filepath.Join("dirExists", "subdir"), StdDirPermissions)
 			},
-			args:    args{dir: filepath.Join("dirExists", "subdir")},
+			dir:     filepath.Join("dirExists", "subdir"),
 			wantErr: false,
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
-			if gotErr := Mkdir(tt.args.dir); (gotErr != nil) != tt.wantErr {
+			if gotErr := Mkdir(tt.dir); (gotErr != nil) != tt.wantErr {
 				t.Errorf("Mkdir() error = %v, wantErr %v", gotErr, tt.wantErr)
 			}
 		})
@@ -287,24 +281,21 @@ func TestPlainFileExists(t *testing.T) {
 		fileSystem = originalFileSystem
 	}()
 	fileSystem = afero.NewMemMapFs()
-	type args struct {
-		path string
-	}
 	tests := map[string]struct {
 		preTest func()
-		args
-		want bool
+		path    string
+		want    bool
 	}{
 		"non-existent file": {
 			preTest: func() {},
-			args:    args{path: "file"},
+			path:    "file",
 			want:    false,
 		},
 		"directory": {
 			preTest: func() {
 				fileSystem.Mkdir("file", StdDirPermissions)
 			},
-			args: args{path: "file"},
+			path: "file",
 			want: false,
 		},
 		"real file": {
@@ -312,14 +303,14 @@ func TestPlainFileExists(t *testing.T) {
 				fileSystem.Mkdir("dir", StdDirPermissions)
 				afero.WriteFile(fileSystem, filepath.Join("dir", "file"), []byte{0, 1, 2}, StdFilePermissions)
 			},
-			args: args{path: filepath.Join("dir", "file")},
+			path: filepath.Join("dir", "file"),
 			want: true,
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
-			if got := PlainFileExists(tt.args.path); got != tt.want {
+			if got := PlainFileExists(tt.path); got != tt.want {
 				t.Errorf("PlainFileExists() = %v, want %v", got, tt.want)
 			}
 		})
@@ -332,19 +323,16 @@ func TestReadDirectory(t *testing.T) {
 		fileSystem = originalFileSystem
 	}()
 	fileSystem = afero.NewMemMapFs()
-	type args struct {
-		dir string
-	}
 	tests := map[string]struct {
-		preTest func()
-		args
+		preTest         func()
+		dir             string
 		wantFilesLength int
 		wantOk          bool
 		output.WantedRecording
 	}{
 		"non-existent directory": {
 			preTest: func() {},
-			args:    args{dir: "no such dir"},
+			dir:     "no such dir",
 			wantOk:  false,
 			WantedRecording: output.WantedRecording{
 				Error: "The directory \"no such dir\" cannot be read: open no such dir: file does not exist.\n",
@@ -355,7 +343,7 @@ func TestReadDirectory(t *testing.T) {
 			preTest: func() {
 				fileSystem.Mkdir("empty", StdDirPermissions)
 			},
-			args:            args{dir: "empty"},
+			dir:             "empty",
 			wantFilesLength: 0,
 			wantOk:          true,
 		},
@@ -371,7 +359,7 @@ func TestReadDirectory(t *testing.T) {
 					fileSystem.Mkdir(filepath.Join("full", subdir), StdDirPermissions)
 				}
 			},
-			args:            args{dir: "full"},
+			dir:             "full",
 			wantFilesLength: 6,
 			wantOk:          true,
 		},
@@ -380,7 +368,7 @@ func TestReadDirectory(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
 			o := output.NewRecorder()
-			gotFiles, gotOk := ReadDirectory(o, tt.args.dir)
+			gotFiles, gotOk := ReadDirectory(o, tt.dir)
 			if len(gotFiles) != tt.wantFilesLength {
 				t.Errorf("ReadDirectory() got %d files, want %d", len(gotFiles), tt.wantFilesLength)
 			}
@@ -474,19 +462,16 @@ func TestReportFileDeletionFailure(t *testing.T) {
 
 func TestSecureAbsolutePath(t *testing.T) {
 	goodFilePath, _ := filepath.Abs("goodFile")
-	type args struct {
-		path string
-	}
 	tests := map[string]struct {
-		args
+		path string
 		want string
 	}{
-		"bad file name":  {args: args{path: "badFile\u0000"}, want: ""},
-		"good file name": {args: args{path: "goodFile"}, want: goodFilePath},
+		"bad file name":  {path: "badFile\u0000", want: ""},
+		"good file name": {path: "goodFile", want: goodFilePath},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if got := SecureAbsolutePath(tt.args.path); got != tt.want {
+			if got := SecureAbsolutePath(tt.path); got != tt.want {
 				t.Errorf("SecureAbsolutePath() = %v, want %v", got, tt.want)
 			}
 		})

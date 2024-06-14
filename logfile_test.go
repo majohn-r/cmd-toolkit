@@ -115,13 +115,10 @@ func Test_cleanup(t *testing.T) {
 		fileSystem = originalFileSystem
 	}()
 	fileSystem = afero.NewMemMapFs()
-	type args struct {
-		path string
-	}
 	tests := map[string]struct {
-		preTest  func()
-		postTest func(t *testing.T)
-		args
+		preTest     func()
+		postTest    func(t *testing.T)
+		path        string
 		wantFound   int
 		wantDeleted int
 		output.WantedRecording
@@ -129,7 +126,7 @@ func Test_cleanup(t *testing.T) {
 		"non-existent directory": {
 			preTest:  func() {},
 			postTest: func(t *testing.T) {},
-			args:     args{path: "no such directory"},
+			path:     "no such directory",
 			WantedRecording: output.WantedRecording{
 				Error: "The directory \"no such directory\" cannot be read: open no such directory: file does not exist.\n",
 				Log:   "level='error' directory='no such directory' error='open no such directory: file does not exist' msg='cannot read directory'\n",
@@ -140,7 +137,7 @@ func Test_cleanup(t *testing.T) {
 				fileSystem.Mkdir("empty", StdDirPermissions)
 			},
 			postTest: func(_ *testing.T) {},
-			args:     args{path: "empty"},
+			path:     "empty",
 		},
 		"maxLogFiles present": {
 			preTest: func() {
@@ -152,7 +149,7 @@ func Test_cleanup(t *testing.T) {
 				}
 			},
 			postTest:  func(_ *testing.T) {},
-			args:      args{path: "maxLogFiles"},
+			path:      "maxLogFiles",
 			wantFound: maxLogFiles,
 		},
 		"lots of files present": {
@@ -176,7 +173,7 @@ func Test_cleanup(t *testing.T) {
 					t.Fail()
 				}
 			},
-			args:        args{path: "manyLogFiles"},
+			path:        "manyLogFiles",
 			wantFound:   maxLogFiles + 1,
 			wantDeleted: 1,
 		},
@@ -186,7 +183,7 @@ func Test_cleanup(t *testing.T) {
 			tt.preTest()
 			defer tt.postTest(t)
 			o := output.NewRecorder()
-			gotFound, gotDeleted := cleanup(o, tt.args.path)
+			gotFound, gotDeleted := cleanup(o, tt.path)
 			if gotFound != tt.wantFound {
 				t.Errorf("cleanup() found %d want %d", gotFound, tt.wantFound)
 			}
@@ -204,17 +201,14 @@ func Test_deleteLogFile(t *testing.T) {
 		fileSystem = originalFileSystem
 	}()
 	fileSystem = afero.NewMemMapFs()
-	type args struct {
-		logFile string
-	}
 	tests := map[string]struct {
 		preTest func()
-		args
+		logFile string
 		output.WantedRecording
 	}{
 		"failure": {
 			preTest: func() {},
-			args:    args{logFile: "no such file"},
+			logFile: "no such file",
 			WantedRecording: output.WantedRecording{
 				Error: "The log file \"no such file\" cannot be deleted: remove no such file: file does not exist.\n",
 			},
@@ -224,14 +218,14 @@ func Test_deleteLogFile(t *testing.T) {
 				fileSystem.Mkdir("logs", StdDirPermissions)
 				afero.WriteFile(fileSystem, filepath.Join("logs", "file.log"), []byte{}, StdFilePermissions)
 			},
-			args: args{logFile: filepath.Join("logs", "file.log")},
+			logFile: filepath.Join("logs", "file.log"),
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
 			o := output.NewRecorder()
-			deleteLogFile(o, tt.args.logFile)
+			deleteLogFile(o, tt.logFile)
 			o.Report(t, "deleteLogFile()", tt.WantedRecording)
 		})
 	}
@@ -328,30 +322,39 @@ func (f fi) Sys() any {
 }
 
 func Test_isLogFile(t *testing.T) {
-	type args struct {
-		file fs.FileInfo
-	}
 	tests := map[string]struct {
-		args
+		file   fs.FileInfo
 		wantOk bool
 	}{
 		"directory": {
-			args: args{file: fi{name: fmt.Sprintf("%s-dir-%s", logFilePrefix(), logFileExtension), mode: fs.ModeDir}},
+			file: fi{
+				name: fmt.Sprintf("%s-dir-%s", logFilePrefix(), logFileExtension),
+				mode: fs.ModeDir,
+			},
 		},
 		"symbolic link": {
-			args: args{file: fi{name: fmt.Sprintf("%s-dir-%s", logFilePrefix(), logFileExtension), mode: fs.ModeSymlink}},
+			file: fi{
+				name: fmt.Sprintf("%s-dir-%s", logFilePrefix(), logFileExtension),
+				mode: fs.ModeSymlink,
+			},
 		},
 		"badly named file": {
-			args: args{file: fi{name: "foo", mode: 0}},
+			file: fi{
+				name: "foo",
+				mode: 0,
+			},
 		},
 		"well named file": {
-			args:   args{file: fi{name: fmt.Sprintf("%sxx%s", logFilePrefix(), logFileExtension), mode: 0}},
+			file: fi{
+				name: fmt.Sprintf("%sxx%s", logFilePrefix(), logFileExtension),
+				mode: 0,
+			},
 			wantOk: true,
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if gotOk := isLogFile(tt.args.file); gotOk != tt.wantOk {
+			if gotOk := isLogFile(tt.file); gotOk != tt.wantOk {
 				t.Errorf("isLogFile() = %v, want %v", gotOk, tt.wantOk)
 			}
 		})

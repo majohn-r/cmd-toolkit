@@ -144,22 +144,19 @@ func TestSetApplicationPath(t *testing.T) {
 	defer func() {
 		applicationPath = savedApplicationPath
 	}()
-	type args struct {
-		s string
-	}
 	tests := map[string]struct {
 		applicationPath string
-		args
-		wantPrevious string
-	}{"simple": {applicationPath: "foo", args: args{s: "bar"}, wantPrevious: "foo"}}
+		s               string
+		wantPrevious    string
+	}{"simple": {applicationPath: "foo", s: "bar", wantPrevious: "foo"}}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			applicationPath = tt.applicationPath
-			if gotPrevious := SetApplicationPath(tt.args.s); gotPrevious != tt.wantPrevious {
+			if gotPrevious := SetApplicationPath(tt.s); gotPrevious != tt.wantPrevious {
 				t.Errorf("SetApplicationPath() = %v, want %v", gotPrevious, tt.wantPrevious)
 			}
-			if gotNew := applicationPath; gotNew != tt.args.s {
-				t.Errorf("SetApplicationPath() gotNew = %v, want %v", gotNew, tt.args.s)
+			if gotNew := applicationPath; gotNew != tt.s {
+				t.Errorf("SetApplicationPath() gotNew = %v, want %v", gotNew, tt.s)
 			}
 		})
 	}

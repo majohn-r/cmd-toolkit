@@ -15,21 +15,16 @@ func TestAddCommandData(t *testing.T) {
 	defer func() {
 		descriptions = savedDescriptions
 	}()
-	type args struct {
+	tests := map[string]struct {
 		name string
 		d    *CommandDescription
-	}
-	tests := map[string]struct {
-		args
 	}{
 		"typical": {
-			args: args{
-				name: "myCommand",
-				d: &CommandDescription{
-					IsDefault: true,
-					Initializer: func(b output.Bus, c *Configuration, fs *flag.FlagSet) (CommandProcessor, bool) {
-						return nil, false
-					},
+			name: "myCommand",
+			d: &CommandDescription{
+				IsDefault: true,
+				Initializer: func(b output.Bus, c *Configuration, fs *flag.FlagSet) (CommandProcessor, bool) {
+					return nil, false
 				},
 			},
 		},
@@ -37,7 +32,7 @@ func TestAddCommandData(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			descriptions = map[string]*CommandDescription{}
-			AddCommandData(tt.args.name, tt.args.d)
+			AddCommandData(tt.name, tt.d)
 			if got := len(descriptions); got != 1 {
 				t.Errorf("AddCommandData() got %d want 1", got)
 			}
@@ -104,12 +99,9 @@ func TestProcessCommand(t *testing.T) {
 		fileSystem = originalFileSystem
 	}()
 	fileSystem = afero.NewMemMapFs()
-	type args struct {
-		args []string
-	}
 	tests := map[string]struct {
-		preTest func()
-		args
+		preTest     func()
+		args        []string
 		wantCmd     bool
 		wantCmdArgs []string
 		wantOk      bool
@@ -122,7 +114,6 @@ func TestProcessCommand(t *testing.T) {
 				fileName := filepath.Join(applicationPath, defaultConfigFileName)
 				afero.WriteFile(fileSystem, fileName, []byte{1, 2, 3}, StdFilePermissions) // this will not read well as YAML
 			},
-			args: args{},
 			WantedRecording: output.WantedRecording{
 				Error: "The configuration file \"badConfigfile\\\\defaults.yaml\" is not well-formed YAML: yaml: control characters are not allowed.\n",
 				Log:   "level='error' directory='badConfigfile' error='yaml: control characters are not allowed' fileName='defaults.yaml' msg='cannot unmarshal yaml content'\n",
@@ -167,7 +158,7 @@ func TestProcessCommand(t *testing.T) {
 					},
 				}
 			},
-			args:            args{args: []string{"cmd", "-flag1", "-flag2"}},
+			args:            []string{"cmd", "-flag1", "-flag2"},
 			wantCmd:         true,
 			wantCmdArgs:     []string{"-flag1", "-flag2"},
 			wantOk:          true,
@@ -178,7 +169,7 @@ func TestProcessCommand(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
 			o := output.NewRecorder()
-			gotCmd, gotCmdArgs, gotOk := ProcessCommand(o, tt.args.args)
+			gotCmd, gotCmdArgs, gotOk := ProcessCommand(o, tt.args)
 			if (gotCmd != nil) != tt.wantCmd {
 				t.Errorf("ProcessCommand() gotCmd = %v, want %v", gotCmd, tt.wantCmd)
 			}
@@ -224,25 +215,26 @@ func Test_determineDefaultCommand(t *testing.T) {
 	defer func() {
 		descriptions = savedDescriptions
 	}()
-	type args struct {
-		c *Configuration
-	}
 	tests := map[string]struct {
-		descriptions map[string]*CommandDescription
-		args
+		descriptions       map[string]*CommandDescription
+		c                  *Configuration
 		wantDefaultCommand string
 		wantOk             bool
 		output.WantedRecording
 	}{
 		"configured good default": {
-			descriptions:       map[string]*CommandDescription{"about": {}},
-			args:               args{NewConfiguration(output.NewNilBus(), map[string]any{"default": "about"})},
+			descriptions: map[string]*CommandDescription{"about": {}},
+			c: NewConfiguration(output.NewNilBus(), map[string]any{
+				"default": "about",
+			}),
 			wantDefaultCommand: "about",
 			wantOk:             true,
 		},
 		"configured bad default": {
 			descriptions: map[string]*CommandDescription{"about": {}},
-			args:         args{NewConfiguration(output.NewNilBus(), map[string]any{"default": "help"})},
+			c: NewConfiguration(output.NewNilBus(), map[string]any{
+				"default": "help",
+			}),
 			WantedRecording: output.WantedRecording{
 				Error: "The configuration file specifies \"help\" as the default command. There is no such command.\n",
 				Log:   "level='error' command='help' msg='invalid default command'\n",
@@ -250,7 +242,7 @@ func Test_determineDefaultCommand(t *testing.T) {
 		},
 		"no configured default, no commands defined": {
 			descriptions: map[string]*CommandDescription{},
-			args:         args{EmptyConfiguration()},
+			c:            EmptyConfiguration(),
 			WantedRecording: output.WantedRecording{
 				Error: "A programming error has occurred - there are no commands registered!\n",
 				Log:   "level='error'  msg='no commands registered'\n",
@@ -258,7 +250,7 @@ func Test_determineDefaultCommand(t *testing.T) {
 		},
 		"no configured default, exactly one command defined": {
 			descriptions:       map[string]*CommandDescription{"help": {}},
-			args:               args{EmptyConfiguration()},
+			c:                  EmptyConfiguration(),
 			wantDefaultCommand: "help",
 			wantOk:             true,
 		},
@@ -267,7 +259,7 @@ func Test_determineDefaultCommand(t *testing.T) {
 				"help":  {},
 				"about": {},
 			},
-			args: args{EmptyConfiguration()},
+			c: EmptyConfiguration(),
 			WantedRecording: output.WantedRecording{
 				Error: "A programming error has occurred - none of the defined commands is defined as the default command.\n",
 				Log:   "level='error' commands='[about help]' msg='No default command'\n",
@@ -278,7 +270,7 @@ func Test_determineDefaultCommand(t *testing.T) {
 				"help":  {IsDefault: true},
 				"about": {},
 			},
-			args:               args{EmptyConfiguration()},
+			c:                  EmptyConfiguration(),
 			wantDefaultCommand: "help",
 			wantOk:             true,
 		},
@@ -288,7 +280,7 @@ func Test_determineDefaultCommand(t *testing.T) {
 				"about": {IsDefault: true},
 				"other": {},
 			},
-			args: args{EmptyConfiguration()},
+			c: EmptyConfiguration(),
 			WantedRecording: output.WantedRecording{
 				Error: "A programming error has occurred - multiple commands ([about help]) are defined as default commands.\n",
 				Log:   "level='error' commands='[about help]' msg='multiple default commands'\n",
@@ -299,7 +291,7 @@ func Test_determineDefaultCommand(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			descriptions = tt.descriptions
 			o := output.NewRecorder()
-			gotDefaultCommand, gotOk := determineDefaultCommand(o, tt.args.c)
+			gotDefaultCommand, gotOk := determineDefaultCommand(o, tt.c)
 			if gotDefaultCommand != tt.wantDefaultCommand {
 				t.Errorf("determineDefaultCommand() gotDefaultCommand = %v, want %v", gotDefaultCommand, tt.wantDefaultCommand)
 			}
@@ -316,16 +308,12 @@ func Test_describedCommandNames(t *testing.T) {
 	defer func() {
 		descriptions = savedDescriptions
 	}()
-	type args struct {
-		defaultCommand string
-	}
 	tests := map[string]struct {
-		args
-		descriptions map[string]*CommandDescription
-		want         []string
+		defaultCommand string
+		descriptions   map[string]*CommandDescription
+		want           []string
 	}{
 		"no default": {
-			args: args{},
 			descriptions: map[string]*CommandDescription{
 				"someCommand": {},
 				"about":       {},
@@ -334,7 +322,7 @@ func Test_describedCommandNames(t *testing.T) {
 			want: []string{"about", "help", "someCommand"},
 		},
 		"with default": {
-			args: args{defaultCommand: "help"},
+			defaultCommand: "help",
 			descriptions: map[string]*CommandDescription{
 				"someCommand": {},
 				"about":       {},
@@ -346,7 +334,7 @@ func Test_describedCommandNames(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			descriptions = tt.descriptions
-			if got := describedCommandNames(tt.args.defaultCommand); !reflect.DeepEqual(got, tt.want) {
+			if got := describedCommandNames(tt.defaultCommand); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("describedCommandNames() = %v, want %v", got, tt.want)
 			}
 		})

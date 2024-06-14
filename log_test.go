@@ -700,68 +700,261 @@ func Test_simpleLogger_Warning(t *testing.T) {
 }
 
 func Test_simpleLogger_willLog(t *testing.T) {
-	type args struct {
-		l output.Level
-	}
 	tests := map[string]struct {
-		cl output.Level
-		args
+		cl   output.Level
+		l    output.Level
 		want bool
 	}{
-		"debug/debug":     {cl: output.Debug, args: args{l: output.Debug}, want: true},
-		"debug/error":     {cl: output.Debug, args: args{l: output.Error}, want: true},
-		"debug/fatal":     {cl: output.Debug, args: args{l: output.Fatal}, want: true},
-		"debug/info":      {cl: output.Debug, args: args{l: output.Info}, want: true},
-		"debug/panic":     {cl: output.Debug, args: args{l: output.Panic}, want: true},
-		"debug/trace":     {cl: output.Debug, args: args{l: output.Trace}, want: false},
-		"debug/warning":   {cl: output.Debug, args: args{l: output.Warning}, want: true},
-		"error/debug":     {cl: output.Error, args: args{l: output.Debug}, want: false},
-		"error/error":     {cl: output.Error, args: args{l: output.Error}, want: true},
-		"error/fatal":     {cl: output.Error, args: args{l: output.Fatal}, want: true},
-		"error/info":      {cl: output.Error, args: args{l: output.Info}, want: false},
-		"error/panic":     {cl: output.Error, args: args{l: output.Panic}, want: true},
-		"error/trace":     {cl: output.Error, args: args{l: output.Trace}, want: false},
-		"error/warning":   {cl: output.Error, args: args{l: output.Warning}, want: false},
-		"fatal/debug":     {cl: output.Fatal, args: args{l: output.Debug}, want: false},
-		"fatal/error":     {cl: output.Fatal, args: args{l: output.Error}, want: false},
-		"fatal/fatal":     {cl: output.Fatal, args: args{l: output.Fatal}, want: true},
-		"fatal/info":      {cl: output.Fatal, args: args{l: output.Info}, want: false},
-		"fatal/panic":     {cl: output.Fatal, args: args{l: output.Panic}, want: false},
-		"fatal/trace":     {cl: output.Fatal, args: args{l: output.Trace}, want: false},
-		"fatal/warning":   {cl: output.Fatal, args: args{l: output.Warning}, want: false},
-		"info/debug":      {cl: output.Info, args: args{l: output.Debug}, want: false},
-		"info/error":      {cl: output.Info, args: args{l: output.Error}, want: true},
-		"info/fatal":      {cl: output.Info, args: args{l: output.Fatal}, want: true},
-		"info/info":       {cl: output.Info, args: args{l: output.Info}, want: true},
-		"info/panic":      {cl: output.Info, args: args{l: output.Panic}, want: true},
-		"info/trace":      {cl: output.Info, args: args{l: output.Trace}, want: false},
-		"info/warning":    {cl: output.Info, args: args{l: output.Warning}, want: true},
-		"panic/debug":     {cl: output.Panic, args: args{l: output.Debug}, want: false},
-		"panic/error":     {cl: output.Panic, args: args{l: output.Error}, want: false},
-		"panic/fatal":     {cl: output.Panic, args: args{l: output.Fatal}, want: true},
-		"panic/info":      {cl: output.Panic, args: args{l: output.Info}, want: false},
-		"panic/panic":     {cl: output.Panic, args: args{l: output.Panic}, want: true},
-		"panic/trace":     {cl: output.Panic, args: args{l: output.Trace}, want: false},
-		"panic/warning":   {cl: output.Panic, args: args{l: output.Warning}, want: false},
-		"trace/debug":     {cl: output.Trace, args: args{l: output.Debug}, want: true},
-		"trace/error":     {cl: output.Trace, args: args{l: output.Error}, want: true},
-		"trace/fatal":     {cl: output.Trace, args: args{l: output.Fatal}, want: true},
-		"trace/info":      {cl: output.Trace, args: args{l: output.Info}, want: true},
-		"trace/panic":     {cl: output.Trace, args: args{l: output.Panic}, want: true},
-		"trace/trace":     {cl: output.Trace, args: args{l: output.Trace}, want: true},
-		"trace/warning":   {cl: output.Trace, args: args{l: output.Warning}, want: true},
-		"warning/debug":   {cl: output.Warning, args: args{l: output.Debug}, want: false},
-		"warning/error":   {cl: output.Warning, args: args{l: output.Error}, want: true},
-		"warning/fatal":   {cl: output.Warning, args: args{l: output.Fatal}, want: true},
-		"warning/info":    {cl: output.Warning, args: args{l: output.Info}, want: false},
-		"warning/panic":   {cl: output.Warning, args: args{l: output.Panic}, want: true},
-		"warning/trace":   {cl: output.Warning, args: args{l: output.Trace}, want: false},
-		"warning/warning": {cl: output.Warning, args: args{l: output.Warning}, want: true},
+		"debug/debug": {
+			cl:   output.Debug,
+			l:    output.Debug,
+			want: true,
+		},
+		"debug/error": {
+			cl:   output.Debug,
+			l:    output.Error,
+			want: true,
+		},
+		"debug/fatal": {
+			cl:   output.Debug,
+			l:    output.Fatal,
+			want: true,
+		},
+		"debug/info": {
+			cl:   output.Debug,
+			l:    output.Info,
+			want: true,
+		},
+		"debug/panic": {
+			cl:   output.Debug,
+			l:    output.Panic,
+			want: true,
+		},
+		"debug/trace": {
+			cl:   output.Debug,
+			l:    output.Trace,
+			want: false,
+		},
+		"debug/warning": {
+			cl:   output.Debug,
+			l:    output.Warning,
+			want: true,
+		},
+		"error/debug": {
+			cl:   output.Error,
+			l:    output.Debug,
+			want: false,
+		},
+		"error/error": {
+			cl:   output.Error,
+			l:    output.Error,
+			want: true,
+		},
+		"error/fatal": {
+			cl:   output.Error,
+			l:    output.Fatal,
+			want: true,
+		},
+		"error/info": {
+			cl:   output.Error,
+			l:    output.Info,
+			want: false,
+		},
+		"error/panic": {
+			cl:   output.Error,
+			l:    output.Panic,
+			want: true,
+		},
+		"error/trace": {
+			cl:   output.Error,
+			l:    output.Trace,
+			want: false,
+		},
+		"error/warning": {
+			cl:   output.Error,
+			l:    output.Warning,
+			want: false,
+		},
+		"fatal/debug": {
+			cl:   output.Fatal,
+			l:    output.Debug,
+			want: false,
+		},
+		"fatal/error": {
+			cl:   output.Fatal,
+			l:    output.Error,
+			want: false,
+		},
+		"fatal/fatal": {
+			cl:   output.Fatal,
+			l:    output.Fatal,
+			want: true,
+		},
+		"fatal/info": {
+			cl:   output.Fatal,
+			l:    output.Info,
+			want: false,
+		},
+		"fatal/panic": {
+			cl:   output.Fatal,
+			l:    output.Panic,
+			want: false,
+		},
+		"fatal/trace": {
+			cl:   output.Fatal,
+			l:    output.Trace,
+			want: false,
+		},
+		"fatal/warning": {
+			cl:   output.Fatal,
+			l:    output.Warning,
+			want: false,
+		},
+		"info/debug": {
+			cl:   output.Info,
+			l:    output.Debug,
+			want: false,
+		},
+		"info/error": {
+			cl:   output.Info,
+			l:    output.Error,
+			want: true,
+		},
+		"info/fatal": {
+			cl:   output.Info,
+			l:    output.Fatal,
+			want: true,
+		},
+		"info/info": {
+			cl:   output.Info,
+			l:    output.Info,
+			want: true,
+		},
+		"info/panic": {
+			cl:   output.Info,
+			l:    output.Panic,
+			want: true,
+		},
+		"info/trace": {
+			cl:   output.Info,
+			l:    output.Trace,
+			want: false,
+		},
+		"info/warning": {
+			cl:   output.Info,
+			l:    output.Warning,
+			want: true,
+		},
+		"panic/debug": {
+			cl:   output.Panic,
+			l:    output.Debug,
+			want: false,
+		},
+		"panic/error": {
+			cl:   output.Panic,
+			l:    output.Error,
+			want: false,
+		},
+		"panic/fatal": {
+			cl:   output.Panic,
+			l:    output.Fatal,
+			want: true,
+		},
+		"panic/info": {
+			cl:   output.Panic,
+			l:    output.Info,
+			want: false,
+		},
+		"panic/panic": {
+			cl:   output.Panic,
+			l:    output.Panic,
+			want: true,
+		},
+		"panic/trace": {
+			cl:   output.Panic,
+			l:    output.Trace,
+			want: false,
+		},
+		"panic/warning": {
+			cl:   output.Panic,
+			l:    output.Warning,
+			want: false,
+		},
+		"trace/debug": {
+			cl:   output.Trace,
+			l:    output.Debug,
+			want: true,
+		},
+		"trace/error": {
+			cl:   output.Trace,
+			l:    output.Error,
+			want: true,
+		},
+		"trace/fatal": {
+			cl:   output.Trace,
+			l:    output.Fatal,
+			want: true,
+		},
+		"trace/info": {
+			cl:   output.Trace,
+			l:    output.Info,
+			want: true,
+		},
+		"trace/panic": {
+			cl:   output.Trace,
+			l:    output.Panic,
+			want: true,
+		},
+		"trace/trace": {
+			cl:   output.Trace,
+			l:    output.Trace,
+			want: true,
+		},
+		"trace/warning": {
+			cl:   output.Trace,
+			l:    output.Warning,
+			want: true,
+		},
+		"warning/debug": {
+			cl:   output.Warning,
+			l:    output.Debug,
+			want: false,
+		},
+		"warning/error": {
+			cl:   output.Warning,
+			l:    output.Error,
+			want: true,
+		},
+		"warning/fatal": {
+			cl:   output.Warning,
+			l:    output.Fatal,
+			want: true,
+		},
+		"warning/info": {
+			cl:   output.Warning,
+			l:    output.Info,
+			want: false,
+		},
+		"warning/panic": {
+			cl:   output.Warning,
+			l:    output.Panic,
+			want: true,
+		},
+		"warning/trace": {
+			cl:   output.Warning,
+			l:    output.Trace,
+			want: false,
+		},
+		"warning/warning": {
+			cl:   output.Warning,
+			l:    output.Warning,
+			want: true,
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			pl := simpleLogger{currentLogLevel: tt.cl}
-			if got := pl.willLog(tt.args.l); got != tt.want {
+			if got := pl.willLog(tt.l); got != tt.want {
 				t.Errorf("simpleLogger.willLog() = %v, want %v", got, tt.want)
 			}
 		})

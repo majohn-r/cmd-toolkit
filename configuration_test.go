@@ -53,22 +53,17 @@ func TestEmptyConfiguration(t *testing.T) {
 }
 
 func TestNewConfiguration(t *testing.T) {
-	type args struct {
-		data map[string]any
-	}
 	tests := map[string]struct {
-		args
+		data map[string]any
 		want *Configuration
 		output.WantedRecording
 	}{
 		"unrecognized type": {
-			args: args{
-				data: map[string]any{
-					"boolean":     true,
-					"integer":     12,
-					"string":      "hello",
-					"problematic": 1.234,
-				},
+			data: map[string]any{
+				"boolean":     true,
+				"integer":     12,
+				"string":      "hello",
+				"problematic": 1.234,
 			},
 			want: &Configuration{
 				bMap: map[string]bool{"boolean": true},
@@ -82,16 +77,14 @@ func TestNewConfiguration(t *testing.T) {
 			},
 		},
 		"no unrecognized types": {
-			args: args{
-				data: map[string]any{
-					"boolean": true,
-					"integer": 12,
-					"string":  "hello",
-					"complex": map[string]any{
-						"another boolean": false,
-						"another integer": 13,
-						"another string":  "hi!",
-					},
+			data: map[string]any{
+				"boolean": true,
+				"integer": 12,
+				"string":  "hello",
+				"complex": map[string]any{
+					"another boolean": false,
+					"another integer": 13,
+					"another string":  "hi!",
 				},
 			},
 			want: &Configuration{
@@ -112,7 +105,7 @@ func TestNewConfiguration(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
-			if got := NewConfiguration(o, tt.args.data); !reflect.DeepEqual(got, tt.want) {
+			if got := NewConfiguration(o, tt.data); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewConfiguration() = %v, want %v", got, tt.want)
 			}
 			o.Report(t, "NewConfiguration()", tt.WantedRecording)
@@ -287,16 +280,13 @@ func TestSetDefaultConfigFileName(t *testing.T) {
 	defer func() {
 		defaultConfigFileName = savedDefaultConfigFileName
 	}()
-	type args struct {
-		s string
-	}
 	tests := map[string]struct {
-		args
+		s    string
 		want string
-	}{"simple": {args: args{s: "defaultConfigFileName.yaml"}, want: "defaultConfigFileName.yaml"}}
+	}{"simple": {s: "defaultConfigFileName.yaml", want: "defaultConfigFileName.yaml"}}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			SetDefaultConfigFileName(tt.args.s)
+			SetDefaultConfigFileName(tt.s)
 			if got := DefaultConfigFileName(); got != tt.want {
 				t.Errorf("SetDefaultConfigFileName() %q want %q", got, tt.want)
 			}
@@ -310,12 +300,9 @@ func Test_verifyDefaultConfigFileExists(t *testing.T) {
 		fileSystem = originalFileSystem
 	}()
 	fileSystem = afero.NewMemMapFs()
-	type args struct {
-		path string
-	}
 	tests := map[string]struct {
 		preTest func()
-		args
+		path    string
 		wantOk  bool
 		wantErr bool
 		output.WantedRecording
@@ -324,7 +311,7 @@ func Test_verifyDefaultConfigFileExists(t *testing.T) {
 			preTest: func() {
 				fileSystem.Mkdir("testpath", StdDirPermissions)
 			},
-			args:    args{path: "testpath"},
+			path:    "testpath",
 			wantErr: true,
 			WantedRecording: output.WantedRecording{
 				Error: "The configuration file \"testpath\" is a directory.\n",
@@ -333,7 +320,7 @@ func Test_verifyDefaultConfigFileExists(t *testing.T) {
 		},
 		"path does not exist": {
 			preTest:         func() {},
-			args:            args{path: filepath.Join(".", "non-existent-file.yaml")},
+			path:            filepath.Join(".", "non-existent-file.yaml"),
 			WantedRecording: output.WantedRecording{Log: "level='info' directory='.' fileName='non-existent-file.yaml' msg='file does not exist'\n"},
 		},
 		"path is a valid file": {
@@ -342,7 +329,7 @@ func Test_verifyDefaultConfigFileExists(t *testing.T) {
 				fileSystem.Mkdir(path, StdDirPermissions)
 				afero.WriteFile(fileSystem, filepath.Join(path, "happy.yaml"), []byte("boo"), StdFilePermissions)
 			},
-			args:   args{path: filepath.Join("testpath2", "happy.yaml")},
+			path:   filepath.Join("testpath2", "happy.yaml"),
 			wantOk: true,
 		},
 	}
@@ -350,7 +337,7 @@ func Test_verifyDefaultConfigFileExists(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
 			o := output.NewRecorder()
-			gotOk, gotErr := verifyDefaultConfigFileExists(o, tt.args.path)
+			gotOk, gotErr := verifyDefaultConfigFileExists(o, tt.path)
 			if (gotErr != nil) != tt.wantErr {
 				t.Errorf("verifyDefaultConfigFileExists() error = %v, wantErr %v", gotErr, tt.wantErr)
 				return
@@ -711,21 +698,28 @@ func TestConfiguration_StringDefault(t *testing.T) {
 }
 
 func TestConfiguration_StringValue(t *testing.T) {
-	type args struct {
-		key string
-	}
 	tests := map[string]struct {
-		c *Configuration
-		args
+		c         *Configuration
+		key       string
 		wantValue string
 		wantOk    bool
 	}{
-		"missing": {c: EmptyConfiguration(), args: args{key: "s"}},
-		"found":   {c: &Configuration{sMap: map[string]string{"s": "hello"}}, args: args{key: "s"}, wantValue: "hello", wantOk: true},
+		"missing": {
+			c:   EmptyConfiguration(),
+			key: "s",
+		},
+		"found": {
+			c: &Configuration{
+				sMap: map[string]string{"s": "hello"},
+			},
+			key:       "s",
+			wantValue: "hello",
+			wantOk:    true,
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotValue, gotOk := tt.c.StringValue(tt.args.key)
+			gotValue, gotOk := tt.c.StringValue(tt.key)
 			if gotValue != tt.wantValue {
 				t.Errorf("Configuration.StringValue() gotValue = %v, want %v", gotValue, tt.wantValue)
 			}
@@ -737,15 +731,16 @@ func TestConfiguration_StringValue(t *testing.T) {
 }
 
 func TestConfiguration_SubConfiguration(t *testing.T) {
-	type args struct {
-		key string
-	}
 	tests := map[string]struct {
-		c *Configuration
-		args
+		c    *Configuration
+		key  string
 		want *Configuration
 	}{
-		"no match": {c: EmptyConfiguration(), args: args{key: "c"}, want: EmptyConfiguration()},
+		"no match": {
+			c:    EmptyConfiguration(),
+			key:  "c",
+			want: EmptyConfiguration(),
+		},
 		"match": {
 			c: &Configuration{
 				cMap: map[string]*Configuration{
@@ -756,16 +751,17 @@ func TestConfiguration_SubConfiguration(t *testing.T) {
 					},
 				},
 			},
-			args: args{key: "c"},
+			key: "c",
 			want: &Configuration{
 				bMap: map[string]bool{"b": true},
 				iMap: map[string]int{"i": 45000},
-				sMap: map[string]string{"s": "hey!"}},
+				sMap: map[string]string{"s": "hey!"},
+			},
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if got := tt.c.SubConfiguration(tt.args.key); !reflect.DeepEqual(got, tt.want) {
+			if got := tt.c.SubConfiguration(tt.key); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Configuration.SubConfiguration() = %v, want %v", got, tt.want)
 			}
 		})
@@ -773,21 +769,30 @@ func TestConfiguration_SubConfiguration(t *testing.T) {
 }
 
 func TestIntBounds_constrainedValue(t *testing.T) {
-	type args struct {
-		value int
-	}
 	tests := map[string]struct {
-		b *IntBounds
-		args
+		b     *IntBounds
+		value int
 		wantI int
 	}{
-		"low":    {b: NewIntBounds(1, 10, 100), args: args{value: -500}, wantI: 1},
-		"high":   {b: NewIntBounds(1, 10, 100), args: args{value: 500}, wantI: 100},
-		"middle": {b: NewIntBounds(1, 10, 100), args: args{value: 50}, wantI: 50},
+		"low": {
+			b:     NewIntBounds(1, 10, 100),
+			value: -500,
+			wantI: 1,
+		},
+		"high": {
+			b:     NewIntBounds(1, 10, 100),
+			value: 500,
+			wantI: 100,
+		},
+		"middle": {
+			b:     NewIntBounds(1, 10, 100),
+			value: 50,
+			wantI: 50,
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if gotI := tt.b.constrainedValue(tt.args.value); gotI != tt.wantI {
+			if gotI := tt.b.constrainedValue(tt.value); gotI != tt.wantI {
 				t.Errorf("IntBounds.constrainedValue() = %v, want %v", gotI, tt.wantI)
 			}
 		})
@@ -795,36 +800,33 @@ func TestIntBounds_constrainedValue(t *testing.T) {
 }
 
 func TestConfiguration_BooleanValue(t *testing.T) {
-	type args struct {
-		key string
-	}
 	tests := map[string]struct {
-		c *Configuration
-		args
+		c         *Configuration
+		key       string
 		wantValue bool
 		wantOk    bool
 	}{
 		"absent": {
 			c:      &Configuration{bMap: map[string]bool{}},
-			args:   args{key: "key"},
+			key:    "key",
 			wantOk: false,
 		},
 		"present and true": {
 			c:         &Configuration{bMap: map[string]bool{"key": true}},
-			args:      args{key: "key"},
+			key:       "key",
 			wantValue: true,
 			wantOk:    true,
 		},
 		"present and false": {
 			c:         &Configuration{bMap: map[string]bool{"key": false}},
-			args:      args{key: "key"},
+			key:       "key",
 			wantValue: false,
 			wantOk:    true,
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotValue, gotOk := tt.c.BooleanValue(tt.args.key)
+			gotValue, gotOk := tt.c.BooleanValue(tt.key)
 			if gotValue != tt.wantValue {
 				t.Errorf("Configuration.BooleanValue() gotValue = %v, want %v", gotValue, tt.wantValue)
 			}
@@ -836,28 +838,25 @@ func TestConfiguration_BooleanValue(t *testing.T) {
 }
 
 func TestConfiguration_HasSubConfiguration(t *testing.T) {
-	type args struct {
-		key string
-	}
 	tests := map[string]struct {
-		c *Configuration
-		args
+		c    *Configuration
+		key  string
 		want bool
 	}{
 		"absent": {
 			c:    EmptyConfiguration(),
-			args: args{key: "key"},
+			key:  "key",
 			want: false,
 		},
 		"present": {
 			c:    &Configuration{cMap: map[string]*Configuration{"key": EmptyConfiguration()}},
-			args: args{key: "key"},
+			key:  "key",
 			want: true,
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if got := tt.c.HasSubConfiguration(tt.args.key); got != tt.want {
+			if got := tt.c.HasSubConfiguration(tt.key); got != tt.want {
 				t.Errorf("Configuration.HasSubConfiguration() = %v, want %v", got, tt.want)
 			}
 		})
@@ -865,30 +864,27 @@ func TestConfiguration_HasSubConfiguration(t *testing.T) {
 }
 
 func TestConfiguration_IntValue(t *testing.T) {
-	type args struct {
-		key string
-	}
 	tests := map[string]struct {
-		c *Configuration
-		args
+		c         *Configuration
+		key       string
 		wantValue int
 		wantOk    bool
 	}{
 		"absent": {
 			c:      EmptyConfiguration(),
-			args:   args{key: "key"},
+			key:    "key",
 			wantOk: false,
 		},
 		"present": {
 			c:         &Configuration{iMap: map[string]int{"key": 42}},
-			args:      args{key: "key"},
+			key:       "key",
 			wantValue: 42,
 			wantOk:    true,
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotValue, gotOk := tt.c.IntValue(tt.args.key)
+			gotValue, gotOk := tt.c.IntValue(tt.key)
 			if gotValue != tt.wantValue {
 				t.Errorf("Configuration.IntValue() gotValue = %v, want %v", gotValue, tt.wantValue)
 			}
@@ -925,18 +921,15 @@ func TestAssignFileSystem(t *testing.T) {
 	defer func() {
 		fileSystem = originalFileSystem
 	}()
-	type args struct {
-		fs afero.Fs
-	}
 	tests := map[string]struct {
-		args
+		fs   afero.Fs
 		want afero.Fs
 	}{
-		"simple": {args: args{fs: afero.NewMemMapFs()}, want: FileSystem()},
+		"simple": {fs: afero.NewMemMapFs(), want: FileSystem()},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if got := AssignFileSystem(tt.args.fs); !reflect.DeepEqual(got, tt.want) {
+			if got := AssignFileSystem(tt.fs); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("AssignFileSystem() = %v, want %v", got, tt.want)
 			}
 		})
