@@ -59,6 +59,7 @@ func TestExecute(t *testing.T) {
 		appDataSet   bool
 		descriptions map[string]*CommandDescription
 		preTest      func()
+		postTest     func()
 		args
 		wantExitCode int
 		output.WantedRecording
@@ -66,6 +67,7 @@ func TestExecute(t *testing.T) {
 		"set app name fails": {
 			appname:      "myApp",
 			preTest:      func() {},
+			postTest:     func() {},
 			wantExitCode: 1,
 			WantedRecording: output.WantedRecording{
 				Error: "A programming error has occurred - cannot initialize app name with an empty string.\n",
@@ -78,6 +80,7 @@ func TestExecute(t *testing.T) {
 					return false
 				}
 			},
+			postTest: func() {},
 			args: args{
 				firstYear:      2021,
 				appName:        "myNewApp",
@@ -97,6 +100,7 @@ func TestExecute(t *testing.T) {
 					return true
 				}
 			},
+			postTest: func() {},
 			args: args{
 				firstYear:      2021,
 				appName:        "myNewApp",
@@ -122,6 +126,9 @@ func TestExecute(t *testing.T) {
 				buildInfoReader = func() (*debug.BuildInfo, bool) {
 					return nil, false
 				}
+			},
+			postTest: func() {
+				fileSystem.RemoveAll("appdata1")
 			},
 			args: args{
 				firstYear:      2021,
@@ -174,6 +181,9 @@ func TestExecute(t *testing.T) {
 					return nil, false
 				}
 			},
+			postTest: func() {
+				fileSystem.RemoveAll("appdata2")
+			},
 			args: args{
 				firstYear:      2021,
 				appName:        "myNewApp",
@@ -211,6 +221,9 @@ func TestExecute(t *testing.T) {
 					return nil, false
 				}
 			},
+			postTest: func() {
+				fileSystem.RemoveAll("appdata3")
+			},
 			args: args{
 				firstYear:      2021,
 				appName:        "myNewApp",
@@ -237,6 +250,7 @@ func TestExecute(t *testing.T) {
 			}
 			descriptions = tt.descriptions
 			tt.preTest()
+			defer tt.postTest()
 			o := output.NewRecorder()
 			if gotExitCode := Execute(o, tt.args.firstYear, tt.args.appName, tt.args.appVersion, tt.args.buildTimestamp, tt.args.cmdLine); gotExitCode != tt.wantExitCode {
 				t.Errorf("Execute() = %v, want %v", gotExitCode, tt.wantExitCode)
