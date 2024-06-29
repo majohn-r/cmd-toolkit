@@ -837,32 +837,6 @@ func TestConfiguration_booleanValue(t *testing.T) {
 	}
 }
 
-func TestConfiguration_HasSubConfiguration(t *testing.T) {
-	tests := map[string]struct {
-		c    *Configuration
-		key  string
-		want bool
-	}{
-		"absent": {
-			c:    EmptyConfiguration(),
-			key:  "key",
-			want: false,
-		},
-		"present": {
-			c:    &Configuration{cMap: map[string]*Configuration{"key": EmptyConfiguration()}},
-			key:  "key",
-			want: true,
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			if got := tt.c.HasSubConfiguration(tt.key); got != tt.want {
-				t.Errorf("Configuration.HasSubConfiguration() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestConfiguration_IntValue(t *testing.T) {
 	tests := map[string]struct {
 		c         *Configuration
@@ -896,9 +870,9 @@ func TestConfiguration_IntValue(t *testing.T) {
 }
 
 func TestSetFlagIndicator(t *testing.T) {
-	originalIndicator := flagIndicator
+	originalIndicator := flagPrefix
 	defer func() {
-		flagIndicator = originalIndicator
+		flagPrefix = originalIndicator
 	}()
 	tests := map[string]struct {
 		val string
@@ -909,7 +883,7 @@ func TestSetFlagIndicator(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			SetFlagIndicator(tt.val)
-			if got := FlagIndicator(); got != tt.val {
+			if got := flagIndicator(); got != tt.val {
 				t.Errorf("SetFlagIndicator got %q want %q", got, tt.val)
 			}
 		})

@@ -20,8 +20,7 @@ var (
 
 type byLength []string // used for sorting environment variable references
 
-// EnvVarMemento preserves a memento of an environment variable's state
-type EnvVarMemento struct {
+type envVarMemento struct {
 	name  string
 	value string
 	set   bool
@@ -79,8 +78,8 @@ func DereferenceEnvVar(s string) (string, error) {
 
 // NewEnvVarMemento reads a specified environment variable and returns a
 // memento of its state
-func NewEnvVarMemento(name string) *EnvVarMemento {
-	s := &EnvVarMemento{name: name}
+func NewEnvVarMemento(name string) *envVarMemento {
+	s := &envVarMemento{name: name}
 	if value, varDefined := os.LookupEnv(name); varDefined {
 		s.value = value
 		s.set = true
@@ -146,7 +145,7 @@ func (bl byLength) Swap(i, j int) {
 }
 
 // Restore resets a saved environment variable to its original state
-func (mem *EnvVarMemento) Restore() {
+func (mem *envVarMemento) Restore() {
 	switch mem.set {
 	case true:
 		os.Setenv(mem.name, mem.value)

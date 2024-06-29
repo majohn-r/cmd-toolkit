@@ -172,12 +172,11 @@ type aboutCmd struct {
 // returns true.
 func (a *aboutCmd) Exec(o output.Bus, args []string) (ok bool) {
 	LogCommandStart(o, aboutCommandName, map[string]any{})
-	GenerateAboutContent(o)
+	generateAboutContent(o)
 	return true
 }
 
-// GenerateAboutContent writes 'about' content in a pretty format
-func GenerateAboutContent(o output.Bus) {
+func generateAboutContent(o output.Bus) {
 	formattedBuildData := formatBuildData()
 	s := make([]string, 0, 2+len(formattedBuildData))
 	name, appNameInitErr := AppName()

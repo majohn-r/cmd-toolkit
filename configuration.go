@@ -16,7 +16,7 @@ import (
 
 var (
 	defaultConfigFileName = "defaults.yaml"
-	flagIndicator         = "-"
+	flagPrefix            = "-"
 	fileSystem            = afero.NewOsFs()
 )
 
@@ -55,14 +55,13 @@ func DefaultConfigFileName() string {
 	return defaultConfigFileName
 }
 
-// FlagIndicator returns the current flag indicator, typically "-" or "--"
-func FlagIndicator() string {
-	return flagIndicator
+func flagIndicator() string {
+	return flagPrefix
 }
 
 // SetFlagIndicator sets the flag indicator to the specified value
 func SetFlagIndicator(val string) {
-	flagIndicator = val
+	flagPrefix = val
 }
 
 // EmptyConfiguration creates an empty Configuration instance
@@ -223,7 +222,7 @@ func (c *Configuration) BoolDefault(key string, defaultValue bool) (bool, error)
 		default:
 			// note: deliberately imitating flags behavior when parsing an
 			// invalid boolean
-			return defaultValue, fmt.Errorf("invalid boolean value \"%d\" for %s%s: parse error", value, FlagIndicator(), key)
+			return defaultValue, fmt.Errorf("invalid boolean value \"%d\" for %s%s: parse error", value, flagIndicator(), key)
 		}
 	}
 	// True values may be specified as "t", "T", "true", "TRUE", or "True"
@@ -234,13 +233,13 @@ func (c *Configuration) BoolDefault(key string, defaultValue bool) (bool, error)
 	}
 	rawValue, dereferenceErr := DereferenceEnvVar(value)
 	if dereferenceErr != nil {
-		return defaultValue, fmt.Errorf("invalid boolean value %q for %s%s: %v", value, FlagIndicator(), key, dereferenceErr)
+		return defaultValue, fmt.Errorf("invalid boolean value %q for %s%s: %v", value, flagIndicator(), key, dereferenceErr)
 	}
 	cookedValue, e := strconv.ParseBool(rawValue)
 	if e != nil {
 		// note: deliberately imitating flags behavior when parsing
 		// an invalid boolean
-		return defaultValue, fmt.Errorf("invalid boolean value %q for %s%s: parse error", value, FlagIndicator(), key)
+		return defaultValue, fmt.Errorf("invalid boolean value %q for %s%s: parse error", value, flagIndicator(), key)
 	}
 	return cookedValue, nil
 }
@@ -248,12 +247,6 @@ func (c *Configuration) BoolDefault(key string, defaultValue bool) (bool, error)
 func (c *Configuration) booleanValue(key string) (value, exists bool) {
 	value, exists = c.bMap[key]
 	return
-}
-
-// HasSubConfiguration returns whether the specified subConfiguration exists
-func (c *Configuration) HasSubConfiguration(key string) bool {
-	_, exists := c.cMap[key]
-	return exists
 }
 
 // IntDefault returns a default value for a specified key, which may or may not
@@ -268,13 +261,13 @@ func (c *Configuration) IntDefault(key string, b *IntBounds) (int, error) {
 	}
 	rawValue, dereferenceErr := DereferenceEnvVar(value)
 	if dereferenceErr != nil {
-		return b.Default(), fmt.Errorf("invalid value %q for flag %s%s: %v", rawValue, FlagIndicator(), key, dereferenceErr)
+		return b.Default(), fmt.Errorf("invalid value %q for flag %s%s: %v", rawValue, flagIndicator(), key, dereferenceErr)
 	}
 	cookedValue, e := strconv.Atoi(rawValue)
 	if e != nil {
 		// note: deliberately imitating flags behavior when parsing an
 		// invalid int
-		return b.Default(), fmt.Errorf("invalid value %q for flag %s%s: parse error", rawValue, FlagIndicator(), key)
+		return b.Default(), fmt.Errorf("invalid value %q for flag %s%s: parse error", rawValue, flagIndicator(), key)
 	}
 	return b.constrainedValue(cookedValue), nil
 }
@@ -290,7 +283,7 @@ func (c *Configuration) StringDefault(key, defaultValue string) (string, error) 
 	var dereferencedDefault string
 	var dereferenceErr error
 	if dereferencedDefault, dereferenceErr = DereferenceEnvVar(defaultValue); dereferenceErr != nil {
-		return "", fmt.Errorf("invalid value %q for flag %s%s: %v", defaultValue, FlagIndicator(), key, dereferenceErr)
+		return "", fmt.Errorf("invalid value %q for flag %s%s: %v", defaultValue, flagIndicator(), key, dereferenceErr)
 	}
 	value, found := c.sMap[key]
 	if !found {
@@ -298,7 +291,7 @@ func (c *Configuration) StringDefault(key, defaultValue string) (string, error) 
 	}
 	var dereferencedValue string
 	if dereferencedValue, dereferenceErr = DereferenceEnvVar(value); dereferenceErr != nil {
-		return "", fmt.Errorf("invalid value %q for flag %s%s: %v", value, FlagIndicator(), key, dereferenceErr)
+		return "", fmt.Errorf("invalid value %q for flag %s%s: %v", value, flagIndicator(), key, dereferenceErr)
 	}
 	return dereferencedValue, nil
 }

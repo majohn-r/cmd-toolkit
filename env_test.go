@@ -97,7 +97,7 @@ func TestDereferenceEnvVar(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			mementos := []*EnvVarMemento{}
+			mementos := []*envVarMemento{}
 			for varName, varValue := range tt.varSettings {
 				mementos = append(mementos, NewEnvVarMemento(varName))
 				if varValue == "" {
@@ -137,13 +137,13 @@ func TestNewEnvVarMemento(t *testing.T) {
 		value string
 		set   bool
 		name  string
-		want  *EnvVarMemento
+		want  *envVarMemento
 	}{
 		"set": {
 			value: "the value",
 			set:   true,
 			name:  varName,
-			want: &EnvVarMemento{
+			want: &envVarMemento{
 				name:  varName,
 				value: "the value",
 				set:   true,
@@ -151,7 +151,7 @@ func TestNewEnvVarMemento(t *testing.T) {
 		},
 		"unset": {
 			name: varName,
-			want: &EnvVarMemento{
+			want: &envVarMemento{
 				name: varName,
 			},
 		},
@@ -293,14 +293,14 @@ func TestEnvVarMemento_Restore(t *testing.T) {
 	tests := map[string]struct {
 		preValue  string
 		preSet    bool
-		mem       *EnvVarMemento
+		mem       *envVarMemento
 		wantValue string
 		wantSet   bool
 	}{
-		"set":             {mem: &EnvVarMemento{name: varName, value: "the value", set: true}, wantValue: "the value", wantSet: true},
-		"unset":           {preValue: "the value", preSet: true, mem: &EnvVarMemento{name: varName}},
-		"overwrite":       {preValue: "old value", preSet: true, mem: &EnvVarMemento{name: varName, value: "the value", set: true}, wantValue: "the value", wantSet: true},
-		"redundant clear": {mem: &EnvVarMemento{name: varName}},
+		"set":             {mem: &envVarMemento{name: varName, value: "the value", set: true}, wantValue: "the value", wantSet: true},
+		"unset":           {preValue: "the value", preSet: true, mem: &envVarMemento{name: varName}},
+		"overwrite":       {preValue: "old value", preSet: true, mem: &envVarMemento{name: varName, value: "the value", set: true}, wantValue: "the value", wantSet: true},
+		"redundant clear": {mem: &envVarMemento{name: varName}},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -311,7 +311,7 @@ func TestEnvVarMemento_Restore(t *testing.T) {
 			}
 			tt.mem.Restore()
 			if gotValue, gotSet := os.LookupEnv(varName); gotValue != tt.wantValue || gotSet != tt.wantSet {
-				t.Errorf("EnvVarMemento.Restore = (%q, %t) want (%q, %t)", gotValue, gotSet, tt.wantValue, tt.wantSet)
+				t.Errorf("envVarMemento.Restore = (%q, %t) want (%q, %t)", gotValue, gotSet, tt.wantValue, tt.wantSet)
 			}
 		})
 	}
