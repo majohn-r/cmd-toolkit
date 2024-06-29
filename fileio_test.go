@@ -173,8 +173,8 @@ func TestLogUnreadableDirectory(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
-			LogUnreadableDirectory(o, tt.args.s, tt.args.e)
-			o.Report(t, "LogUnreadableDirectory()", tt.WantedRecording)
+			logUnreadableDirectory(o, tt.args.s, tt.args.e)
+			o.Report(t, "logUnreadableDirectory()", tt.WantedRecording)
 		})
 	}
 }

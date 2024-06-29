@@ -305,22 +305,12 @@ func (b *IntBounds) Default() int {
 	return b.defaultValue
 }
 
-// Maximum returns the maximum value for a bounded int
-func (b *IntBounds) Maximum() int {
-	return b.maxValue
-}
-
-// Minimum returns the minimum value for a bounded int
-func (b *IntBounds) Minimum() int {
-	return b.minValue
-}
-
 func (b *IntBounds) constrainedValue(value int) (i int) {
 	switch {
-	case value < b.Minimum():
-		i = b.Minimum()
-	case value > b.Maximum():
-		i = b.Maximum()
+	case value < b.minValue:
+		i = b.minValue
+	case value > b.maxValue:
+		i = b.maxValue
 	default:
 		i = value
 	}

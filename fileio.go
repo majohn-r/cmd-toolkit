@@ -73,10 +73,10 @@ func LogFileDeletionFailure(o output.Bus, s string, e error) {
 	})
 }
 
-// LogUnreadableDirectory logs errors when a directory cannot be read; does not
+// logUnreadableDirectory logs errors when a directory cannot be read; does not
 // write anything to the error output because that typically needs additional
 // context
-func LogUnreadableDirectory(o output.Bus, s string, e error) {
+func logUnreadableDirectory(o output.Bus, s string, e error) {
 	o.Log(output.Error, "cannot read directory", map[string]any{
 		"directory": s,
 		"error":     e,
@@ -116,7 +116,7 @@ func ReadDirectory(o output.Bus, dir string) ([]fs.FileInfo, bool) {
 	if fileErr == nil {
 		return files, true
 	}
-	LogUnreadableDirectory(o, dir, fileErr)
+	logUnreadableDirectory(o, dir, fileErr)
 	o.WriteCanonicalError("The directory %q cannot be read: %v", dir, fileErr)
 	return nil, false
 }
