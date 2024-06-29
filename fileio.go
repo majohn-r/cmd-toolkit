@@ -121,17 +121,6 @@ func ReadDirectory(o output.Bus, dir string) ([]fs.FileInfo, bool) {
 	return nil, false
 }
 
-// ReportDirectoryCreationFailure reports an error creating a directory to error
-// output and to the log
-func ReportDirectoryCreationFailure(o output.Bus, cmd, dir string, e error) {
-	WriteDirectoryCreationError(o, dir, e)
-	o.Log(output.Error, "cannot create directory", map[string]any{
-		"command":   cmd,
-		"directory": dir,
-		"error":     e,
-	})
-}
-
 // ReportFileCreationFailure reports an error creating a file to error output
 // and to the log
 func ReportFileCreationFailure(o output.Bus, cmd, file string, e error) {
@@ -143,24 +132,6 @@ func ReportFileCreationFailure(o output.Bus, cmd, file string, e error) {
 	})
 }
 
-// ReportFileDeletionFailure reports an error deleting a file to error output
-// and to the log
-func ReportFileDeletionFailure(o output.Bus, file string, e error) {
-	o.WriteCanonicalError("The file %q cannot be deleted: %v", file, e)
-	LogFileDeletionFailure(o, file, e)
-}
-
-// SecureAbsolutePath returns a path's absolute value
-func SecureAbsolutePath(path string) string {
-	absPath, fileErr := filepath.Abs(path)
-	if fileErr != nil {
-		return ""
-	}
-	return absPath
-}
-
-// WriteDirectoryCreationError writes a suitable error message to the user when
-// a directory cannot be created
-func WriteDirectoryCreationError(o output.Bus, d string, e error) {
+func writeDirectoryCreationError(o output.Bus, d string, e error) {
 	o.WriteCanonicalError("The directory %q cannot be created: %v", d, e)
 }

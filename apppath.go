@@ -36,7 +36,7 @@ func InitApplicationPath(o output.Bus) bool {
 	// Mkdir does nothing and succeeds if applicationPath is an existing
 	// directory
 	if mkdirErr := Mkdir(dir); mkdirErr != nil {
-		WriteDirectoryCreationError(o, dir, mkdirErr)
+		writeDirectoryCreationError(o, dir, mkdirErr)
 		o.Log(output.Error, "cannot create directory", map[string]any{
 			"directory": dir,
 			"error":     mkdirErr,
@@ -47,7 +47,7 @@ func InitApplicationPath(o output.Bus) bool {
 	return true
 }
 
-// SetApplicationPath is used to set applicationPath to a known value; intent is for use in tesing scenarios
+// SetApplicationPath is used to set applicationPath to a known value; intent is for use in testing scenarios
 func SetApplicationPath(s string) (previous string) {
 	previous = applicationPath
 	applicationPath = s

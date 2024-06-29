@@ -19,8 +19,8 @@ func Test_initWriter(t *testing.T) {
 	originalLogPath := logPath
 	originalFileSystem := fileSystem
 	defer func() {
-		originalTmp.Restore()
-		originalTemp.Restore()
+		originalTmp.restore()
+		originalTemp.restore()
 		appName = originalAppName
 		logPath = originalLogPath
 		fileSystem = originalFileSystem
@@ -235,8 +235,8 @@ func Test_findTemp(t *testing.T) {
 	savedTmp := newEnvVarMemento("TMP")
 	savedTemp := newEnvVarMemento("TEMP")
 	defer func() {
-		savedTmp.Restore()
-		savedTemp.Restore()
+		savedTmp.restore()
+		savedTemp.restore()
 	}()
 	tests := map[string]struct {
 		preTest func()

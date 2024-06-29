@@ -275,25 +275,6 @@ func TestReportInvalidConfigurationData(t *testing.T) {
 	}
 }
 
-func TestSetDefaultConfigFileName(t *testing.T) {
-	savedDefaultConfigFileName := defaultConfigFileName
-	defer func() {
-		defaultConfigFileName = savedDefaultConfigFileName
-	}()
-	tests := map[string]struct {
-		s    string
-		want string
-	}{"simple": {s: "defaultConfigFileName.yaml", want: "defaultConfigFileName.yaml"}}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			SetDefaultConfigFileName(tt.s)
-			if got := DefaultConfigFileName(); got != tt.want {
-				t.Errorf("SetDefaultConfigFileName() %q want %q", got, tt.want)
-			}
-		})
-	}
-}
-
 func Test_verifyDefaultConfigFileExists(t *testing.T) {
 	originalFileSystem := fileSystem
 	defer func() {
@@ -719,12 +700,12 @@ func TestConfiguration_StringValue(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotValue, gotOk := tt.c.StringValue(tt.key)
+			gotValue, gotOk := tt.c.stringValue(tt.key)
 			if gotValue != tt.wantValue {
-				t.Errorf("Configuration.StringValue() gotValue = %v, want %v", gotValue, tt.wantValue)
+				t.Errorf("Configuration.stringValue() gotValue = %v, want %v", gotValue, tt.wantValue)
 			}
 			if gotOk != tt.wantOk {
-				t.Errorf("Configuration.StringValue() gotOk = %v, want %v", gotOk, tt.wantOk)
+				t.Errorf("Configuration.stringValue() gotOk = %v, want %v", gotOk, tt.wantOk)
 			}
 		})
 	}

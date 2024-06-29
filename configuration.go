@@ -158,12 +158,6 @@ func ReportInvalidConfigurationData(o output.Bus, s string, e error) {
 	})
 }
 
-// SetDefaultConfigFileName sets the name of the configuration file that
-// contains defaults for the commands
-func SetDefaultConfigFileName(s string) {
-	defaultConfigFileName = s
-}
-
 func verifyDefaultConfigFileExists(o output.Bus, path string) (exists bool, err error) {
 	var f fs.FileInfo
 	f, err = fileSystem.Stat(path)
@@ -283,9 +277,9 @@ func (c *Configuration) StringDefault(key, defaultValue string) (string, error) 
 	return dereferencedValue, nil
 }
 
-// StringValue returns the definition of the specified key and whether the value
+// stringValue returns the definition of the specified key and whether the value
 // is defined
-func (c *Configuration) StringValue(key string) (value string, found bool) {
+func (c *Configuration) stringValue(key string) (value string, found bool) {
 	value, found = c.sMap[key]
 	return
 }

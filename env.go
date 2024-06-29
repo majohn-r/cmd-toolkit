@@ -142,8 +142,7 @@ func (bl byLength) Swap(i, j int) {
 	bl[i], bl[j] = bl[j], bl[i]
 }
 
-// Restore resets a saved environment variable to its original state
-func (mem *envVarMemento) Restore() {
+func (mem *envVarMemento) restore() {
 	switch mem.set {
 	case true:
 		_ = os.Setenv(mem.name, mem.value)

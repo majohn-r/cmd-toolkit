@@ -59,7 +59,7 @@ func ReportNothingToDo(o output.Bus, cmd string, fields map[string]any) {
 
 func determineDefaultCommand(o output.Bus, c *Configuration) (defaultCommand string, defaultFound bool) {
 	// get the default command name from configuration, if it's defined
-	defaultCommand, defaultFound = c.StringValue("default")
+	defaultCommand, defaultFound = c.stringValue("default")
 	if defaultFound {
 		_, defaultFound = descriptions[defaultCommand]
 		if !defaultFound {

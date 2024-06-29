@@ -12,57 +12,68 @@ import (
 func TestCopyFile(t *testing.T) {
 	// note: use os filesystem - Create never returns an error in the
 	// memory-mapped file system
-	fileSystem.Mkdir("sourceDir1", StdDirPermissions)
-	fileSystem.Mkdir("sourceDir2", StdDirPermissions)
-	fileSystem.Mkdir("sourceDir3", StdDirPermissions)
-	fileSystem.Mkdir("sourceDir4", StdDirPermissions)
-	fileSystem.Mkdir("destDir1", StdDirPermissions)
-	fileSystem.MkdirAll(filepath.Join("destDir2", "file1"), StdDirPermissions)
-	fileSystem.Mkdir("destDir3", StdDirPermissions)
-	afero.WriteFile(fileSystem, filepath.Join("sourceDir2", "file1"), []byte{1, 2, 3}, StdFilePermissions)
-	afero.WriteFile(fileSystem, filepath.Join("sourceDir3", "file1"), []byte{1, 2, 3}, StdFilePermissions)
-	afero.WriteFile(fileSystem, filepath.Join("sourceDir4", "file1"), []byte{1, 2, 3}, StdFilePermissions)
+	_ = fileSystem.Mkdir("sourceDir1", StdDirPermissions)
+	_ = fileSystem.Mkdir("sourceDir2", StdDirPermissions)
+	_ = fileSystem.Mkdir("sourceDir3", StdDirPermissions)
+	_ = fileSystem.Mkdir("sourceDir4", StdDirPermissions)
+	_ = fileSystem.Mkdir("destinationDir1", StdDirPermissions)
+	_ = fileSystem.MkdirAll(filepath.Join("destinationDir2", "file1"), StdDirPermissions)
+	_ = fileSystem.Mkdir("destinationDir3", StdDirPermissions)
+	_ = afero.WriteFile(fileSystem, filepath.Join("sourceDir2", "file1"), []byte{1, 2, 3}, StdFilePermissions)
+	_ = afero.WriteFile(fileSystem, filepath.Join("sourceDir3", "file1"), []byte{1, 2, 3}, StdFilePermissions)
+	_ = afero.WriteFile(fileSystem, filepath.Join("sourceDir4", "file1"), []byte{1, 2, 3}, StdFilePermissions)
 	defer func() {
-		fileSystem.RemoveAll("sourceDir1")
-		fileSystem.RemoveAll("sourceDir2")
-		fileSystem.RemoveAll("sourceDir3")
-		fileSystem.RemoveAll("sourceDir4")
-		fileSystem.RemoveAll("destDir1")
-		fileSystem.RemoveAll("destDir2")
-		fileSystem.RemoveAll("destDir3")
+		_ = fileSystem.RemoveAll("sourceDir1")
+		_ = fileSystem.RemoveAll("sourceDir2")
+		_ = fileSystem.RemoveAll("sourceDir3")
+		_ = fileSystem.RemoveAll("sourceDir4")
+		_ = fileSystem.RemoveAll("destinationDir1")
+		_ = fileSystem.RemoveAll("destinationDir2")
+		_ = fileSystem.RemoveAll("destinationDir3")
 	}()
 	type args struct {
-		src  string
-		dest string
+		src         string
+		destination string
 	}
 	tests := map[string]struct {
 		args
 		wantErr bool
 	}{
 		"copy file onto itself": {
-			args:    args{src: "file1", dest: "file1"},
+			args:    args{src: "file1", destination: "file1"},
 			wantErr: true,
 		},
 		"non-existent source": {
-			args:    args{src: filepath.Join("sourceDir1", "file1"), dest: filepath.Join("destDir1", "file1")},
+			args: args{
+				src:         filepath.Join("sourceDir1", "file1"),
+				destination: filepath.Join("destinationDir1", "file1"),
+			},
 			wantErr: true,
 		},
 		"destination is a directory": {
-			args:    args{src: filepath.Join("sourceDir2", "file1"), dest: filepath.Join("destDir2", "file1")},
+			args: args{
+				src:         filepath.Join("sourceDir2", "file1"),
+				destination: filepath.Join("destinationDir2", "file1"),
+			},
 			wantErr: true,
 		},
 		"success": {
-			args:    args{src: filepath.Join("sourceDir3", "file1"), dest: filepath.Join("destDir3", "file1")},
+			args: args{
+				src:         filepath.Join("sourceDir3", "file1"),
+				destination: filepath.Join("destinationDir3", "file1"),
+			},
 			wantErr: false,
 		},
 		"error writing to non-existent directory": {
-			args:    args{src: filepath.Join("sourceDir4", "file1"), dest: filepath.Join("destDir4", "file2")},
+			args: args{
+				src:         filepath.Join("sourceDir4", "file1"),
+				destination: filepath.Join("destinationDir4", "file2")},
 			wantErr: true,
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if gotErr := CopyFile(tt.args.src, tt.args.dest); (gotErr != nil) != tt.wantErr {
+			if gotErr := CopyFile(tt.args.src, tt.args.destination); (gotErr != nil) != tt.wantErr {
 				t.Errorf("CopyFile() error = %v, wantErr %v", gotErr, tt.wantErr)
 			}
 		})
@@ -91,15 +102,15 @@ func TestCreateFile(t *testing.T) {
 		},
 		"pre-existing file": {
 			preTest: func() {
-				fileSystem.Mkdir("badDir", StdDirPermissions)
-				afero.WriteFile(fileSystem, filepath.Join("badDir", "file1"), []byte{2, 4, 6}, StdFilePermissions)
+				_ = fileSystem.Mkdir("badDir", StdDirPermissions)
+				_ = afero.WriteFile(fileSystem, filepath.Join("badDir", "file1"), []byte{2, 4, 6}, StdFilePermissions)
 			},
 			args:    args{fileName: filepath.Join("badDir", "file1"), content: []byte{1, 2, 3}},
 			wantErr: true,
 		},
 		"good file": {
 			preTest: func() {
-				fileSystem.Mkdir("goodDir", StdDirPermissions)
+				_ = fileSystem.Mkdir("goodDir", StdDirPermissions)
 			},
 			args:    args{fileName: filepath.Join("goodDir", "file1"), content: []byte{1, 2, 3}},
 			wantErr: false,
@@ -192,29 +203,29 @@ func TestMkdir(t *testing.T) {
 	}{
 		"subdirectory of non-existent directory": {
 			preTest: func() {},
-			dir:     filepath.Join("non-existent directory", "subdir"),
+			dir:     filepath.Join("non-existent directory", "subDir"),
 			wantErr: true,
 		},
 		"dir is a plain file": {
 			preTest: func() {
-				fileSystem.Mkdir("plainfile", StdDirPermissions)
-				afero.WriteFile(fileSystem, filepath.Join("plainfile", "subdir"), []byte{0, 1, 2}, StdFilePermissions)
+				_ = fileSystem.Mkdir("plainFile", StdDirPermissions)
+				_ = afero.WriteFile(fileSystem, filepath.Join("plainFile", "subDir"), []byte{0, 1, 2}, StdFilePermissions)
 			},
-			dir:     filepath.Join("plainfile", "subdir"),
+			dir:     filepath.Join("plainFile", "subDir"),
 			wantErr: true,
 		},
 		"successfully create new directory": {
 			preTest: func() {
-				fileSystem.Mkdir("emptyDir", StdDirPermissions)
+				_ = fileSystem.Mkdir("emptyDir", StdDirPermissions)
 			},
-			dir:     filepath.Join("emptyDir", "subdir"),
+			dir:     filepath.Join("emptyDir", "subDir"),
 			wantErr: false,
 		},
 		"directory already exists": {
 			preTest: func() {
-				fileSystem.MkdirAll(filepath.Join("dirExists", "subdir"), StdDirPermissions)
+				_ = fileSystem.MkdirAll(filepath.Join("dirExists", "subDir"), StdDirPermissions)
 			},
-			dir:     filepath.Join("dirExists", "subdir"),
+			dir:     filepath.Join("dirExists", "subDir"),
 			wantErr: false,
 		},
 	}
@@ -246,15 +257,15 @@ func TestPlainFileExists(t *testing.T) {
 		},
 		"directory": {
 			preTest: func() {
-				fileSystem.Mkdir("file", StdDirPermissions)
+				_ = fileSystem.Mkdir("file", StdDirPermissions)
 			},
 			path: "file",
 			want: false,
 		},
 		"real file": {
 			preTest: func() {
-				fileSystem.Mkdir("dir", StdDirPermissions)
-				afero.WriteFile(fileSystem, filepath.Join("dir", "file"), []byte{0, 1, 2}, StdFilePermissions)
+				_ = fileSystem.Mkdir("dir", StdDirPermissions)
+				_ = afero.WriteFile(fileSystem, filepath.Join("dir", "file"), []byte{0, 1, 2}, StdFilePermissions)
 			},
 			path: filepath.Join("dir", "file"),
 			want: true,
@@ -294,7 +305,7 @@ func TestReadDirectory(t *testing.T) {
 		},
 		"empty directory": {
 			preTest: func() {
-				fileSystem.Mkdir("empty", StdDirPermissions)
+				_ = fileSystem.Mkdir("empty", StdDirPermissions)
 			},
 			dir:             "empty",
 			wantFilesLength: 0,
@@ -302,14 +313,14 @@ func TestReadDirectory(t *testing.T) {
 		},
 		"directory with content": {
 			preTest: func() {
-				fileSystem.Mkdir("full", StdDirPermissions)
+				_ = fileSystem.Mkdir("full", StdDirPermissions)
 				// make a few files
 				for _, filename := range []string{"file1", "file2", "file3"} {
-					afero.WriteFile(fileSystem, filepath.Join("full", filename), []byte{}, StdFilePermissions)
+					_ = afero.WriteFile(fileSystem, filepath.Join("full", filename), []byte{}, StdFilePermissions)
 				}
 				// and a few directories
-				for _, subdir := range []string{"sub1", "sub2", "sub3"} {
-					fileSystem.Mkdir(filepath.Join("full", subdir), StdDirPermissions)
+				for _, subDirectory := range []string{"sub1", "sub2", "sub3"} {
+					_ = fileSystem.Mkdir(filepath.Join("full", subDirectory), StdDirPermissions)
 				}
 			},
 			dir:             "full",
@@ -329,33 +340,6 @@ func TestReadDirectory(t *testing.T) {
 				t.Errorf("ReadDirectory() gotOk = %v, want %v", gotOk, tt.wantOk)
 			}
 			o.Report(t, "ReadDirectory()", tt.WantedRecording)
-		})
-	}
-}
-
-func TestReportDirectoryCreationFailure(t *testing.T) {
-	type args struct {
-		cmd string
-		dir string
-		e   error
-	}
-	tests := map[string]struct {
-		args
-		output.WantedRecording
-	}{
-		"basic": {
-			args: args{cmd: "myCommand", dir: "myPoorDirectory", e: errors.New("system busy")},
-			WantedRecording: output.WantedRecording{
-				Error: "The directory \"myPoorDirectory\" cannot be created: system busy.\n",
-				Log:   "level='error' command='myCommand' directory='myPoorDirectory' error='system busy' msg='cannot create directory'\n",
-			},
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			o := output.NewRecorder()
-			ReportDirectoryCreationFailure(o, tt.args.cmd, tt.args.dir, tt.args.e)
-			o.Report(t, "ReportDirectoryCreationFailure()", tt.WantedRecording)
 		})
 	}
 }
@@ -387,50 +371,6 @@ func TestReportFileCreationFailure(t *testing.T) {
 	}
 }
 
-func TestReportFileDeletionFailure(t *testing.T) {
-	type args struct {
-		file string
-		e    error
-	}
-	tests := map[string]struct {
-		args
-		output.WantedRecording
-	}{
-		"basic": {
-			args: args{file: "myPoorFile", e: errors.New("file locked")},
-			WantedRecording: output.WantedRecording{
-				Error: "The file \"myPoorFile\" cannot be deleted: file locked.\n",
-				Log:   "level='error' error='file locked' fileName='myPoorFile' msg='cannot delete file'\n",
-			},
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			o := output.NewRecorder()
-			ReportFileDeletionFailure(o, tt.args.file, tt.args.e)
-			o.Report(t, "ReportFileDeletionFailure()", tt.WantedRecording)
-		})
-	}
-}
-
-func TestSecureAbsolutePath(t *testing.T) {
-	goodFilePath, _ := filepath.Abs("goodFile")
-	tests := map[string]struct {
-		path string
-		want string
-	}{
-		"bad file name":  {path: "badFile\u0000", want: ""},
-		"good file name": {path: "goodFile", want: goodFilePath},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			if got := SecureAbsolutePath(tt.path); got != tt.want {
-				t.Errorf("SecureAbsolutePath() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestWriteDirectoryCreationError(t *testing.T) {
 	type args struct {
 		d string
@@ -441,15 +381,15 @@ func TestWriteDirectoryCreationError(t *testing.T) {
 		output.WantedRecording
 	}{
 		"basic": {
-			args:            args{d: "dirname", e: errors.New("parent directory does not exist")},
-			WantedRecording: output.WantedRecording{Error: "The directory \"dirname\" cannot be created: parent directory does not exist.\n"},
+			args:            args{d: "dirName", e: errors.New("parent directory does not exist")},
+			WantedRecording: output.WantedRecording{Error: "The directory \"dirName\" cannot be created: parent directory does not exist.\n"},
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
-			WriteDirectoryCreationError(o, tt.args.d, tt.args.e)
-			o.Report(t, "WriteDirectoryCreationError()", tt.WantedRecording)
+			writeDirectoryCreationError(o, tt.args.d, tt.args.e)
+			o.Report(t, "writeDirectoryCreationError()", tt.WantedRecording)
 		})
 	}
 }

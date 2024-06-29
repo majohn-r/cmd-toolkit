@@ -108,7 +108,7 @@ func TestDereferenceEnvVar(t *testing.T) {
 			}
 			defer func() {
 				for _, memento := range mementos {
-					memento.Restore()
+					memento.restore()
 				}
 			}()
 			got, gotErr := DereferenceEnvVar(tt.s)
@@ -309,9 +309,9 @@ func TestEnvVarMemento_Restore(t *testing.T) {
 			} else {
 				_ = os.Unsetenv(varName)
 			}
-			tt.mem.Restore()
+			tt.mem.restore()
 			if gotValue, gotSet := os.LookupEnv(varName); gotValue != tt.wantValue || gotSet != tt.wantSet {
-				t.Errorf("envVarMemento.Restore = (%q, %t) want (%q, %t)", gotValue, gotSet, tt.wantValue, tt.wantSet)
+				t.Errorf("envVarMemento.restore = (%q, %t) want (%q, %t)", gotValue, gotSet, tt.wantValue, tt.wantSet)
 			}
 		})
 	}

@@ -30,8 +30,8 @@ var (
 	// this may be reset by SetAuthor()
 	author = "Marc Johnson"
 	// this should be reset by SetFirstYear()
-	firstYear                                       = time.Now().Year()
-	buildInfoReader func() (*debug.BuildInfo, bool) = debug.ReadBuildInfo
+	firstYear       = time.Now().Year()
+	buildInfoReader = debug.ReadBuildInfo
 )
 
 // BuildDependencies returns information about the dependencies used to compile
@@ -66,12 +66,6 @@ func InterpretBuildData() (goVersion string, dependencies []string) {
 		dependencies = append(dependencies, fmt.Sprintf("%s %s", d.Path, d.Version))
 	}
 	return
-}
-
-// SetAuthor is used to override the default value of author, in case someone
-// besides me decides to use this library
-func SetAuthor(s string) {
-	author = s
 }
 
 // SetFirstYear sets the first year of application development
@@ -170,7 +164,7 @@ type aboutCmd struct {
 
 // Exec runs the command. The args parameter is ignored, and the method always
 // returns true.
-func (a *aboutCmd) Exec(o output.Bus, args []string) (ok bool) {
+func (a *aboutCmd) Exec(o output.Bus, _ []string) (ok bool) {
 	LogCommandStart(o, aboutCommandName, map[string]any{})
 	generateAboutContent(o)
 	return true
@@ -201,6 +195,6 @@ func Copyright(o output.Bus, first int, timestamp, owner string) string {
 	return formatCopyright(first, finalYear(o, timestamp), owner)
 }
 
-func newAboutCmd(o output.Bus, _ *Configuration, _ *flag.FlagSet) (CommandProcessor, bool) {
+func newAboutCmd(_ output.Bus, _ *Configuration, _ *flag.FlagSet) (CommandProcessor, bool) {
 	return &aboutCmd{}, true
 }

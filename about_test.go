@@ -154,27 +154,6 @@ func TestInitBuildData(t *testing.T) {
 	}
 }
 
-func TestSetAuthor(t *testing.T) {
-	savedAuthor := author
-	defer func() {
-		author = savedAuthor
-	}()
-	tests := map[string]struct {
-		s    string
-		want string
-	}{
-		"simple": {s: "a brilliant author", want: "a brilliant author"},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			SetAuthor(tt.s)
-			if got := author; got != tt.want {
-				t.Errorf("SetAuthor() got %q want %q", got, tt.want)
-			}
-		})
-	}
-}
-
 func Test_setFirstYear(t *testing.T) {
 	savedFirstYear := firstYear
 	defer func() {
@@ -424,7 +403,7 @@ func Test_aboutCmd_Exec(t *testing.T) {
 		firstYear = savedFirstYear
 	}()
 	tests := map[string]struct {
-		appname           string
+		appName           string
 		goVersion         string
 		buildDependencies []string
 		appVersion        string
@@ -435,7 +414,7 @@ func Test_aboutCmd_Exec(t *testing.T) {
 		output.WantedRecording
 	}{
 		"no appName": {
-			appname:           "",
+			appName:           "",
 			goVersion:         "unknown",
 			buildDependencies: nil,
 			appVersion:        "0.0.1beta",
@@ -458,7 +437,7 @@ func Test_aboutCmd_Exec(t *testing.T) {
 			},
 		},
 		"with appName": {
-			appname:   "BrilliantApp.exe",
+			appName:   "BrilliantApp.exe",
 			goVersion: "go19.4",
 			buildDependencies: []string{
 				"github.com/majohn-r/output v0.1.1",
@@ -491,7 +470,7 @@ func Test_aboutCmd_Exec(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			appName = tt.appname
+			appName = tt.appName
 			goVersion = tt.goVersion
 			buildDependencies = tt.buildDependencies
 			appVersion = tt.appVersion
