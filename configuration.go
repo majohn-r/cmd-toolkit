@@ -244,11 +244,6 @@ func (c *Configuration) BoolDefault(key string, defaultValue bool) (bool, error)
 	return cookedValue, nil
 }
 
-func (c *Configuration) booleanValue(key string) (value, exists bool) {
-	value, exists = c.bMap[key]
-	return
-}
-
 // IntDefault returns a default value for a specified key, which may or may not
 // be defined in the Configuration instance
 func (c *Configuration) IntDefault(key string, b *IntBounds) (int, error) {
@@ -270,12 +265,6 @@ func (c *Configuration) IntDefault(key string, b *IntBounds) (int, error) {
 		return b.Default(), fmt.Errorf("invalid value %q for flag %s%s: parse error", rawValue, flagIndicator(), key)
 	}
 	return b.constrainedValue(cookedValue), nil
-}
-
-// IntValue returns an int value and whether it exists
-func (c *Configuration) IntValue(key string) (value int, exists bool) {
-	value, exists = c.iMap[key]
-	return
 }
 
 // StringDefault returns a string value for a specified key

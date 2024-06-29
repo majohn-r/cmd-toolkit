@@ -84,24 +84,24 @@ func determineDefaultCommand(o output.Bus, c *Configuration) (defaultCommand str
 		}
 	default:
 		// common case: there is more than 1 command defined
-		defaultCmds := make([]string, 0, len(descriptions))
+		defaultCommands := make([]string, 0, len(descriptions))
 		for name, d := range descriptions {
 			if d.IsDefault {
-				defaultCmds = append(defaultCmds, name)
+				defaultCommands = append(defaultCommands, name)
 			}
 		}
-		switch len(defaultCmds) {
+		switch len(defaultCommands) {
 		case 0:
 			o.Log(output.Error, "No default command", map[string]any{"commands": describedCommandNames("")})
 			o.WriteCanonicalError("A programming error has occurred - none of the defined commands is defined as the default command.")
 			defaultFound = false
 		case 1:
-			defaultCommand = defaultCmds[0]
+			defaultCommand = defaultCommands[0]
 			defaultFound = true
 		default:
-			sort.Strings(defaultCmds)
-			o.WriteCanonicalError("A programming error has occurred - multiple commands (%v) are defined as default commands.", defaultCmds)
-			o.Log(output.Error, "multiple default commands", map[string]any{"commands": defaultCmds})
+			sort.Strings(defaultCommands)
+			o.WriteCanonicalError("A programming error has occurred - multiple commands (%v) are defined as default commands.", defaultCommands)
+			o.Log(output.Error, "multiple default commands", map[string]any{"commands": defaultCommands})
 			defaultFound = false
 		}
 	}
