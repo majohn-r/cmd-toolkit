@@ -105,10 +105,10 @@ func TestNewConfiguration(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
-			if got := NewConfiguration(o, tt.data); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewConfiguration() = %v, want %v", got, tt.want)
+			if got := newConfiguration(o, tt.data); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("newConfiguration() = %v, want %v", got, tt.want)
 			}
-			o.Report(t, "NewConfiguration()", tt.WantedRecording)
+			o.Report(t, "newConfiguration()", tt.WantedRecording)
 		})
 	}
 }
@@ -159,7 +159,7 @@ func TestReadConfigurationFile(t *testing.T) {
 			preTest: func() {
 				applicationPath = "configFileDir"
 				defaultConfigFileName = "dir.yaml"
-				fileSystem.MkdirAll(filepath.Join(applicationPath, defaultConfigFileName), StdDirPermissions)
+				_ = fileSystem.MkdirAll(filepath.Join(applicationPath, defaultConfigFileName), StdDirPermissions)
 			},
 			wantC: EmptyConfiguration(),
 			WantedRecording: output.WantedRecording{
@@ -185,8 +185,8 @@ func TestReadConfigurationFile(t *testing.T) {
 			preTest: func() {
 				applicationPath = "garbageDir"
 				defaultConfigFileName = "trash.yaml"
-				fileSystem.Mkdir(applicationPath, StdDirPermissions)
-				afero.WriteFile(fileSystem, filepath.Join(applicationPath, defaultConfigFileName), []byte{1, 2, 3}, StdFilePermissions)
+				_ = fileSystem.Mkdir(applicationPath, StdDirPermissions)
+				_ = afero.WriteFile(fileSystem, filepath.Join(applicationPath, defaultConfigFileName), []byte{1, 2, 3}, StdFilePermissions)
 			},
 			wantC: EmptyConfiguration(),
 			WantedRecording: output.WantedRecording{
@@ -198,7 +198,7 @@ func TestReadConfigurationFile(t *testing.T) {
 			preTest: func() {
 				applicationPath = "happyDir"
 				defaultConfigFileName = "good.yaml"
-				fileSystem.Mkdir(applicationPath, StdDirPermissions)
+				_ = fileSystem.Mkdir(applicationPath, StdDirPermissions)
 				content := "" +
 					"b: true\n" +
 					"i: 12\n" +
@@ -309,13 +309,13 @@ func Test_verifyDefaultConfigFileExists(t *testing.T) {
 	}{
 		"path is a directory": {
 			preTest: func() {
-				fileSystem.Mkdir("testpath", StdDirPermissions)
+				_ = fileSystem.Mkdir("testPath", StdDirPermissions)
 			},
-			path:    "testpath",
+			path:    "testPath",
 			wantErr: true,
 			WantedRecording: output.WantedRecording{
-				Error: "The configuration file \"testpath\" is a directory.\n",
-				Log:   "level='error' directory='.' fileName='testpath' msg='file is a directory'\n",
+				Error: "The configuration file \"testPath\" is a directory.\n",
+				Log:   "level='error' directory='.' fileName='testPath' msg='file is a directory'\n",
 			},
 		},
 		"path does not exist": {
@@ -325,11 +325,11 @@ func Test_verifyDefaultConfigFileExists(t *testing.T) {
 		},
 		"path is a valid file": {
 			preTest: func() {
-				path := "testpath2"
-				fileSystem.Mkdir(path, StdDirPermissions)
-				afero.WriteFile(fileSystem, filepath.Join(path, "happy.yaml"), []byte("boo"), StdFilePermissions)
+				path := "testPath2"
+				_ = fileSystem.Mkdir(path, StdDirPermissions)
+				_ = afero.WriteFile(fileSystem, filepath.Join(path, "happy.yaml"), []byte("boo"), StdFilePermissions)
 			},
-			path:   filepath.Join("testpath2", "happy.yaml"),
+			path:   filepath.Join("testPath2", "happy.yaml"),
 			wantOk: true,
 		},
 	}
@@ -383,13 +383,13 @@ func TestConfiguration_String(t *testing.T) {
 }
 
 func TestConfiguration_BoolDefault(t *testing.T) {
-	envVar := "TESTVAR"
+	envVar := "TEST_VAR"
 	savedValue, savedStatus := os.LookupEnv(envVar)
 	defer func() {
 		if savedStatus {
-			os.Setenv(envVar, savedValue)
+			_ = os.Setenv(envVar, savedValue)
 		} else {
-			os.Unsetenv(envVar)
+			_ = os.Unsetenv(envVar)
 		}
 	}()
 	type args struct {
@@ -503,9 +503,9 @@ func TestConfiguration_BoolDefault(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			if tt.envSet {
-				os.Setenv(envVar, tt.envValue)
+				_ = os.Setenv(envVar, tt.envValue)
 			} else {
-				os.Unsetenv(envVar)
+				_ = os.Unsetenv(envVar)
 			}
 			gotB, gotErr := tt.c.BoolDefault(tt.args.key, tt.args.defaultValue)
 			if (gotErr != nil) != tt.wantErr {
@@ -520,13 +520,13 @@ func TestConfiguration_BoolDefault(t *testing.T) {
 }
 
 func TestConfiguration_IntDefault(t *testing.T) {
-	envVar := "TESTVAR"
+	envVar := "TEST_VAR"
 	savedValue, savedStatus := os.LookupEnv(envVar)
 	defer func() {
 		if savedStatus {
-			os.Setenv(envVar, savedValue)
+			_ = os.Setenv(envVar, savedValue)
 		} else {
-			os.Unsetenv(envVar)
+			_ = os.Unsetenv(envVar)
 		}
 	}()
 	type args struct {
@@ -589,9 +589,9 @@ func TestConfiguration_IntDefault(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			if tt.envSet {
-				os.Setenv(envVar, tt.envValue)
+				_ = os.Setenv(envVar, tt.envValue)
 			} else {
-				os.Unsetenv(envVar)
+				_ = os.Unsetenv(envVar)
 			}
 			gotI, gotErr := tt.c.IntDefault(tt.args.key, tt.args.b)
 			if (gotErr != nil) != tt.wantErr {
@@ -606,20 +606,20 @@ func TestConfiguration_IntDefault(t *testing.T) {
 }
 
 func TestConfiguration_StringDefault(t *testing.T) {
-	envVar1 := "TESTVAR1"
+	envVar1 := "TEST_VAR1"
 	savedValue1, savedStatus1 := os.LookupEnv(envVar1)
-	envVar2 := "TESTVAR2"
+	envVar2 := "TEST_VAR2"
 	savedValue2, savedStatus2 := os.LookupEnv(envVar2)
 	defer func() {
 		if savedStatus1 {
-			os.Setenv(envVar1, savedValue1)
+			_ = os.Setenv(envVar1, savedValue1)
 		} else {
-			os.Unsetenv(envVar1)
+			_ = os.Unsetenv(envVar1)
 		}
 		if savedStatus2 {
-			os.Setenv(envVar2, savedValue2)
+			_ = os.Setenv(envVar2, savedValue2)
 		} else {
-			os.Unsetenv(envVar2)
+			_ = os.Unsetenv(envVar2)
 		}
 	}()
 	type args struct {
@@ -676,14 +676,14 @@ func TestConfiguration_StringDefault(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			if tt.envSet1 {
-				os.Setenv(envVar1, tt.envValue1)
+				_ = os.Setenv(envVar1, tt.envValue1)
 			} else {
-				os.Unsetenv(envVar1)
+				_ = os.Unsetenv(envVar1)
 			}
 			if tt.envSet2 {
-				os.Setenv(envVar2, tt.envValue2)
+				_ = os.Setenv(envVar2, tt.envValue2)
 			} else {
-				os.Unsetenv(envVar2)
+				_ = os.Unsetenv(envVar2)
 			}
 			gotS, gotErr := tt.c.StringDefault(tt.args.key, tt.args.defaultValue)
 			if (gotErr != nil) != tt.wantErr {

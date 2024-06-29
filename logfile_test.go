@@ -13,15 +13,15 @@ import (
 )
 
 func Test_initWriter(t *testing.T) {
-	originalTmp := NewEnvVarMemento("TMP")
-	originalTemp := NewEnvVarMemento("TEMP")
-	originalAppname := appname
+	originalTmp := newEnvVarMemento("TMP")
+	originalTemp := newEnvVarMemento("TEMP")
+	originalAppName := appName
 	originalLogPath := logPath
 	originalFileSystem := fileSystem
 	defer func() {
 		originalTmp.Restore()
 		originalTemp.Restore()
-		appname = originalAppname
+		appName = originalAppName
 		logPath = originalLogPath
 		fileSystem = originalFileSystem
 	}()
@@ -35,18 +35,18 @@ func Test_initWriter(t *testing.T) {
 	}{
 		"no temp folder defined": {
 			preTest: func() {
-				os.Unsetenv("TMP")
-				os.Unsetenv("TEMP")
+				_ = os.Unsetenv("TMP")
+				_ = os.Unsetenv("TEMP")
 			},
 			postTest:        func() {},
 			wantNil:         true,
 			WantedRecording: output.WantedRecording{Error: "Neither the TMP nor TEMP environment variables are defined.\n"},
 		},
-		"uninitialized appname": {
+		"uninitialized appName": {
 			preTest: func() {
-				os.Setenv("TMP", "logs1")
-				os.Unsetenv("TEMP")
-				appname = ""
+				_ = os.Setenv("TMP", "logs1")
+				_ = os.Unsetenv("TEMP")
+				appName = ""
 			},
 			postTest:        func() {},
 			wantNil:         true,
@@ -54,10 +54,10 @@ func Test_initWriter(t *testing.T) {
 		},
 		"bad TMP setting": {
 			preTest: func() {
-				os.Setenv("TMP", "logs2")
-				os.Unsetenv("TEMP")
-				appname = "myApp"
-				afero.WriteFile(fileSystem, "logs2", []byte{}, StdFilePermissions)
+				_ = os.Setenv("TMP", "logs2")
+				_ = os.Unsetenv("TEMP")
+				appName = "myApp"
+				_ = afero.WriteFile(fileSystem, "logs2", []byte{}, StdFilePermissions)
 			},
 			postTest: func() {
 			},
@@ -69,9 +69,9 @@ func Test_initWriter(t *testing.T) {
 		},
 		"success": {
 			preTest: func() {
-				os.Setenv("TMP", "goodLogs")
-				os.Unsetenv("TEMP")
-				appname = "myApp"
+				_ = os.Setenv("TMP", "goodLogs")
+				_ = os.Unsetenv("TEMP")
+				appName = "myApp"
 			},
 			postTest: func() {
 				// critical to close logWriter, otherwise, "goodLogs" cannot be
@@ -134,18 +134,18 @@ func Test_cleanup(t *testing.T) {
 		},
 		"empty directory": {
 			preTest: func() {
-				fileSystem.Mkdir("empty", StdDirPermissions)
+				_ = fileSystem.Mkdir("empty", StdDirPermissions)
 			},
 			postTest: func(_ *testing.T) {},
 			path:     "empty",
 		},
 		"maxLogFiles present": {
 			preTest: func() {
-				fileSystem.Mkdir("maxLogFiles", StdDirPermissions)
+				_ = fileSystem.Mkdir("maxLogFiles", StdDirPermissions)
 				prefix := logFilePrefix()
 				for k := 0; k < maxLogFiles; k++ {
 					fileName := fmt.Sprintf("%s%d%s", prefix, k, logFileExtension)
-					afero.WriteFile(fileSystem, filepath.Join("maxLogFiles", fileName), []byte{0, 1, 2}, StdFilePermissions)
+					_ = afero.WriteFile(fileSystem, filepath.Join("maxLogFiles", fileName), []byte{0, 1, 2}, StdFilePermissions)
 				}
 			},
 			postTest:  func(_ *testing.T) {},
@@ -154,11 +154,11 @@ func Test_cleanup(t *testing.T) {
 		},
 		"lots of files present": {
 			preTest: func() {
-				fileSystem.Mkdir("manyLogFiles", StdDirPermissions)
+				_ = fileSystem.Mkdir("manyLogFiles", StdDirPermissions)
 				prefix := logFilePrefix()
 				for k := 0; k < maxLogFiles+1; k++ {
 					fileName := fmt.Sprintf("%s%d%s", prefix, k, logFileExtension)
-					afero.WriteFile(fileSystem, filepath.Join("manyLogFiles", fileName), []byte{0, 1, 2}, StdFilePermissions)
+					_ = afero.WriteFile(fileSystem, filepath.Join("manyLogFiles", fileName), []byte{0, 1, 2}, StdFilePermissions)
 					time.Sleep(100 * time.Millisecond)
 				}
 			},
@@ -215,8 +215,8 @@ func Test_deleteLogFile(t *testing.T) {
 		},
 		"success": {
 			preTest: func() {
-				fileSystem.Mkdir("logs", StdDirPermissions)
-				afero.WriteFile(fileSystem, filepath.Join("logs", "file.log"), []byte{}, StdFilePermissions)
+				_ = fileSystem.Mkdir("logs", StdDirPermissions)
+				_ = afero.WriteFile(fileSystem, filepath.Join("logs", "file.log"), []byte{}, StdFilePermissions)
 			},
 			logFile: filepath.Join("logs", "file.log"),
 		},
@@ -232,8 +232,8 @@ func Test_deleteLogFile(t *testing.T) {
 }
 
 func Test_findTemp(t *testing.T) {
-	savedTmp := NewEnvVarMemento("TMP")
-	savedTemp := NewEnvVarMemento("TEMP")
+	savedTmp := newEnvVarMemento("TMP")
+	savedTemp := newEnvVarMemento("TEMP")
 	defer func() {
 		savedTmp.Restore()
 		savedTemp.Restore()
@@ -246,31 +246,31 @@ func Test_findTemp(t *testing.T) {
 	}{
 		"no temp vars": {
 			preTest: func() {
-				os.Unsetenv("TMP")
-				os.Unsetenv("TEMP")
+				_ = os.Unsetenv("TMP")
+				_ = os.Unsetenv("TEMP")
 			},
 			WantedRecording: output.WantedRecording{Error: "Neither the TMP nor TEMP environment variables are defined.\n"},
 		},
 		"TMP, no TEMP": {
 			preTest: func() {
-				os.Setenv("TMP", "tmp")
-				os.Unsetenv("TEMP")
+				_ = os.Setenv("TMP", "tmp")
+				_ = os.Unsetenv("TEMP")
 			},
 			want:  "tmp",
 			want1: true,
 		},
 		"TEMP, no TMP": {
 			preTest: func() {
-				os.Setenv("TEMP", "temp")
-				os.Unsetenv("TMP")
+				_ = os.Setenv("TEMP", "temp")
+				_ = os.Unsetenv("TMP")
 			},
 			want:  "temp",
 			want1: true,
 		},
 		"TMP and TEMP": {
 			preTest: func() {
-				os.Setenv("TMP", "tmp")
-				os.Setenv("TEMP", "temp")
+				_ = os.Setenv("TMP", "tmp")
+				_ = os.Setenv("TEMP", "temp")
 			},
 			want:  "tmp",
 			want1: true,
@@ -362,9 +362,9 @@ func Test_isLogFile(t *testing.T) {
 }
 
 func Test_logFilePrefix(t *testing.T) {
-	savedAppname := appname
+	savedAppName := appName
 	defer func() {
-		appname = savedAppname
+		appName = savedAppName
 	}()
 	tests := map[string]struct {
 		preTest func()
@@ -372,13 +372,13 @@ func Test_logFilePrefix(t *testing.T) {
 	}{
 		"bad app name": {
 			preTest: func() {
-				appname = ""
+				appName = ""
 			},
 			want: "_log_.",
 		},
 		"good app name": {
 			preTest: func() {
-				appname = "myApp"
+				appName = "myApp"
 			},
 			want: "myApp.",
 		},

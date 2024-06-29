@@ -109,33 +109,33 @@ func TestProcessCommand(t *testing.T) {
 	}{
 		"fail to get configuration file": {
 			preTest: func() {
-				applicationPath = "badConfigfile"
-				fileSystem.Mkdir(applicationPath, StdDirPermissions)
+				applicationPath = "badConfigFile"
+				_ = fileSystem.Mkdir(applicationPath, StdDirPermissions)
 				fileName := filepath.Join(applicationPath, defaultConfigFileName)
-				afero.WriteFile(fileSystem, fileName, []byte{1, 2, 3}, StdFilePermissions) // this will not read well as YAML
+				_ = afero.WriteFile(fileSystem, fileName, []byte{1, 2, 3}, StdFilePermissions) // this will not read well as YAML
 			},
 			WantedRecording: output.WantedRecording{
-				Error: "The configuration file \"badConfigfile\\\\defaults.yaml\" is not well-formed YAML: yaml: control characters are not allowed.\n",
-				Log:   "level='error' directory='badConfigfile' error='yaml: control characters are not allowed' fileName='defaults.yaml' msg='cannot unmarshal yaml content'\n",
+				Error: "The configuration file \"badConfigFile\\\\defaults.yaml\" is not well-formed YAML: yaml: control characters are not allowed.\n",
+				Log:   "level='error' directory='badConfigFile' error='yaml: control characters are not allowed' fileName='defaults.yaml' msg='cannot unmarshal yaml content'\n",
 			},
 		},
 		"non-existent configuration file, no commands registered": {
 			preTest: func() {
-				applicationPath = "noConfigfile"
-				fileSystem.Mkdir(applicationPath, StdDirPermissions)
+				applicationPath = "noConfigFile"
+				_ = fileSystem.Mkdir(applicationPath, StdDirPermissions)
 				descriptions = map[string]*CommandDescription{}
 			},
 			WantedRecording: output.WantedRecording{
 				Error: "A programming error has occurred - there are no commands registered!\n",
 				Log: "" +
-					"level='info' directory='noConfigfile' fileName='defaults.yaml' msg='file does not exist'\n" +
+					"level='info' directory='noConfigFile' fileName='defaults.yaml' msg='file does not exist'\n" +
 					"level='error'  msg='no commands registered'\n",
 			},
 		},
 		"non-existent configuration file, bad command initialization": {
 			preTest: func() {
-				applicationPath = "noConfigfile"
-				fileSystem.Mkdir(applicationPath, StdDirPermissions)
+				applicationPath = "noConfigFile"
+				_ = fileSystem.Mkdir(applicationPath, StdDirPermissions)
 				descriptions = map[string]*CommandDescription{
 					"about": {
 						Initializer: func(_ output.Bus, _ *Configuration, _ *flag.FlagSet) (CommandProcessor, bool) {
@@ -144,12 +144,12 @@ func TestProcessCommand(t *testing.T) {
 					},
 				}
 			},
-			WantedRecording: output.WantedRecording{Log: "level='info' directory='noConfigfile' fileName='defaults.yaml' msg='file does not exist'\n"},
+			WantedRecording: output.WantedRecording{Log: "level='info' directory='noConfigFile' fileName='defaults.yaml' msg='file does not exist'\n"},
 		},
 		"success": {
 			preTest: func() {
-				applicationPath = "noConfigfile"
-				fileSystem.Mkdir(applicationPath, StdDirPermissions)
+				applicationPath = "noConfigFile"
+				_ = fileSystem.Mkdir(applicationPath, StdDirPermissions)
 				descriptions = map[string]*CommandDescription{
 					"about": {
 						Initializer: func(_ output.Bus, _ *Configuration, _ *flag.FlagSet) (CommandProcessor, bool) {
@@ -162,24 +162,24 @@ func TestProcessCommand(t *testing.T) {
 			wantCmd:         true,
 			wantCmdArgs:     []string{"-flag1", "-flag2"},
 			wantOk:          true,
-			WantedRecording: output.WantedRecording{Log: "level='info' directory='noConfigfile' fileName='defaults.yaml' msg='file does not exist'\n"},
+			WantedRecording: output.WantedRecording{Log: "level='info' directory='noConfigFile' fileName='defaults.yaml' msg='file does not exist'\n"},
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
 			o := output.NewRecorder()
-			gotCmd, gotCmdArgs, gotOk := ProcessCommand(o, tt.args)
+			gotCmd, gotCmdArgs, gotOk := processCommand(o, tt.args)
 			if (gotCmd != nil) != tt.wantCmd {
-				t.Errorf("ProcessCommand() gotCmd = %v, want %v", gotCmd, tt.wantCmd)
+				t.Errorf("processCommand() gotCmd = %v, want %v", gotCmd, tt.wantCmd)
 			}
 			if !reflect.DeepEqual(gotCmdArgs, tt.wantCmdArgs) {
-				t.Errorf("ProcessCommand() gotCmdArgs = %v, want %v", gotCmdArgs, tt.wantCmdArgs)
+				t.Errorf("processCommand() gotCmdArgs = %v, want %v", gotCmdArgs, tt.wantCmdArgs)
 			}
 			if gotOk != tt.wantOk {
-				t.Errorf("ProcessCommand() gotOk = %v, want %v", gotOk, tt.wantOk)
+				t.Errorf("processCommand() gotOk = %v, want %v", gotOk, tt.wantOk)
 			}
-			o.Report(t, "ProcessCommand()", tt.WantedRecording)
+			o.Report(t, "processCommand()", tt.WantedRecording)
 		})
 	}
 }
@@ -224,7 +224,7 @@ func Test_determineDefaultCommand(t *testing.T) {
 	}{
 		"configured good default": {
 			descriptions: map[string]*CommandDescription{"about": {}},
-			c: NewConfiguration(output.NewNilBus(), map[string]any{
+			c: newConfiguration(output.NewNilBus(), map[string]any{
 				"default": "about",
 			}),
 			wantDefaultCommand: "about",
@@ -232,7 +232,7 @@ func Test_determineDefaultCommand(t *testing.T) {
 		},
 		"configured bad default": {
 			descriptions: map[string]*CommandDescription{"about": {}},
-			c: NewConfiguration(output.NewNilBus(), map[string]any{
+			c: newConfiguration(output.NewNilBus(), map[string]any{
 				"default": "help",
 			}),
 			WantedRecording: output.WantedRecording{

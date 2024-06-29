@@ -409,14 +409,14 @@ func Test_aboutCmd_Exec(t *testing.T) {
 	makeAboutCmd := func() *aboutCmd {
 		return &aboutCmd{}
 	}
-	savedAppName := appname
+	savedAppName := appName
 	savedGoVersion := goVersion
 	savedBuildDependencies := buildDependencies
 	savedAppVersion := appVersion
 	savedBuildTimestamp := buildTimestamp
 	savedFirstYear := firstYear
 	defer func() {
-		appname = savedAppName
+		appName = savedAppName
 		goVersion = savedGoVersion
 		buildDependencies = savedBuildDependencies
 		appVersion = savedAppVersion
@@ -434,7 +434,7 @@ func Test_aboutCmd_Exec(t *testing.T) {
 		wantOk            bool
 		output.WantedRecording
 	}{
-		"no appname": {
+		"no appName": {
 			appname:           "",
 			goVersion:         "unknown",
 			buildDependencies: nil,
@@ -457,7 +457,7 @@ func Test_aboutCmd_Exec(t *testing.T) {
 					"level='error' error='parsing time \"whenever\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"whenever\" as \"2006\"' value='whenever' msg='parse error'\n",
 			},
 		},
-		"with appname": {
+		"with appName": {
 			appname:   "BrilliantApp.exe",
 			goVersion: "go19.4",
 			buildDependencies: []string{
@@ -491,7 +491,7 @@ func Test_aboutCmd_Exec(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			appname = tt.appname
+			appName = tt.appname
 			goVersion = tt.goVersion
 			buildDependencies = tt.buildDependencies
 			appVersion = tt.appVersion

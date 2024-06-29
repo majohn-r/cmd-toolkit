@@ -16,7 +16,7 @@ var applicationPath string
 
 const applicationDataEnvVarName = "APPDATA"
 
-// ApplicationPath returns the path to application-specific data (%APPDATA%\appname)
+// ApplicationPath returns the path to application-specific data (%APPDATA%\appName)
 func ApplicationPath() string {
 	return applicationPath
 }

@@ -74,9 +74,7 @@ func EmptyConfiguration() *Configuration {
 	}
 }
 
-// NewConfiguration returns a Configuration instance populated as specified by
-// the data parameter
-func NewConfiguration(o output.Bus, data map[string]any) *Configuration {
+func newConfiguration(o output.Bus, data map[string]any) *Configuration {
 	c := EmptyConfiguration()
 	for key, v := range data {
 		switch t := v.(type) {
@@ -87,7 +85,7 @@ func NewConfiguration(o output.Bus, data map[string]any) *Configuration {
 		case int:
 			c.iMap[key] = t
 		case map[string]any:
-			c.cMap[key] = NewConfiguration(o, t)
+			c.cMap[key] = newConfiguration(o, t)
 		default:
 			o.Log(output.Error, "unexpected value type", map[string]any{
 				"key":   key,
@@ -101,7 +99,7 @@ func NewConfiguration(o output.Bus, data map[string]any) *Configuration {
 	return c
 }
 
-// NewIntBounds creates a instance of IntBounds, sorting the provided value into
+// NewIntBounds creates an instance of IntBounds, sorting the provided value into
 // reasonable fields
 func NewIntBounds(v1, v2, v3 int) *IntBounds {
 	v := []int{v1, v2, v3}
@@ -140,7 +138,7 @@ func ReadConfigurationFile(o output.Bus) (*Configuration, bool) {
 		o.WriteCanonicalError("The configuration file %q is not well-formed YAML: %v", file, fileError)
 		return c, false
 	}
-	c = NewConfiguration(o, data)
+	c = newConfiguration(o, data)
 	o.Log(output.Info, "read configuration file", map[string]any{
 		"directory": path,
 		"fileName":  defaultConfigFileName,

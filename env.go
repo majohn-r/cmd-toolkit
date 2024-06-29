@@ -12,7 +12,7 @@ import (
 
 var (
 	// the name of the application
-	appname string
+	appName string
 	// regular expressions for detecting environment variable references ($VAR or %VAR%)
 	unixPattern    = regexp.MustCompile(`[$][a-zA-Z_]+[a-zA-Z0-9_]*`)
 	windowsPattern = regexp.MustCompile(`%[a-zA-Z_]+[a-zA-Z0-9_]*%`)
@@ -28,10 +28,10 @@ type envVarMemento struct {
 
 // AppName retrieves the name of the application
 func AppName() (string, error) {
-	if appname == "" {
+	if appName == "" {
 		return "", errors.New("app name has not been initialized")
 	}
-	return appname, nil
+	return appName, nil
 }
 
 // CreateAppSpecificPath creates a path string for an app-related directory
@@ -76,9 +76,7 @@ func DereferenceEnvVar(s string) (string, error) {
 	return s, nil
 }
 
-// NewEnvVarMemento reads a specified environment variable and returns a
-// memento of its state
-func NewEnvVarMemento(name string) *envVarMemento {
+func newEnvVarMemento(name string) *envVarMemento {
 	s := &envVarMemento{name: name}
 	if value, varDefined := os.LookupEnv(name); varDefined {
 		s.value = value
@@ -94,15 +92,15 @@ func SetAppName(s string) error {
 	if s == "" {
 		return errors.New("cannot initialize app name with an empty string")
 	}
-	if appname != "" && appname != s {
-		return fmt.Errorf("app name has already been initialized: %s", appname)
+	if appName != "" && appName != s {
+		return fmt.Errorf("app name has already been initialized: %s", appName)
 	}
-	appname = s
+	appName = s
 	return nil
 }
 
 func findReferences(s string) []string {
-	squishDups := func(s []string) []string {
+	squishDuplicates := func(s []string) []string {
 		found := map[string]bool{}
 		for _, name := range s {
 			found[name] = true
@@ -113,9 +111,9 @@ func findReferences(s string) []string {
 		}
 		return keys
 	}
-	matches := squishDups(unixPattern.FindAllString(s, -1))
+	matches := squishDuplicates(unixPattern.FindAllString(s, -1))
 	// unix-style variable references can easily be confused: $MYAPP and
-	// $MYAPPUSER are both valid, and it would be unfortunate if a string
+	// $MYAPP_USER are both valid, and it would be unfortunate if a string
 	// containing both of them dereferenced the shorter one first. So, we sort
 	// them from longest to shortest, and that's the order in which they'll be
 	// dereferenced
@@ -123,10 +121,10 @@ func findReferences(s string) []string {
 		sort.Sort(byLength(matches))
 	}
 	// but windows-style variable references, which begin and end with '%', do
-	// not suffer from the same issue - %MYAPP% and %MYAPPUSER% are not going to
+	// not suffer from the same issue - %MYAPP% and %MYAPP_USER% are not going to
 	// clobber each other, regardless of the order in which they are
 	// dereferenced - so they don't need to be sorted
-	windowsMatches := squishDups(windowsPattern.FindAllString(s, -1))
+	windowsMatches := squishDuplicates(windowsPattern.FindAllString(s, -1))
 	sort.Strings(windowsMatches) // sorted alphabetically for determinism in testing
 	matches = append(matches, windowsMatches...)
 	return matches
@@ -148,8 +146,8 @@ func (bl byLength) Swap(i, j int) {
 func (mem *envVarMemento) Restore() {
 	switch mem.set {
 	case true:
-		os.Setenv(mem.name, mem.value)
+		_ = os.Setenv(mem.name, mem.value)
 	case false:
-		os.Unsetenv(mem.name)
+		_ = os.Unsetenv(mem.name)
 	}
 }

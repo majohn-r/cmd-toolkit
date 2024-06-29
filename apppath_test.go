@@ -28,7 +28,7 @@ func TestApplicationPath(t *testing.T) {
 }
 
 func TestInitApplicationPath(t *testing.T) {
-	originalAppname := appname
+	originalAppname := appName
 	originalApplicationPath := applicationPath
 	originalFileSystem := fileSystem
 	var appDataWasSet bool
@@ -38,7 +38,7 @@ func TestInitApplicationPath(t *testing.T) {
 		savedAppDataValue = value
 	}
 	defer func() {
-		appname = originalAppname
+		appName = originalAppname
 		applicationPath = originalApplicationPath
 		if appDataWasSet {
 			os.Setenv(applicationDataEnvVarName, savedAppDataValue)
@@ -122,7 +122,7 @@ func TestInitApplicationPath(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			appname = tt.appname
+			appName = tt.appname
 			applicationPath = ""
 			if tt.appDataSet {
 				os.Setenv(applicationDataEnvVarName, tt.appDataValue)

@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	logInitializer func(output.Bus) bool = InitLogging
+	logInitializer = InitLogging
 )
 
 func Execute(o output.Bus, firstYear int, appName, appVersion, buildTimestamp string, cmdLine []string) (exitCode int) {
@@ -28,7 +28,7 @@ func Execute(o output.Bus, firstYear int, appName, appVersion, buildTimestamp st
 			"dependencies": BuildDependencies(),
 			"args":         cmdLine,
 		})
-		if cmd, args, processed := ProcessCommand(o, cmdLine); processed && cmd != nil {
+		if cmd, args, processed := processCommand(o, cmdLine); processed && cmd != nil {
 			if cmd.Exec(o, args) {
 				exitCode = 0
 			}

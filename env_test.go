@@ -8,21 +8,21 @@ import (
 )
 
 func TestAppName(t *testing.T) {
-	savedAppname := appname
+	savedAppName := appName
 	defer func() {
-		appname = savedAppname
+		appName = savedAppName
 	}()
 	tests := map[string]struct {
-		appname string
+		appName string
 		want    string
 		wantErr bool
 	}{
 		"get empty value":     {wantErr: true},
-		"get non-empty value": {appname: "myApp", want: "myApp"},
+		"get non-empty value": {appName: "myApp", want: "myApp"},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			appname = tt.appname
+			appName = tt.appName
 			got, gotErr := AppName()
 			if (gotErr != nil) != tt.wantErr {
 				t.Errorf("AppName() error = %v, wantErr %v", gotErr, tt.wantErr)
@@ -36,26 +36,26 @@ func TestAppName(t *testing.T) {
 }
 
 func TestCreateAppSpecificPath(t *testing.T) {
-	savedAppname := appname
+	savedAppName := appName
 	defer func() {
-		appname = savedAppname
+		appName = savedAppName
 	}()
 	tests := map[string]struct {
-		appname string
+		appName string
 		topDir  string
 		want    string
 		wantErr bool
 	}{
-		"uninitialized appname": {wantErr: true},
-		"initialized appname": {
-			appname: "myApp",
+		"uninitialized appName": {wantErr: true},
+		"initialized appName": {
+			appName: "myApp",
 			topDir:  "dir",
 			want:    filepath.Join("dir", "myApp"),
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			appname = tt.appname
+			appName = tt.appName
 			got, gotErr := CreateAppSpecificPath(tt.topDir)
 			if (gotErr != nil) != tt.wantErr {
 				t.Errorf("CreateAppSpecificPath() error = %v, wantErr %v", gotErr, tt.wantErr)
@@ -97,13 +97,13 @@ func TestDereferenceEnvVar(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			mementos := []*envVarMemento{}
+			mementos := make([]*envVarMemento, 0)
 			for varName, varValue := range tt.varSettings {
-				mementos = append(mementos, NewEnvVarMemento(varName))
+				mementos = append(mementos, newEnvVarMemento(varName))
 				if varValue == "" {
-					os.Unsetenv(varName)
+					_ = os.Unsetenv(varName)
 				} else {
-					os.Setenv(varName, varValue)
+					_ = os.Setenv(varName, varValue)
 				}
 			}
 			defer func() {
@@ -128,9 +128,9 @@ func TestNewEnvVarMemento(t *testing.T) {
 	savedValue, savedSet := os.LookupEnv(varName)
 	defer func() {
 		if savedSet {
-			os.Setenv(varName, savedValue)
+			_ = os.Setenv(varName, savedValue)
 		} else {
-			os.Unsetenv(varName)
+			_ = os.Unsetenv(varName)
 		}
 	}()
 	tests := map[string]struct {
@@ -159,35 +159,35 @@ func TestNewEnvVarMemento(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			if tt.set {
-				os.Setenv(varName, tt.value)
+				_ = os.Setenv(varName, tt.value)
 			} else {
-				os.Unsetenv(varName)
+				_ = os.Unsetenv(varName)
 			}
-			if got := NewEnvVarMemento(tt.name); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewEnvVarMemento() = %v, want %v", got, tt.want)
+			if got := newEnvVarMemento(tt.name); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("newEnvVarMemento() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
 func TestSetAppName(t *testing.T) {
-	savedAppname := appname
+	savedAppName := appName
 	defer func() {
-		appname = savedAppname
+		appName = savedAppName
 	}()
 	tests := map[string]struct {
-		appname string
+		appName string
 		s       string
 		wantErr bool
 	}{
 		"unset, set to empty":         {wantErr: true},
 		"unset, set to non-empty":     {s: "myApp"},
-		"set, set to same value":      {appname: "myApp", s: "myApp"},
-		"set, set to different value": {appname: "myApp", s: "myOtherApp", wantErr: true},
+		"set, set to same value":      {appName: "myApp", s: "myApp"},
+		"set, set to different value": {appName: "myApp", s: "myOtherApp", wantErr: true},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			appname = tt.appname
+			appName = tt.appName
 			if gotErr := SetAppName(tt.s); (gotErr != nil) != tt.wantErr {
 				t.Errorf("SetAppName() error = %v, wantErr %v", gotErr, tt.wantErr)
 			}
@@ -285,9 +285,9 @@ func TestEnvVarMemento_Restore(t *testing.T) {
 	savedValue, savedSet := os.LookupEnv(varName)
 	defer func() {
 		if savedSet {
-			os.Setenv(varName, savedValue)
+			_ = os.Setenv(varName, savedValue)
 		} else {
-			os.Unsetenv(varName)
+			_ = os.Unsetenv(varName)
 		}
 	}()
 	tests := map[string]struct {
@@ -305,9 +305,9 @@ func TestEnvVarMemento_Restore(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			if tt.preSet {
-				os.Setenv(varName, tt.preValue)
+				_ = os.Setenv(varName, tt.preValue)
 			} else {
-				os.Unsetenv(varName)
+				_ = os.Unsetenv(varName)
 			}
 			tt.mem.Restore()
 			if gotValue, gotSet := os.LookupEnv(varName); gotValue != tt.wantValue || gotSet != tt.wantSet {

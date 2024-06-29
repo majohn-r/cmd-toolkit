@@ -26,7 +26,7 @@ func (*unhappyCommand) Exec(o output.Bus, _ []string) bool {
 }
 
 func TestExecute(t *testing.T) {
-	originalAppname := appname
+	originalAppName := appName
 	originalAppDataValue, originalAppDataSet := os.LookupEnv(applicationDataEnvVarName)
 	originalDescriptions := descriptions
 	originalLogInitializer := logInitializer
@@ -34,11 +34,11 @@ func TestExecute(t *testing.T) {
 	originalFirstYear := firstYear
 	originalFileSystem := fileSystem
 	defer func() {
-		appname = originalAppname
+		appName = originalAppName
 		if originalAppDataSet {
-			os.Setenv(applicationDataEnvVarName, originalAppDataValue)
+			_ = os.Setenv(applicationDataEnvVarName, originalAppDataValue)
 		} else {
-			os.Unsetenv(applicationDataEnvVarName)
+			_ = os.Unsetenv(applicationDataEnvVarName)
 		}
 		descriptions = originalDescriptions
 		logInitializer = originalLogInitializer
@@ -54,7 +54,7 @@ func TestExecute(t *testing.T) {
 		cmdLine        []string
 	}
 	tests := map[string]struct {
-		appname      string
+		appName      string
 		appDataValue string
 		appDataSet   bool
 		descriptions map[string]*CommandDescription
@@ -65,7 +65,7 @@ func TestExecute(t *testing.T) {
 		output.WantedRecording
 	}{
 		"set app name fails": {
-			appname:      "myApp",
+			appName:      "myApp",
 			preTest:      func() {},
 			postTest:     func() {},
 			wantExitCode: 1,
@@ -113,13 +113,13 @@ func TestExecute(t *testing.T) {
 				Log:   "level='error' environmentVariable='APPDATA' msg='not set'\n",
 			},
 		},
-		"ProcessCommand fails": {
+		"processCommand fails": {
 			appDataValue: "appdata1",
 			appDataSet:   true,
 			descriptions: map[string]*CommandDescription{},
 			preTest: func() {
 				path := filepath.Join("appdata1", "myApp")
-				fileSystem.MkdirAll(path, StdDirPermissions)
+				_ = fileSystem.MkdirAll(path, StdDirPermissions)
 				logInitializer = func(_ output.Bus) bool {
 					return true
 				}
@@ -128,7 +128,7 @@ func TestExecute(t *testing.T) {
 				}
 			},
 			postTest: func() {
-				fileSystem.RemoveAll("appdata1")
+				_ = fileSystem.RemoveAll("appdata1")
 			},
 			args: args{
 				firstYear:      2021,
@@ -173,7 +173,7 @@ func TestExecute(t *testing.T) {
 				}},
 			preTest: func() {
 				path := filepath.Join("appdata2", "myApp")
-				fileSystem.MkdirAll(path, StdDirPermissions)
+				_ = fileSystem.MkdirAll(path, StdDirPermissions)
 				logInitializer = func(_ output.Bus) bool {
 					return true
 				}
@@ -182,7 +182,7 @@ func TestExecute(t *testing.T) {
 				}
 			},
 			postTest: func() {
-				fileSystem.RemoveAll("appdata2")
+				_ = fileSystem.RemoveAll("appdata2")
 			},
 			args: args{
 				firstYear:      2021,
@@ -213,7 +213,7 @@ func TestExecute(t *testing.T) {
 				}},
 			preTest: func() {
 				path := filepath.Join("appdata3", "myApp")
-				fileSystem.MkdirAll(path, StdDirPermissions)
+				_ = fileSystem.MkdirAll(path, StdDirPermissions)
 				logInitializer = func(_ output.Bus) bool {
 					return true
 				}
@@ -222,7 +222,7 @@ func TestExecute(t *testing.T) {
 				}
 			},
 			postTest: func() {
-				fileSystem.RemoveAll("appdata3")
+				_ = fileSystem.RemoveAll("appdata3")
 			},
 			args: args{
 				firstYear:      2021,
@@ -242,11 +242,11 @@ func TestExecute(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			appname = tt.appname
+			appName = tt.appName
 			if tt.appDataSet {
-				os.Setenv(applicationDataEnvVarName, tt.appDataValue)
+				_ = os.Setenv(applicationDataEnvVarName, tt.appDataValue)
 			} else {
-				os.Unsetenv(applicationDataEnvVarName)
+				_ = os.Unsetenv(applicationDataEnvVarName)
 			}
 			descriptions = tt.descriptions
 			tt.preTest()
@@ -263,7 +263,7 @@ func TestExecute(t *testing.T) {
 			}
 			gotLog := o.LogOutput()
 			if strings.Contains(gotLog, " duration='") {
-				// snip out the time and replace with 'XXXX'
+				// snip out the time and replace with 'REDACTED'
 				before := strings.Index(gotLog, " duration='")
 				timeIndex := before + len(" duration='")
 				postIndex := timeIndex + 1

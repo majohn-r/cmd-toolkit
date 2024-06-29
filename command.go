@@ -37,9 +37,7 @@ func LogCommandStart(o output.Bus, name string, m map[string]any) {
 	o.Log(output.Info, "executing command", m)
 }
 
-// ProcessCommand selects which command to be run and returns the relevant
-// CommandProcessor, command line arguments and status
-func ProcessCommand(o output.Bus, args []string) (cmd CommandProcessor, cmdArgs []string, processed bool) {
+func processCommand(o output.Bus, args []string) (cmd CommandProcessor, cmdArgs []string, processed bool) {
 	var c *Configuration
 	if c, processed = ReadConfigurationFile(o); !processed {
 		return
