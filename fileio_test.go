@@ -80,53 +80,6 @@ func TestCopyFile(t *testing.T) {
 	}
 }
 
-// TODO: delete this function when there are no external consumers of CreateFile
-func TestCreateFile(t *testing.T) {
-	originalFileSystem := fileSystem
-	defer func() {
-		fileSystem = originalFileSystem
-	}()
-	fileSystem = afero.NewMemMapFs()
-	type args struct {
-		fileName string
-		content  []byte
-	}
-	tests := map[string]struct {
-		preTest func()
-		args
-		wantErr bool
-	}{
-		"file in non-existent directory": {
-			preTest: func() {},
-			args:    args{fileName: filepath.Join("no such dir", "file1"), content: []byte{1, 2, 3}},
-			wantErr: true,
-		},
-		"pre-existing file": {
-			preTest: func() {
-				_ = fileSystem.Mkdir("badDir", StdDirPermissions)
-				_ = afero.WriteFile(fileSystem, filepath.Join("badDir", "file1"), []byte{2, 4, 6}, StdFilePermissions)
-			},
-			args:    args{fileName: filepath.Join("badDir", "file1"), content: []byte{1, 2, 3}},
-			wantErr: true,
-		},
-		"good file": {
-			preTest: func() {
-				_ = fileSystem.Mkdir("goodDir", StdDirPermissions)
-			},
-			args:    args{fileName: filepath.Join("goodDir", "file1"), content: []byte{1, 2, 3}},
-			wantErr: false,
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			tt.preTest()
-			if gotErr := CreateFile(tt.args.fileName, tt.args.content); (gotErr != nil) != tt.wantErr {
-				t.Errorf("CreateFile() error = %v, wantErr %v", gotErr, tt.wantErr)
-			}
-		})
-	}
-}
-
 func TestDirExists(t *testing.T) {
 	tests := map[string]struct {
 		path string

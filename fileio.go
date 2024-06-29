@@ -49,18 +49,6 @@ func CopyFile(src, destination string) error {
 	return nil
 }
 
-// Deprecated - will disappear when users switch to filesystem based logic
-func CreateFile(fileName string, content []byte) error {
-	if fileExists, _ := afero.Exists(fileSystem, fileName); fileExists {
-		return fmt.Errorf("file %q already exists", fileName)
-	}
-	dir := filepath.Dir(fileName)
-	if dirExists, _ := afero.DirExists(fileSystem, dir); !dirExists {
-		return fmt.Errorf("%q does not exist or is not a directory", dir)
-	}
-	return afero.WriteFile(fileSystem, fileName, content, StdFilePermissions) // bad path
-}
-
 // DirExists returns whether the specified file exists as a directory
 func DirExists(path string) bool {
 	pathIsDir, _ := afero.IsDir(fileSystem, path)

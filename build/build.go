@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/goyek/goyek/v2"
-	tools_build "github.com/majohn-r/tools-build"
+	toolsbuild "github.com/majohn-r/tools-build"
 )
 
 const coverageFile = "coverage.out"
@@ -12,7 +12,7 @@ var (
 		Name:  "clean",
 		Usage: "delete build products",
 		Action: func(a *goyek.A) {
-			tools_build.Clean([]string{coverageFile})
+			toolsbuild.Clean([]string{coverageFile})
 		},
 	})
 
@@ -20,7 +20,7 @@ var (
 		Name:  "coverage",
 		Usage: "run unit tests and produce a coverage report",
 		Action: func(a *goyek.A) {
-			tools_build.GenerateCoverageReport(a, coverageFile)
+			toolsbuild.GenerateCoverageReport(a, coverageFile)
 		},
 	})
 
@@ -28,7 +28,7 @@ var (
 		Name:  "doc",
 		Usage: "generate documentation",
 		Action: func(a *goyek.A) {
-			tools_build.GenerateDocumentation(a, []string{"build"})
+			toolsbuild.GenerateDocumentation(a, []string{"build"})
 		},
 	})
 
@@ -36,7 +36,7 @@ var (
 		Name:  "format",
 		Usage: "clean up source code formatting",
 		Action: func(a *goyek.A) {
-			tools_build.Format(a)
+			toolsbuild.Format(a)
 		},
 	})
 
@@ -44,7 +44,7 @@ var (
 		Name:  "lint",
 		Usage: "run the linter on source code",
 		Action: func(a *goyek.A) {
-			tools_build.Lint(a)
+			toolsbuild.Lint(a)
 		},
 	})
 
@@ -52,7 +52,7 @@ var (
 		Name:  "nilaway",
 		Usage: "run nilaway on source code",
 		Action: func(a *goyek.A) {
-			tools_build.NilAway(a)
+			toolsbuild.NilAway(a)
 		},
 	})
 
@@ -60,7 +60,7 @@ var (
 		Name:  "tests",
 		Usage: "run unit tests",
 		Action: func(a *goyek.A) {
-			tools_build.UnitTests(a)
+			toolsbuild.UnitTests(a)
 		},
 	})
 
@@ -68,7 +68,7 @@ var (
 		Name:  "updateDependencies",
 		Usage: "update dependencies",
 		Action: func(a *goyek.A) {
-			tools_build.UpdateDependencies(a)
+			toolsbuild.UpdateDependencies(a)
 		},
 	})
 
@@ -76,7 +76,7 @@ var (
 		Name:  "vulnCheck",
 		Usage: "run vulnerability check on source code",
 		Action: func(a *goyek.A) {
-			tools_build.VulnerabilityCheck(a)
+			toolsbuild.VulnerabilityCheck(a)
 		},
 	})
 

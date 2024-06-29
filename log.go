@@ -26,7 +26,7 @@ type simpleLogger struct {
 
 const defaultLoggingLevel = output.Info
 
-var ProductionLogger *simpleLogger = &simpleLogger{
+var ProductionLogger = &simpleLogger{
 	exitFunction:    os.Exit,
 	currentLogLevel: defaultLoggingLevel,
 	lock:            &sync.RWMutex{},
@@ -34,7 +34,7 @@ var ProductionLogger *simpleLogger = &simpleLogger{
 
 // function to get an io.Writer with which to initialize the logger; this makes
 // it easy to substitute another function in unit tests
-var writerGetter func(o output.Bus) io.Writer = initWriter
+var writerGetter = initWriter
 
 // InitLogging sets up logging at the default log level
 func InitLogging(o output.Bus) (ok bool) {
@@ -55,7 +55,7 @@ func (sl *simpleLogger) willLog(l output.Level) bool {
 	return l <= sl.currentLogLevel
 }
 
-var typicalChars = regexp.MustCompile(`^[a-zA-Z0-9._/@\^+-]+$`)
+var typicalChars = regexp.MustCompile(`^[a-zA-Z0-9._/@^+-]+$`)
 
 func requiresQuotes(s string) bool {
 	return !typicalChars.MatchString(s)
@@ -86,7 +86,7 @@ func (sl *simpleLogger) log(l output.Level, msg string, fields map[string]any) {
 	if !sl.willLog(l) {
 		return
 	}
-	var fieldMap map[string]string = map[string]string{}
+	var fieldMap = map[string]string{}
 	fieldKeys := make([]string, 0, len(fields))
 	if len(fields) > 0 {
 		for k, v := range fields {

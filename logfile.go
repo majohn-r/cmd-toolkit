@@ -26,7 +26,7 @@ var (
 	logWriter io.WriteCloser
 )
 
-// https://github.com/majohn-r/cmd-toolkit/issues/16
+// LogPath returns the path for log files; see https://github.com/majohn-r/cmd-toolkit/issues/16
 func LogPath() string {
 	return logPath
 }
@@ -47,7 +47,7 @@ func initWriter(o output.Bus) io.Writer {
 		return nil
 	}
 	logPath = filepath.Join(tmp, logDirName)
-	fileSystem.MkdirAll(logPath, StdDirPermissions)
+	_ = fileSystem.MkdirAll(logPath, StdDirPermissions)
 	cleanup(o, logPath)
 	logWriter = cronowriter.MustNew(
 		filepath.Join(logPath, logFilePrefix()+"%Y%m%d"+logFileExtension),
@@ -58,7 +58,7 @@ func initWriter(o output.Bus) io.Writer {
 
 func cleanup(o output.Bus, logPath string) (found, deleted int) {
 	if files, dirRead := ReadDirectory(o, logPath); dirRead {
-		var fileMap map[time.Time]fs.FileInfo = make(map[time.Time]fs.FileInfo)
+		var fileMap = make(map[time.Time]fs.FileInfo)
 		times := make([]time.Time, 0, len(files))
 		for _, file := range files {
 			if isLogFile(file) {

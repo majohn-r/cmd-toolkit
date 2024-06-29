@@ -1,7 +1,6 @@
 package cmd_toolkit
 
 import (
-	"flag"
 	"reflect"
 	"runtime/debug"
 	"strings"
@@ -482,32 +481,6 @@ func Test_aboutCmd_Exec(t *testing.T) {
 				t.Errorf("aboutCmd.Exec() = %v, want %v", gotOk, tt.wantOk)
 			}
 			o.Report(t, "aboutCmd.Exec()", tt.WantedRecording)
-		})
-	}
-}
-
-func Test_newAboutCmd(t *testing.T) {
-	type args struct {
-		in1 *Configuration
-		in2 *flag.FlagSet
-	}
-	tests := map[string]struct {
-		args
-		want  CommandProcessor
-		want1 bool
-		output.WantedRecording
-	}{"nothing interesting": {args: args{}, want: &aboutCmd{}, want1: true}}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			o := output.NewRecorder()
-			got, got1 := newAboutCmd(o, tt.args.in1, tt.args.in2)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("newAboutCmd() got = %v, want %v", got, tt.want)
-			}
-			if got1 != tt.want1 {
-				t.Errorf("newAboutCmd() got1 = %v, want %v", got1, tt.want1)
-			}
-			o.Report(t, "newAboutCmd()", tt.WantedRecording)
 		})
 	}
 }

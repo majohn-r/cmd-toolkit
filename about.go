@@ -1,7 +1,6 @@
 package cmd_toolkit
 
 import (
-	"flag"
 	"fmt"
 	"runtime/debug"
 	"strings"
@@ -192,8 +191,4 @@ func DecoratedAppName(applicationName, applicationVersion, timestamp string) str
 // Copyright returns an appropriately formatted copyright statement; see https://github.com/majohn-r/cmd-toolkit/issues/17
 func Copyright(o output.Bus, first int, timestamp, owner string) string {
 	return formatCopyright(first, finalYear(o, timestamp), owner)
-}
-
-func newAboutCmd(_ output.Bus, _ *Configuration, _ *flag.FlagSet) (CommandProcessor, bool) {
-	return &aboutCmd{}, true
 }
