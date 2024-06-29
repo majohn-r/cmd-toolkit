@@ -12,8 +12,12 @@ import (
 )
 
 const (
-	StdFilePermissions = 0o644 // -rw-r--r--
-	StdDirPermissions  = 0o755 // -rwxr-xr-x
+	// StdFilePermissions is the standard mode constant for plain files; it sets up the file
+	// to be read/write for its owner, read only for everyone else
+	StdFilePermissions = 0o644
+	// StdDirPermissions is the standard mode constant for directory files; it sets up the
+	// directory to be read/write/executable for its owner, read/executable for everyone else;
+	StdDirPermissions = 0o755 // -rwxr-xr-x
 )
 
 // CopyFile copies a file. Adapted from
@@ -45,7 +49,7 @@ func CopyFile(src, destination string) error {
 	return nil
 }
 
-// CreateFile creates a file; it returns an error if the file already exists
+// Deprecated - will disappear when users switch to filesystem based logic
 func CreateFile(fileName string, content []byte) error {
 	if fileExists, _ := afero.Exists(fileSystem, fileName); fileExists {
 		return fmt.Errorf("file %q already exists", fileName)

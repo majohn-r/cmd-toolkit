@@ -25,6 +25,7 @@ func (*unhappyCommand) Exec(o output.Bus, _ []string) bool {
 	return false
 }
 
+// TODO: delete this when there are no external callers of Execute
 func TestExecute(t *testing.T) {
 	originalAppName := appName
 	originalAppDataValue, originalAppDataSet := os.LookupEnv(applicationDataEnvVarName)

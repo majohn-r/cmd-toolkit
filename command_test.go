@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/afero"
 )
 
+// TODO: when there are no consumers of AddCommandData, delete this function
 func TestAddCommandData(t *testing.T) {
 	savedDescriptions := descriptions
 	defer func() {
@@ -184,6 +185,7 @@ func TestProcessCommand(t *testing.T) {
 	}
 }
 
+// TODO: delete when there are no external callers
 func TestReportNothingToDo(t *testing.T) {
 	type args struct {
 		cmd    string

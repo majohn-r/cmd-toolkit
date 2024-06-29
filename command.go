@@ -9,6 +9,7 @@ import (
 	"github.com/majohn-r/output"
 )
 
+// Deprecated - this will disappear when consumers switch to using viper
 type CommandDescription struct {
 	IsDefault   bool
 	Initializer func(output.Bus, *Configuration, *flag.FlagSet) (CommandProcessor, bool)
@@ -16,11 +17,12 @@ type CommandDescription struct {
 
 var descriptions = map[string]*CommandDescription{}
 
-// CommandProcessor defines the functions needed to run a command
+// Deprecated - this will disappear when consumers switch to viper
 type CommandProcessor interface {
 	Exec(output.Bus, []string) bool
 }
 
+// deprecated ... use the viper library instead; will disappear when there are no consumers
 func AddCommandData(name string, d *CommandDescription) {
 	descriptions[name] = d
 }
@@ -49,9 +51,7 @@ func processCommand(o output.Bus, args []string) (cmd CommandProcessor, cmdArgs 
 	return
 }
 
-// ReportNothingToDo reports a user error in which a command's parameter values
-// prevent the command from doing any work; the report is made to error output
-// and to the log
+// Deprecated: callers should write their own functionality, to include how to fix the problem
 func ReportNothingToDo(o output.Bus, cmd string, fields map[string]any) {
 	o.WriteCanonicalError("You disabled all functionality for the command %q", cmd)
 	o.Log(output.Error, "the user disabled all functionality", fields)

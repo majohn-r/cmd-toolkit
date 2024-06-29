@@ -80,6 +80,7 @@ func TestCopyFile(t *testing.T) {
 	}
 }
 
+// TODO: delete this function when there are no external consumers of CreateFile
 func TestCreateFile(t *testing.T) {
 	originalFileSystem := fileSystem
 	defer func() {

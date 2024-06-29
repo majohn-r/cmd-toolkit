@@ -10,6 +10,7 @@ var (
 	logInitializer = InitLogging
 )
 
+// Deprecated: goes away when users switch to viper
 func Execute(o output.Bus, firstYear int, appName, appVersion, buildTimestamp string, cmdLine []string) (exitCode int) {
 	start := time.Now()
 	SetFirstYear(firstYear)

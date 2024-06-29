@@ -10,10 +10,6 @@ import (
 	"github.com/majohn-r/output"
 )
 
-func init() {
-	AddCommandData(aboutCommandName, &CommandDescription{IsDefault: false, Initializer: newAboutCmd})
-}
-
 // the code in this file is for the "about" command, which is a common need for
 // applications.
 
@@ -53,7 +49,8 @@ func InitBuildData(version, creation string) {
 	buildTimestamp = creation
 }
 
-// https://github.com/majohn-r/cmd-toolkit/issues/17
+// InterpretBuildData interprets the output of calling buildInfoReader() into easily consumed forms;
+// created and/or published per https://github.com/majohn-r/cmd-toolkit/issues/17
 func InterpretBuildData() (goVersion string, dependencies []string) {
 	buildInfo, infoObtained := buildInfoReader()
 	if !infoObtained || buildInfo == nil {
@@ -92,12 +89,14 @@ func formatBuildData() []string {
 	return append(s, FormatBuildDependencies(buildDependencies)...)
 }
 
-// https://github.com/majohn-r/cmd-toolkit/issues/17
+// BuildInformationHeader returns the canonical heading for build information.
+// See https://github.com/majohn-r/cmd-toolkit/issues/17
 func BuildInformationHeader() string {
 	return "Build Information"
 }
 
-// https://github.com/majohn-r/cmd-toolkit/issues/17
+// FormatBuildDependencies returns build dependency data formatted nicely;
+// see https://github.com/majohn-r/cmd-toolkit/issues/17
 func FormatBuildDependencies(dependencies []string) []string {
 	formatted := make([]string, len(dependencies))
 	index := 0
@@ -108,7 +107,7 @@ func FormatBuildDependencies(dependencies []string) []string {
 	return formatted
 }
 
-// https://github.com/majohn-r/cmd-toolkit/issues/17
+// FormatGoVersion returns the formatted go version; see https://github.com/majohn-r/cmd-toolkit/issues/17
 func FormatGoVersion(version string) string {
 	return fmt.Sprintf(" - Go version: %s", version)
 }
@@ -124,7 +123,7 @@ func reportAbout(o output.Bus, lines []string) {
 	o.WriteConsole(strings.Join(FlowerBox(lines), "\n"))
 }
 
-// https://github.com/majohn-r/cmd-toolkit/issues/17
+// FlowerBox draws a box around the provided slice of strings; see https://github.com/majohn-r/cmd-toolkit/issues/17
 func FlowerBox(lines []string) []string {
 	maxRunesPerLine := 0
 	for _, s := range lines {
@@ -184,13 +183,13 @@ func generateAboutContent(o output.Bus) {
 	reportAbout(o, s)
 }
 
-// https://github.com/majohn-r/cmd-toolkit/issues/17
+// DecoratedAppName returns the app name with its version and build timestamp; see https://github.com/majohn-r/cmd-toolkit/issues/17
 func DecoratedAppName(applicationName, applicationVersion, timestamp string) string {
 	return fmt.Sprintf("%s version %s, built on %s", applicationName, applicationVersion,
 		translateTimestamp(timestamp))
 }
 
-// https://github.com/majohn-r/cmd-toolkit/issues/17
+// Copyright returns an appropriately formatted copyright statement; see https://github.com/majohn-r/cmd-toolkit/issues/17
 func Copyright(o output.Bus, first int, timestamp, owner string) string {
 	return formatCopyright(first, finalYear(o, timestamp), owner)
 }
