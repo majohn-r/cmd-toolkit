@@ -14,10 +14,7 @@ import (
 
 var applicationPath string
 
-// ApplicationDataEnvVarName is the name of the environment variable used to
-// read/write application-specific files that are intended to have some
-// permanence.
-const ApplicationDataEnvVarName = "APPDATA"
+const applicationDataEnvVarName = "APPDATA"
 
 // ApplicationPath returns the path to application-specific data (%APPDATA%\appname)
 func ApplicationPath() string {
@@ -26,9 +23,9 @@ func ApplicationPath() string {
 
 // InitApplicationPath ensures that the application path exists
 func InitApplicationPath(o output.Bus) bool {
-	value, varDefined := os.LookupEnv(ApplicationDataEnvVarName)
+	value, varDefined := os.LookupEnv(applicationDataEnvVarName)
 	if !varDefined {
-		o.Log(output.Error, "not set", map[string]any{"environmentVariable": ApplicationDataEnvVarName})
+		o.Log(output.Error, "not set", map[string]any{"environmentVariable": applicationDataEnvVarName})
 		return false
 	}
 	dir, pathErr := CreateAppSpecificPath(value)

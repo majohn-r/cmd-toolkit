@@ -245,8 +245,7 @@ func (c *Configuration) BoolDefault(key string, defaultValue bool) (bool, error)
 	return cookedValue, nil
 }
 
-// BooleanValue returns a boolean value and whether it exists
-func (c *Configuration) BooleanValue(key string) (value, exists bool) {
+func (c *Configuration) booleanValue(key string) (value, exists bool) {
 	value, exists = c.bMap[key]
 	return
 }

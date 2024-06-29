@@ -18,26 +18,30 @@ const (
 
 // CopyFile copies a file. Adapted from
 // https://github.com/cleversoap/go-cp/blob/master/cp.go
-func CopyFile(src, dest string) error {
+func CopyFile(src, destination string) error {
 	absSrc, _ := filepath.Abs(src)
-	absDest, _ := filepath.Abs(dest)
-	if absSrc == absDest {
+	absDestination, _ := filepath.Abs(destination)
+	if absSrc == absDestination {
 		return fmt.Errorf("cannot copy file %q to itself", absSrc)
 	}
 	openedSrc, srcOpenErr := fileSystem.Open(src)
 	if srcOpenErr != nil {
 		return srcOpenErr
 	}
-	defer openedSrc.Close()
-	if destinationIsDir, _ := afero.IsDir(fileSystem, dest); destinationIsDir {
+	defer func() {
+		_ = openedSrc.Close()
+	}()
+	if destinationIsDir, _ := afero.IsDir(fileSystem, destination); destinationIsDir {
 		return fmt.Errorf("cannot overwrite a directory")
 	}
-	openedDest, destOpenErr := fileSystem.Create(dest)
-	if destOpenErr != nil {
-		return destOpenErr
+	openedDestination, destinationOpenErr := fileSystem.Create(destination)
+	if destinationOpenErr != nil {
+		return destinationOpenErr
 	}
-	defer openedDest.Close()
-	_, _ = io.Copy(openedDest, openedSrc)
+	defer func() {
+		_ = openedDestination.Close()
+	}()
+	_, _ = io.Copy(openedDestination, openedSrc)
 	return nil
 }
 
@@ -51,12 +55,6 @@ func CreateFile(fileName string, content []byte) error {
 		return fmt.Errorf("%q does not exist or is not a directory", dir)
 	}
 	return afero.WriteFile(fileSystem, fileName, content, StdFilePermissions) // bad path
-}
-
-// CreateFileInDirectory creates a file in a specified directory. It returns an
-// error if the file already exists
-func CreateFileInDirectory(dir, name string, content []byte) error {
-	return CreateFile(filepath.Join(dir, name), content)
 }
 
 // DirExists returns whether the specified file exists as a directory

@@ -33,7 +33,7 @@ func TestInitApplicationPath(t *testing.T) {
 	originalFileSystem := fileSystem
 	var appDataWasSet bool
 	var savedAppDataValue string
-	if value, varDefined := os.LookupEnv(ApplicationDataEnvVarName); varDefined {
+	if value, varDefined := os.LookupEnv(applicationDataEnvVarName); varDefined {
 		appDataWasSet = true
 		savedAppDataValue = value
 	}
@@ -41,9 +41,9 @@ func TestInitApplicationPath(t *testing.T) {
 		appname = originalAppname
 		applicationPath = originalApplicationPath
 		if appDataWasSet {
-			os.Setenv(ApplicationDataEnvVarName, savedAppDataValue)
+			os.Setenv(applicationDataEnvVarName, savedAppDataValue)
 		} else {
-			os.Unsetenv(ApplicationDataEnvVarName)
+			os.Unsetenv(applicationDataEnvVarName)
 		}
 		fileSystem = originalFileSystem
 	}()
@@ -125,9 +125,9 @@ func TestInitApplicationPath(t *testing.T) {
 			appname = tt.appname
 			applicationPath = ""
 			if tt.appDataSet {
-				os.Setenv(ApplicationDataEnvVarName, tt.appDataValue)
+				os.Setenv(applicationDataEnvVarName, tt.appDataValue)
 			} else {
-				os.Unsetenv(ApplicationDataEnvVarName)
+				os.Unsetenv(applicationDataEnvVarName)
 			}
 			tt.preTest()
 			o := output.NewRecorder()

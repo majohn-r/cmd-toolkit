@@ -799,7 +799,7 @@ func TestIntBounds_constrainedValue(t *testing.T) {
 	}
 }
 
-func TestConfiguration_BooleanValue(t *testing.T) {
+func TestConfiguration_booleanValue(t *testing.T) {
 	tests := map[string]struct {
 		c         *Configuration
 		key       string
@@ -826,12 +826,12 @@ func TestConfiguration_BooleanValue(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			gotValue, gotOk := tt.c.BooleanValue(tt.key)
+			gotValue, gotOk := tt.c.booleanValue(tt.key)
 			if gotValue != tt.wantValue {
-				t.Errorf("Configuration.BooleanValue() gotValue = %v, want %v", gotValue, tt.wantValue)
+				t.Errorf("Configuration.booleanValue() gotValue = %v, want %v", gotValue, tt.wantValue)
 			}
 			if gotOk != tt.wantOk {
-				t.Errorf("Configuration.BooleanValue() gotOk = %v, want %v", gotOk, tt.wantOk)
+				t.Errorf("Configuration.booleanValue() gotOk = %v, want %v", gotOk, tt.wantOk)
 			}
 		})
 	}
