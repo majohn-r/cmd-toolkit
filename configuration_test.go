@@ -1,7 +1,8 @@
-package cmd_toolkit
+package cmd_toolkit_test
 
 import (
 	"fmt"
+	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -12,18 +13,16 @@ import (
 )
 
 func TestDefaultConfigFileName(t *testing.T) {
-	savedDefaultConfigFileName := defaultConfigFileName
-	defer func() {
-		defaultConfigFileName = savedDefaultConfigFileName
-	}()
+	originalDefaultConfigFileName := cmdtoolkit.DefaultConfigFileName()
+	defer cmdtoolkit.UnsafeSetDefaultConfigFileName(originalDefaultConfigFileName)
 	tests := map[string]struct {
 		defaultConfigFileName string
 		want                  string
 	}{"simple": {defaultConfigFileName: "myDefaults.yaml", want: "myDefaults.yaml"}}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			defaultConfigFileName = tt.defaultConfigFileName
-			if got := DefaultConfigFileName(); got != tt.want {
+			cmdtoolkit.UnsafeSetDefaultConfigFileName(tt.defaultConfigFileName)
+			if got := cmdtoolkit.DefaultConfigFileName(); got != tt.want {
 				t.Errorf("DefaultConfigFileName() = %v, want %v", got, tt.want)
 			}
 		})
@@ -32,83 +31,22 @@ func TestDefaultConfigFileName(t *testing.T) {
 
 func TestEmptyConfiguration(t *testing.T) {
 	tests := map[string]struct {
-		want *Configuration
+		want *cmdtoolkit.Configuration
 	}{
 		"simple": {
-			want: &Configuration{
-				bMap: map[string]bool{},
-				cMap: map[string]*Configuration{},
-				iMap: map[string]int{},
-				sMap: map[string]string{},
+			want: &cmdtoolkit.Configuration{
+				BoolMap:          map[string]bool{},
+				ConfigurationMap: map[string]*cmdtoolkit.Configuration{},
+				IntMap:           map[string]int{},
+				StringMap:        map[string]string{},
 			},
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if got := EmptyConfiguration(); !reflect.DeepEqual(got, tt.want) {
+			if got := cmdtoolkit.EmptyConfiguration(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("EmptyConfiguration() = %v, want %v", got, tt.want)
 			}
-		})
-	}
-}
-
-func TestNewConfiguration(t *testing.T) {
-	tests := map[string]struct {
-		data map[string]any
-		want *Configuration
-		output.WantedRecording
-	}{
-		"unrecognized type": {
-			data: map[string]any{
-				"boolean":     true,
-				"integer":     12,
-				"string":      "hello",
-				"problematic": 1.234,
-			},
-			want: &Configuration{
-				bMap: map[string]bool{"boolean": true},
-				cMap: map[string]*Configuration{},
-				iMap: map[string]int{"integer": 12},
-				sMap: map[string]string{"string": "hello", "problematic": "1.234"},
-			},
-			WantedRecording: output.WantedRecording{
-				Error: "The key \"problematic\", with value '1.234', has an unexpected type float64.\n",
-				Log:   "level='error' key='problematic' type='float64' value='1.234' msg='unexpected value type'\n",
-			},
-		},
-		"no unrecognized types": {
-			data: map[string]any{
-				"boolean": true,
-				"integer": 12,
-				"string":  "hello",
-				"complex": map[string]any{
-					"another boolean": false,
-					"another integer": 13,
-					"another string":  "hi!",
-				},
-			},
-			want: &Configuration{
-				bMap: map[string]bool{"boolean": true},
-				cMap: map[string]*Configuration{
-					"complex": {
-						bMap: map[string]bool{"another boolean": false},
-						cMap: map[string]*Configuration{},
-						iMap: map[string]int{"another integer": 13},
-						sMap: map[string]string{"another string": "hi!"},
-					},
-				},
-				iMap: map[string]int{"integer": 12},
-				sMap: map[string]string{"string": "hello"},
-			},
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			o := output.NewRecorder()
-			if got := newConfiguration(o, tt.data); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("newConfiguration() = %v, want %v", got, tt.want)
-			}
-			o.Report(t, "newConfiguration()", tt.WantedRecording)
 		})
 	}
 }
@@ -121,18 +59,18 @@ func TestNewIntBounds(t *testing.T) {
 	}
 	tests := map[string]struct {
 		args
-		want *IntBounds
+		want *cmdtoolkit.IntBounds
 	}{
-		"0,1,2": {args: args{v1: 0, v2: 1, v3: 2}, want: &IntBounds{minValue: 0, defaultValue: 1, maxValue: 2}},
-		"0,2,1": {args: args{v1: 0, v2: 2, v3: 1}, want: &IntBounds{minValue: 0, defaultValue: 1, maxValue: 2}},
-		"1,0,2": {args: args{v1: 1, v2: 0, v3: 2}, want: &IntBounds{minValue: 0, defaultValue: 1, maxValue: 2}},
-		"1,2,0": {args: args{v1: 1, v2: 2, v3: 0}, want: &IntBounds{minValue: 0, defaultValue: 1, maxValue: 2}},
-		"2,0,1": {args: args{v1: 2, v2: 0, v3: 1}, want: &IntBounds{minValue: 0, defaultValue: 1, maxValue: 2}},
-		"2,1,0": {args: args{v1: 2, v2: 1, v3: 0}, want: &IntBounds{minValue: 0, defaultValue: 1, maxValue: 2}},
+		"0,1,2": {args: args{v1: 0, v2: 1, v3: 2}, want: &cmdtoolkit.IntBounds{MinValue: 0, DefaultValue: 1, MaxValue: 2}},
+		"0,2,1": {args: args{v1: 0, v2: 2, v3: 1}, want: &cmdtoolkit.IntBounds{MinValue: 0, DefaultValue: 1, MaxValue: 2}},
+		"1,0,2": {args: args{v1: 1, v2: 0, v3: 2}, want: &cmdtoolkit.IntBounds{MinValue: 0, DefaultValue: 1, MaxValue: 2}},
+		"1,2,0": {args: args{v1: 1, v2: 2, v3: 0}, want: &cmdtoolkit.IntBounds{MinValue: 0, DefaultValue: 1, MaxValue: 2}},
+		"2,0,1": {args: args{v1: 2, v2: 0, v3: 1}, want: &cmdtoolkit.IntBounds{MinValue: 0, DefaultValue: 1, MaxValue: 2}},
+		"2,1,0": {args: args{v1: 2, v2: 1, v3: 0}, want: &cmdtoolkit.IntBounds{MinValue: 0, DefaultValue: 1, MaxValue: 2}},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if got := NewIntBounds(tt.args.v1, tt.args.v2, tt.args.v3); !reflect.DeepEqual(got, tt.want) {
+			if got := cmdtoolkit.NewIntBounds(tt.args.v1, tt.args.v2, tt.args.v3); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewIntBounds() = %v, want %v", got, tt.want)
 			}
 		})
@@ -140,28 +78,28 @@ func TestNewIntBounds(t *testing.T) {
 }
 
 func TestReadConfigurationFile(t *testing.T) {
-	originalFileSystem := fileSystem
-	originalApplicationPath := applicationPath
-	originalDefaultConfigFileName := defaultConfigFileName
+	originalFileSystem := cmdtoolkit.FileSystem()
+	originalApplicationPath := cmdtoolkit.ApplicationPath()
+	originalDefaultConfigFileName := cmdtoolkit.DefaultConfigFileName()
 	defer func() {
-		fileSystem = originalFileSystem
-		applicationPath = originalApplicationPath
-		defaultConfigFileName = originalDefaultConfigFileName
+		cmdtoolkit.AssignFileSystem(originalFileSystem)
+		cmdtoolkit.UnsafeSetApplicationPath(originalApplicationPath)
+		cmdtoolkit.UnsafeSetDefaultConfigFileName(originalDefaultConfigFileName)
 	}()
-	fileSystem = afero.NewMemMapFs()
+	cmdtoolkit.AssignFileSystem(afero.NewMemMapFs())
 	tests := map[string]struct {
 		preTest func()
-		wantC   *Configuration
+		wantC   *cmdtoolkit.Configuration
 		wantOk  bool
 		output.WantedRecording
 	}{
 		"config file is a directory": {
 			preTest: func() {
-				applicationPath = "configFileDir"
-				defaultConfigFileName = "dir.yaml"
-				_ = fileSystem.MkdirAll(filepath.Join(applicationPath, defaultConfigFileName), StdDirPermissions)
+				cmdtoolkit.UnsafeSetApplicationPath("configFileDir")
+				cmdtoolkit.UnsafeSetDefaultConfigFileName("dir.yaml")
+				_ = cmdtoolkit.FileSystem().MkdirAll(filepath.Join(cmdtoolkit.ApplicationPath(), cmdtoolkit.DefaultConfigFileName()), cmdtoolkit.StdDirPermissions)
 			},
-			wantC: EmptyConfiguration(),
+			wantC: cmdtoolkit.EmptyConfiguration(),
 			WantedRecording: output.WantedRecording{
 				Error: "The configuration file \"configFileDir\\\\dir.yaml\" is a directory.\n",
 				Log:   "level='error' directory='configFileDir' fileName='dir.yaml' msg='file is a directory'\n",
@@ -169,26 +107,26 @@ func TestReadConfigurationFile(t *testing.T) {
 		},
 		"no config file does not exist": {
 			preTest: func() {
-				applicationPath = "non-existent directory"
-				defaultConfigFileName = "no such file.yaml"
+				cmdtoolkit.UnsafeSetApplicationPath("non-existent directory")
+				cmdtoolkit.UnsafeSetDefaultConfigFileName("no such file.yaml")
 			},
-			wantC: &Configuration{
-				bMap: map[string]bool{},
-				cMap: map[string]*Configuration{},
-				iMap: map[string]int{},
-				sMap: map[string]string{},
+			wantC: &cmdtoolkit.Configuration{
+				BoolMap:          map[string]bool{},
+				ConfigurationMap: map[string]*cmdtoolkit.Configuration{},
+				IntMap:           map[string]int{},
+				StringMap:        map[string]string{},
 			},
 			wantOk:          true,
 			WantedRecording: output.WantedRecording{Log: "level='info' directory='non-existent directory' fileName='no such file.yaml' msg='file does not exist'\n"},
 		},
 		"config file contains bad data": {
 			preTest: func() {
-				applicationPath = "garbageDir"
-				defaultConfigFileName = "trash.yaml"
-				_ = fileSystem.Mkdir(applicationPath, StdDirPermissions)
-				_ = afero.WriteFile(fileSystem, filepath.Join(applicationPath, defaultConfigFileName), []byte{1, 2, 3}, StdFilePermissions)
+				cmdtoolkit.UnsafeSetApplicationPath("garbageDir")
+				cmdtoolkit.UnsafeSetDefaultConfigFileName("trash.yaml")
+				_ = cmdtoolkit.FileSystem().Mkdir(cmdtoolkit.ApplicationPath(), cmdtoolkit.StdDirPermissions)
+				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(cmdtoolkit.ApplicationPath(), cmdtoolkit.DefaultConfigFileName()), []byte{1, 2, 3}, cmdtoolkit.StdFilePermissions)
 			},
-			wantC: EmptyConfiguration(),
+			wantC: cmdtoolkit.EmptyConfiguration(),
 			WantedRecording: output.WantedRecording{
 				Error: "The configuration file \"garbageDir\\\\trash.yaml\" is not well-formed YAML: yaml: control characters are not allowed.\n",
 				Log:   "level='error' directory='garbageDir' error='yaml: control characters are not allowed' fileName='trash.yaml' msg='cannot unmarshal yaml content'\n",
@@ -196,29 +134,29 @@ func TestReadConfigurationFile(t *testing.T) {
 		},
 		"config file contains usable data": {
 			preTest: func() {
-				applicationPath = "happyDir"
-				defaultConfigFileName = "good.yaml"
-				_ = fileSystem.Mkdir(applicationPath, StdDirPermissions)
+				cmdtoolkit.UnsafeSetApplicationPath("happyDir")
+				cmdtoolkit.UnsafeSetDefaultConfigFileName("good.yaml")
+				_ = cmdtoolkit.FileSystem().Mkdir(cmdtoolkit.ApplicationPath(), cmdtoolkit.StdDirPermissions)
 				content := "" +
 					"b: true\n" +
 					"i: 12\n" +
 					"s: hello\n" +
 					"command:\n" +
 					"  default: about\n"
-				_ = afero.WriteFile(fileSystem, filepath.Join(applicationPath, defaultConfigFileName), []byte(content), StdFilePermissions)
+				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(cmdtoolkit.ApplicationPath(), cmdtoolkit.DefaultConfigFileName()), []byte(content), cmdtoolkit.StdFilePermissions)
 			},
-			wantC: &Configuration{
-				bMap: map[string]bool{"b": true},
-				cMap: map[string]*Configuration{
+			wantC: &cmdtoolkit.Configuration{
+				BoolMap: map[string]bool{"b": true},
+				ConfigurationMap: map[string]*cmdtoolkit.Configuration{
 					"command": {
-						bMap: map[string]bool{},
-						cMap: map[string]*Configuration{},
-						iMap: map[string]int{},
-						sMap: map[string]string{"default": "about"},
+						BoolMap:          map[string]bool{},
+						ConfigurationMap: map[string]*cmdtoolkit.Configuration{},
+						IntMap:           map[string]int{},
+						StringMap:        map[string]string{"default": "about"},
 					},
 				},
-				iMap: map[string]int{"i": 12},
-				sMap: map[string]string{"s": "hello"},
+				IntMap:    map[string]int{"i": 12},
+				StringMap: map[string]string{"s": "hello"},
 			},
 			wantOk: true,
 			WantedRecording: output.WantedRecording{
@@ -230,7 +168,7 @@ func TestReadConfigurationFile(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
 			o := output.NewRecorder()
-			gotC, gotOk := ReadConfigurationFile(o)
+			gotC, gotOk := cmdtoolkit.ReadConfigurationFile(o)
 			if !reflect.DeepEqual(gotC, tt.wantC) {
 				t.Errorf("ReadConfigurationFile() gotC = %v, want %v", gotC, tt.wantC)
 			}
@@ -243,10 +181,8 @@ func TestReadConfigurationFile(t *testing.T) {
 }
 
 func TestReportInvalidConfigurationData(t *testing.T) {
-	savedDefaultConfigFileName := defaultConfigFileName
-	defer func() {
-		defaultConfigFileName = savedDefaultConfigFileName
-	}()
+	originalDefaultConfigFileName := cmdtoolkit.DefaultConfigFileName()
+	defer cmdtoolkit.UnsafeSetDefaultConfigFileName(originalDefaultConfigFileName)
 	type args struct {
 		s string
 		e error
@@ -267,89 +203,33 @@ func TestReportInvalidConfigurationData(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			defaultConfigFileName = tt.defaultConfigFileName
+			cmdtoolkit.UnsafeSetDefaultConfigFileName(tt.defaultConfigFileName)
 			o := output.NewRecorder()
-			ReportInvalidConfigurationData(o, tt.args.s, tt.args.e)
+			cmdtoolkit.ReportInvalidConfigurationData(o, tt.args.s, tt.args.e)
 			o.Report(t, "ReportInvalidConfigurationData()", tt.WantedRecording)
-		})
-	}
-}
-
-func Test_verifyDefaultConfigFileExists(t *testing.T) {
-	originalFileSystem := fileSystem
-	defer func() {
-		fileSystem = originalFileSystem
-	}()
-	fileSystem = afero.NewMemMapFs()
-	tests := map[string]struct {
-		preTest func()
-		path    string
-		wantOk  bool
-		wantErr bool
-		output.WantedRecording
-	}{
-		"path is a directory": {
-			preTest: func() {
-				_ = fileSystem.Mkdir("testPath", StdDirPermissions)
-			},
-			path:    "testPath",
-			wantErr: true,
-			WantedRecording: output.WantedRecording{
-				Error: "The configuration file \"testPath\" is a directory.\n",
-				Log:   "level='error' directory='.' fileName='testPath' msg='file is a directory'\n",
-			},
-		},
-		"path does not exist": {
-			preTest:         func() {},
-			path:            filepath.Join(".", "non-existent-file.yaml"),
-			WantedRecording: output.WantedRecording{Log: "level='info' directory='.' fileName='non-existent-file.yaml' msg='file does not exist'\n"},
-		},
-		"path is a valid file": {
-			preTest: func() {
-				path := "testPath2"
-				_ = fileSystem.Mkdir(path, StdDirPermissions)
-				_ = afero.WriteFile(fileSystem, filepath.Join(path, "happy.yaml"), []byte("boo"), StdFilePermissions)
-			},
-			path:   filepath.Join("testPath2", "happy.yaml"),
-			wantOk: true,
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			tt.preTest()
-			o := output.NewRecorder()
-			gotOk, gotErr := verifyDefaultConfigFileExists(o, tt.path)
-			if (gotErr != nil) != tt.wantErr {
-				t.Errorf("verifyDefaultConfigFileExists() error = %v, wantErr %v", gotErr, tt.wantErr)
-				return
-			}
-			if gotOk != tt.wantOk {
-				t.Errorf("verifyDefaultConfigFileExists() = %v, want %v", gotOk, tt.wantOk)
-			}
-			o.Report(t, "verifyDefaultConfigFileExists()", tt.WantedRecording)
 		})
 	}
 }
 
 func TestConfiguration_String(t *testing.T) {
 	tests := map[string]struct {
-		c    *Configuration
+		c    *cmdtoolkit.Configuration
 		want string
 	}{
-		"empty": {c: EmptyConfiguration()},
+		"empty": {c: cmdtoolkit.EmptyConfiguration()},
 		"busy": {
-			c: &Configuration{
-				bMap: map[string]bool{"a": false, "b": true},
-				cMap: map[string]*Configuration{
+			c: &cmdtoolkit.Configuration{
+				BoolMap: map[string]bool{"a": false, "b": true},
+				ConfigurationMap: map[string]*cmdtoolkit.Configuration{
 					"c": {
-						bMap: map[string]bool{"e": false, "f": true},
-						cMap: map[string]*Configuration{},
-						iMap: map[string]int{"g": 1, "h": 2},
-						sMap: map[string]string{"i": "abc", "j": "def"},
+						BoolMap:          map[string]bool{"e": false, "f": true},
+						ConfigurationMap: map[string]*cmdtoolkit.Configuration{},
+						IntMap:           map[string]int{"g": 1, "h": 2},
+						StringMap:        map[string]string{"i": "abc", "j": "def"},
 					},
 				},
-				iMap: map[string]int{"k": 3, "l": 4},
-				sMap: map[string]string{"m": "ghi", "n": "jkl"},
+				IntMap:    map[string]int{"k": 3, "l": 4},
+				StringMap: map[string]string{"m": "ghi", "n": "jkl"},
 			},
 			want: "map[a:false b:true], map[k:3 l:4], map[m:ghi n:jkl], map[c:map[e:false f:true], map[g:1 h:2], map[i:abc j:def]]",
 		},
@@ -380,89 +260,89 @@ func TestConfiguration_BoolDefault(t *testing.T) {
 	tests := map[string]struct {
 		envValue string
 		envSet   bool
-		c        *Configuration
+		c        *cmdtoolkit.Configuration
 		args
 		wantB   bool
 		wantErr bool
 	}{
 		"no value found": {
-			c:     EmptyConfiguration(),
+			c:     cmdtoolkit.EmptyConfiguration(),
 			args:  args{key: "b", defaultValue: true},
 			wantB: true,
 		},
 		"boolean value found": {
-			c:     &Configuration{bMap: map[string]bool{"b": true}},
+			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{"b": true}},
 			args:  args{key: "b", defaultValue: false},
 			wantB: true,
 		},
 		"int 0 found": {
-			c:     &Configuration{bMap: map[string]bool{}, iMap: map[string]int{"b": 0}},
+			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{"b": 0}},
 			args:  args{key: "b", defaultValue: true},
 			wantB: false,
 		},
 		"int 1 found": {
-			c:     &Configuration{bMap: map[string]bool{}, iMap: map[string]int{"b": 1}},
+			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{"b": 1}},
 			args:  args{key: "b", defaultValue: false},
 			wantB: true,
 		},
 		"bad int found": {
-			c:       &Configuration{bMap: map[string]bool{}, iMap: map[string]int{"b": 2}},
+			c:       &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{"b": 2}},
 			args:    args{key: "b", defaultValue: true},
 			wantB:   true,
 			wantErr: true,
 		},
 		"string 't' found": {
-			c:     &Configuration{bMap: map[string]bool{}, iMap: map[string]int{}, sMap: map[string]string{"b": "t"}},
+			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "t"}},
 			args:  args{key: "b", defaultValue: false},
 			wantB: true,
 		},
 		"string 'T' found": {
-			c:     &Configuration{bMap: map[string]bool{}, iMap: map[string]int{}, sMap: map[string]string{"b": "T"}},
+			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "T"}},
 			args:  args{key: "b", defaultValue: false},
 			wantB: true,
 		},
 		"string 'true' found": {
-			c:     &Configuration{bMap: map[string]bool{}, iMap: map[string]int{}, sMap: map[string]string{"b": "true"}},
+			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "true"}},
 			args:  args{key: "b", defaultValue: false},
 			wantB: true,
 		},
 		"string 'TRUE' found": {
-			c:     &Configuration{bMap: map[string]bool{}, iMap: map[string]int{}, sMap: map[string]string{"b": "TRUE"}},
+			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "TRUE"}},
 			args:  args{key: "b", defaultValue: false},
 			wantB: true,
 		},
 		"string 'True' found": {
-			c:     &Configuration{bMap: map[string]bool{}, iMap: map[string]int{}, sMap: map[string]string{"b": "True"}},
+			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "True"}},
 			args:  args{key: "b", defaultValue: false},
 			wantB: true,
 		},
 		"string 'f' found": {
-			c:     &Configuration{bMap: map[string]bool{}, iMap: map[string]int{}, sMap: map[string]string{"b": "f"}},
+			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "f"}},
 			args:  args{key: "b", defaultValue: true},
 			wantB: false,
 		},
 		"string 'F' found": {
-			c:     &Configuration{bMap: map[string]bool{}, iMap: map[string]int{}, sMap: map[string]string{"b": "F"}},
+			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "F"}},
 			args:  args{key: "b", defaultValue: true},
 			wantB: false,
 		},
 		"string 'false' found": {
-			c:     &Configuration{bMap: map[string]bool{}, iMap: map[string]int{}, sMap: map[string]string{"b": "false"}},
+			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "false"}},
 			args:  args{key: "b", defaultValue: true},
 			wantB: false,
 		},
 		"string 'FALSE' found": {
-			c:     &Configuration{bMap: map[string]bool{}, iMap: map[string]int{}, sMap: map[string]string{"b": "FALSE"}},
+			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "FALSE"}},
 			args:  args{key: "b", defaultValue: true},
 			wantB: false,
 		},
 		"string 'False' found": {
-			c:     &Configuration{bMap: map[string]bool{}, iMap: map[string]int{}, sMap: map[string]string{"b": "False"}},
+			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "False"}},
 			args:  args{key: "b", defaultValue: true},
 			wantB: false,
 		},
 		"bad string found": {
-			c:       &Configuration{bMap: map[string]bool{}, iMap: map[string]int{}, sMap: map[string]string{"b": "nope"}},
+			c:       &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "nope"}},
 			args:    args{key: "b", defaultValue: true},
 			wantB:   true,
 			wantErr: true,
@@ -470,12 +350,12 @@ func TestConfiguration_BoolDefault(t *testing.T) {
 		"use dereferenced value": {
 			envValue: "false",
 			envSet:   true,
-			c:        &Configuration{bMap: map[string]bool{}, iMap: map[string]int{}, sMap: map[string]string{"b": "$" + envVar}},
+			c:        &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "$" + envVar}},
 			args:     args{key: "b", defaultValue: true},
 			wantB:    false,
 		},
 		"use bad dereferenced value": {
-			c:       &Configuration{bMap: map[string]bool{}, iMap: map[string]int{}, sMap: map[string]string{"b": "$" + envVar}},
+			c:       &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "$" + envVar}},
 			args:    args{key: "b", defaultValue: true},
 			wantB:   true,
 			wantErr: true,
@@ -512,57 +392,57 @@ func TestConfiguration_IntDefault(t *testing.T) {
 	}()
 	type args struct {
 		key string
-		b   *IntBounds
+		b   *cmdtoolkit.IntBounds
 	}
 	tests := map[string]struct {
 		envValue string
 		envSet   bool
-		c        *Configuration
+		c        *cmdtoolkit.Configuration
 		args
 		wantI   int
 		wantErr bool
 	}{
 		"empty": {
-			c:     EmptyConfiguration(),
-			args:  args{key: "i", b: NewIntBounds(1, 2, 3)},
+			c:     cmdtoolkit.EmptyConfiguration(),
+			args:  args{key: "i", b: cmdtoolkit.NewIntBounds(1, 2, 3)},
 			wantI: 2,
 		},
 		"too low": {
-			c:     &Configuration{iMap: map[string]int{"i": -2}},
-			args:  args{key: "i", b: NewIntBounds(1, 2, 3)},
+			c:     &cmdtoolkit.Configuration{IntMap: map[string]int{"i": -2}},
+			args:  args{key: "i", b: cmdtoolkit.NewIntBounds(1, 2, 3)},
 			wantI: 1,
 		},
 		"too high": {
-			c:     &Configuration{iMap: map[string]int{"i": 47}},
-			args:  args{key: "i", b: NewIntBounds(1, 2, 3)},
+			c:     &cmdtoolkit.Configuration{IntMap: map[string]int{"i": 47}},
+			args:  args{key: "i", b: cmdtoolkit.NewIntBounds(1, 2, 3)},
 			wantI: 3,
 		},
 		"string too low": {
-			c:     &Configuration{sMap: map[string]string{"i": "-100"}},
-			args:  args{key: "i", b: NewIntBounds(1, 2, 3)},
+			c:     &cmdtoolkit.Configuration{StringMap: map[string]string{"i": "-100"}},
+			args:  args{key: "i", b: cmdtoolkit.NewIntBounds(1, 2, 3)},
 			wantI: 1,
 		},
 		"string too high": {
-			c:     &Configuration{sMap: map[string]string{"i": "100"}},
-			args:  args{key: "i", b: NewIntBounds(1, 2, 3)},
+			c:     &cmdtoolkit.Configuration{StringMap: map[string]string{"i": "100"}},
+			args:  args{key: "i", b: cmdtoolkit.NewIntBounds(1, 2, 3)},
 			wantI: 3,
 		},
 		"dereferenced string": {
 			envValue: "7",
 			envSet:   true,
-			c:        &Configuration{sMap: map[string]string{"i": "%" + envVar + "%"}},
-			args:     args{key: "i", b: NewIntBounds(-1, 2, 300)},
+			c:        &cmdtoolkit.Configuration{StringMap: map[string]string{"i": "%" + envVar + "%"}},
+			args:     args{key: "i", b: cmdtoolkit.NewIntBounds(-1, 2, 300)},
 			wantI:    7,
 		},
 		"bad dereferenced string": {
-			c:       &Configuration{sMap: map[string]string{"i": "%" + envVar + "%"}},
-			args:    args{key: "i", b: NewIntBounds(-1, 2, 300)},
+			c:       &cmdtoolkit.Configuration{StringMap: map[string]string{"i": "%" + envVar + "%"}},
+			args:    args{key: "i", b: cmdtoolkit.NewIntBounds(-1, 2, 300)},
 			wantI:   2,
 			wantErr: true,
 		},
 		"bad string": {
-			c:       &Configuration{sMap: map[string]string{"i": "nine"}},
-			args:    args{key: "i", b: NewIntBounds(-1, 20, 300)},
+			c:       &cmdtoolkit.Configuration{StringMap: map[string]string{"i": "nine"}},
+			args:    args{key: "i", b: cmdtoolkit.NewIntBounds(-1, 20, 300)},
 			wantI:   20,
 			wantErr: true,
 		},
@@ -588,20 +468,12 @@ func TestConfiguration_IntDefault(t *testing.T) {
 
 func TestConfiguration_StringDefault(t *testing.T) {
 	envVar1 := "TEST_VAR1"
-	savedValue1, savedStatus1 := os.LookupEnv(envVar1)
+	envVar1Memento := cmdtoolkit.NewEnvVarMemento(envVar1)
 	envVar2 := "TEST_VAR2"
-	savedValue2, savedStatus2 := os.LookupEnv(envVar2)
+	envVar2Memento := cmdtoolkit.NewEnvVarMemento(envVar2)
 	defer func() {
-		if savedStatus1 {
-			_ = os.Setenv(envVar1, savedValue1)
-		} else {
-			_ = os.Unsetenv(envVar1)
-		}
-		if savedStatus2 {
-			_ = os.Setenv(envVar2, savedValue2)
-		} else {
-			_ = os.Unsetenv(envVar2)
-		}
+		envVar1Memento.Restore()
+		envVar2Memento.Restore()
 	}()
 	type args struct {
 		key          string
@@ -612,25 +484,25 @@ func TestConfiguration_StringDefault(t *testing.T) {
 		envSet1   bool
 		envValue2 string
 		envSet2   bool
-		c         *Configuration
+		c         *cmdtoolkit.Configuration
 		args
 		wantS   string
 		wantErr bool
 	}{
 		"simple default, no configuration": {
-			c:     EmptyConfiguration(),
+			c:     cmdtoolkit.EmptyConfiguration(),
 			args:  args{key: "s", defaultValue: "defaultValue"},
 			wantS: "defaultValue",
 		},
 		"simple config override": {
-			c:     &Configuration{sMap: map[string]string{"s": "override"}},
+			c:     &cmdtoolkit.Configuration{StringMap: map[string]string{"s": "override"}},
 			args:  args{key: "s", defaultValue: "defaultValue"},
 			wantS: "override",
 		},
 		"dereferenced default, no configuration": {
 			envValue1: "user",
 			envSet1:   true,
-			c:         EmptyConfiguration(),
+			c:         cmdtoolkit.EmptyConfiguration(),
 			args:      args{key: "s", defaultValue: "hello $" + envVar1},
 			wantS:     "hello user",
 		},
@@ -639,17 +511,17 @@ func TestConfiguration_StringDefault(t *testing.T) {
 			envSet1:   true,
 			envValue2: "other user",
 			envSet2:   true,
-			c:         &Configuration{sMap: map[string]string{"s": "goodbye %" + envVar2 + "%"}},
+			c:         &cmdtoolkit.Configuration{StringMap: map[string]string{"s": "goodbye %" + envVar2 + "%"}},
 			args:      args{key: "s", defaultValue: "hello $" + envVar1},
 			wantS:     "goodbye other user",
 		},
 		"bad reference in default": {
-			c:       EmptyConfiguration(),
+			c:       cmdtoolkit.EmptyConfiguration(),
 			args:    args{key: "s", defaultValue: "hello $" + envVar1},
 			wantErr: true,
 		},
 		"bad reference in configuration": {
-			c:       &Configuration{sMap: map[string]string{"s": "goodbye %" + envVar2 + "%"}},
+			c:       &cmdtoolkit.Configuration{StringMap: map[string]string{"s": "goodbye %" + envVar2 + "%"}},
 			args:    args{key: "s", defaultValue: "hello"},
 			wantErr: true,
 		},
@@ -678,65 +550,32 @@ func TestConfiguration_StringDefault(t *testing.T) {
 	}
 }
 
-func TestConfiguration_StringValue(t *testing.T) {
-	tests := map[string]struct {
-		c         *Configuration
-		key       string
-		wantValue string
-		wantOk    bool
-	}{
-		"missing": {
-			c:   EmptyConfiguration(),
-			key: "s",
-		},
-		"found": {
-			c: &Configuration{
-				sMap: map[string]string{"s": "hello"},
-			},
-			key:       "s",
-			wantValue: "hello",
-			wantOk:    true,
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			gotValue, gotOk := tt.c.stringValue(tt.key)
-			if gotValue != tt.wantValue {
-				t.Errorf("Configuration.stringValue() gotValue = %v, want %v", gotValue, tt.wantValue)
-			}
-			if gotOk != tt.wantOk {
-				t.Errorf("Configuration.stringValue() gotOk = %v, want %v", gotOk, tt.wantOk)
-			}
-		})
-	}
-}
-
 func TestConfiguration_SubConfiguration(t *testing.T) {
 	tests := map[string]struct {
-		c    *Configuration
+		c    *cmdtoolkit.Configuration
 		key  string
-		want *Configuration
+		want *cmdtoolkit.Configuration
 	}{
 		"no match": {
-			c:    EmptyConfiguration(),
+			c:    cmdtoolkit.EmptyConfiguration(),
 			key:  "c",
-			want: EmptyConfiguration(),
+			want: cmdtoolkit.EmptyConfiguration(),
 		},
 		"match": {
-			c: &Configuration{
-				cMap: map[string]*Configuration{
+			c: &cmdtoolkit.Configuration{
+				ConfigurationMap: map[string]*cmdtoolkit.Configuration{
 					"c": {
-						bMap: map[string]bool{"b": true},
-						iMap: map[string]int{"i": 45000},
-						sMap: map[string]string{"s": "hey!"},
+						BoolMap:   map[string]bool{"b": true},
+						IntMap:    map[string]int{"i": 45000},
+						StringMap: map[string]string{"s": "hey!"},
 					},
 				},
 			},
 			key: "c",
-			want: &Configuration{
-				bMap: map[string]bool{"b": true},
-				iMap: map[string]int{"i": 45000},
-				sMap: map[string]string{"s": "hey!"},
+			want: &cmdtoolkit.Configuration{
+				BoolMap:   map[string]bool{"b": true},
+				IntMap:    map[string]int{"i": 45000},
+				StringMap: map[string]string{"s": "hey!"},
 			},
 		},
 	}
@@ -749,42 +588,9 @@ func TestConfiguration_SubConfiguration(t *testing.T) {
 	}
 }
 
-func TestIntBounds_constrainedValue(t *testing.T) {
-	tests := map[string]struct {
-		b     *IntBounds
-		value int
-		wantI int
-	}{
-		"low": {
-			b:     NewIntBounds(1, 10, 100),
-			value: -500,
-			wantI: 1,
-		},
-		"high": {
-			b:     NewIntBounds(1, 10, 100),
-			value: 500,
-			wantI: 100,
-		},
-		"middle": {
-			b:     NewIntBounds(1, 10, 100),
-			value: 50,
-			wantI: 50,
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			if gotI := tt.b.constrainedValue(tt.value); gotI != tt.wantI {
-				t.Errorf("IntBounds.constrainedValue() = %v, want %v", gotI, tt.wantI)
-			}
-		})
-	}
-}
-
 func TestSetFlagIndicator(t *testing.T) {
-	originalIndicator := flagPrefix
-	defer func() {
-		flagPrefix = originalIndicator
-	}()
+	originalIndicator := cmdtoolkit.FlagIndicator()
+	defer cmdtoolkit.SetFlagIndicator(originalIndicator)
 	tests := map[string]struct {
 		val string
 	}{
@@ -793,8 +599,8 @@ func TestSetFlagIndicator(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			SetFlagIndicator(tt.val)
-			if got := flagIndicator(); got != tt.val {
+			cmdtoolkit.SetFlagIndicator(tt.val)
+			if got := cmdtoolkit.FlagIndicator(); got != tt.val {
 				t.Errorf("SetFlagIndicator got %q want %q", got, tt.val)
 			}
 		})
@@ -802,19 +608,17 @@ func TestSetFlagIndicator(t *testing.T) {
 }
 
 func TestAssignFileSystem(t *testing.T) {
-	originalFileSystem := FileSystem()
-	defer func() {
-		fileSystem = originalFileSystem
-	}()
+	originalFileSystem := cmdtoolkit.FileSystem()
+	defer cmdtoolkit.AssignFileSystem(originalFileSystem)
 	tests := map[string]struct {
 		fs   afero.Fs
 		want afero.Fs
 	}{
-		"simple": {fs: afero.NewMemMapFs(), want: FileSystem()},
+		"simple": {fs: afero.NewMemMapFs(), want: cmdtoolkit.FileSystem()},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if got := AssignFileSystem(tt.fs); !reflect.DeepEqual(got, tt.want) {
+			if got := cmdtoolkit.AssignFileSystem(tt.fs); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("AssignFileSystem() = %v, want %v", got, tt.want)
 			}
 		})

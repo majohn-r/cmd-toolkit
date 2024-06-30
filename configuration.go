@@ -35,18 +35,18 @@ func AssignFileSystem(newFileSystem afero.Fs) afero.Fs {
 
 // Configuration defines the data structure for configuration information.
 type Configuration struct {
-	sMap map[string]string
-	bMap map[string]bool
-	iMap map[string]int
-	cMap map[string]*Configuration
+	StringMap        map[string]string
+	BoolMap          map[string]bool
+	IntMap           map[string]int
+	ConfigurationMap map[string]*Configuration
 }
 
 // IntBounds holds the bounds for an int value which has a minimum value, a
 // maximum value, and a default that lies within those bounds
 type IntBounds struct {
-	minValue     int
-	defaultValue int
-	maxValue     int
+	MinValue     int
+	DefaultValue int
+	MaxValue     int
 }
 
 // DefaultConfigFileName retrieves the name of the configuration file that
@@ -55,7 +55,15 @@ func DefaultConfigFileName() string {
 	return defaultConfigFileName
 }
 
-func flagIndicator() string {
+// UnsafeSetDefaultConfigFileName sets the defaultConfigFileName variable, which is intended
+// strictly for unit testing
+func UnsafeSetDefaultConfigFileName(newConfigFileName string) {
+	defaultConfigFileName = newConfigFileName
+}
+
+// FlagIndicator retrieves the string that indicates a command flag, typically either '-'
+// or '--'
+func FlagIndicator() string {
 	return flagPrefix
 }
 
@@ -67,10 +75,10 @@ func SetFlagIndicator(val string) {
 // EmptyConfiguration creates an empty Configuration instance
 func EmptyConfiguration() *Configuration {
 	return &Configuration{
-		bMap: make(map[string]bool),
-		iMap: make(map[string]int),
-		sMap: make(map[string]string),
-		cMap: make(map[string]*Configuration),
+		BoolMap:          make(map[string]bool),
+		IntMap:           make(map[string]int),
+		StringMap:        make(map[string]string),
+		ConfigurationMap: make(map[string]*Configuration),
 	}
 }
 
@@ -79,13 +87,13 @@ func newConfiguration(o output.Bus, data map[string]any) *Configuration {
 	for key, v := range data {
 		switch t := v.(type) {
 		case string:
-			c.sMap[key] = t
+			c.StringMap[key] = t
 		case bool:
-			c.bMap[key] = t
+			c.BoolMap[key] = t
 		case int:
-			c.iMap[key] = t
+			c.IntMap[key] = t
 		case map[string]any:
-			c.cMap[key] = newConfiguration(o, t)
+			c.ConfigurationMap[key] = newConfiguration(o, t)
 		default:
 			o.Log(output.Error, "unexpected value type", map[string]any{
 				"key":   key,
@@ -93,7 +101,7 @@ func newConfiguration(o output.Bus, data map[string]any) *Configuration {
 				"type":  fmt.Sprintf("%T", v),
 			})
 			o.WriteCanonicalError("The key %q, with value '%v', has an unexpected type %T", key, v, v)
-			c.sMap[key] = fmt.Sprintf("%v", v)
+			c.StringMap[key] = fmt.Sprintf("%v", v)
 		}
 	}
 	return c
@@ -105,9 +113,9 @@ func NewIntBounds(v1, v2, v3 int) *IntBounds {
 	v := []int{v1, v2, v3}
 	sort.Ints(v)
 	return &IntBounds{
-		minValue:     v[0],
-		defaultValue: v[1],
-		maxValue:     v[2],
+		MinValue:     v[0],
+		DefaultValue: v[1],
+		MaxValue:     v[2],
 	}
 }
 
@@ -185,27 +193,27 @@ func verifyDefaultConfigFileExists(o output.Bus, path string) (exists bool, err 
 
 func (c *Configuration) String() string {
 	s := make([]string, 0, 4)
-	if len(c.bMap) != 0 {
-		s = append(s, fmt.Sprintf("%v", c.bMap))
+	if len(c.BoolMap) != 0 {
+		s = append(s, fmt.Sprintf("%v", c.BoolMap))
 	}
-	if len(c.iMap) != 0 {
-		s = append(s, fmt.Sprintf("%v", c.iMap))
+	if len(c.IntMap) != 0 {
+		s = append(s, fmt.Sprintf("%v", c.IntMap))
 	}
-	if len(c.sMap) != 0 {
-		s = append(s, fmt.Sprintf("%v", c.sMap))
+	if len(c.StringMap) != 0 {
+		s = append(s, fmt.Sprintf("%v", c.StringMap))
 	}
-	if len(c.cMap) != 0 {
-		s = append(s, fmt.Sprintf("%v", c.cMap))
+	if len(c.ConfigurationMap) != 0 {
+		s = append(s, fmt.Sprintf("%v", c.ConfigurationMap))
 	}
 	return strings.Join(s, ", ")
 }
 
 // BoolDefault returns a boolean value for a specified key
 func (c *Configuration) BoolDefault(key string, defaultValue bool) (bool, error) {
-	if value, valueDefined := c.bMap[key]; valueDefined {
+	if value, valueDefined := c.BoolMap[key]; valueDefined {
 		return value, nil
 	}
-	if value, valueDefined := c.iMap[key]; valueDefined {
+	if value, valueDefined := c.IntMap[key]; valueDefined {
 		switch value {
 		case 0:
 			return false, nil
@@ -214,24 +222,24 @@ func (c *Configuration) BoolDefault(key string, defaultValue bool) (bool, error)
 		default:
 			// note: deliberately imitating flags behavior when parsing an
 			// invalid boolean
-			return defaultValue, fmt.Errorf("invalid boolean value \"%d\" for %s%s: parse error", value, flagIndicator(), key)
+			return defaultValue, fmt.Errorf("invalid boolean value \"%d\" for %s%s: parse error", value, FlagIndicator(), key)
 		}
 	}
 	// True values may be specified as "t", "T", "true", "TRUE", or "True"
 	// False values may be specified as "f", "F", "false", "FALSE", or "False"
-	value, valueDefined := c.sMap[key]
+	value, valueDefined := c.StringMap[key]
 	if !valueDefined {
 		return defaultValue, nil
 	}
 	rawValue, dereferenceErr := DereferenceEnvVar(value)
 	if dereferenceErr != nil {
-		return defaultValue, fmt.Errorf("invalid boolean value %q for %s%s: %v", value, flagIndicator(), key, dereferenceErr)
+		return defaultValue, fmt.Errorf("invalid boolean value %q for %s%s: %v", value, FlagIndicator(), key, dereferenceErr)
 	}
 	cookedValue, e := strconv.ParseBool(rawValue)
 	if e != nil {
 		// note: deliberately imitating flags behavior when parsing
 		// an invalid boolean
-		return defaultValue, fmt.Errorf("invalid boolean value %q for %s%s: parse error", value, flagIndicator(), key)
+		return defaultValue, fmt.Errorf("invalid boolean value %q for %s%s: parse error", value, FlagIndicator(), key)
 	}
 	return cookedValue, nil
 }
@@ -239,22 +247,22 @@ func (c *Configuration) BoolDefault(key string, defaultValue bool) (bool, error)
 // IntDefault returns a default value for a specified key, which may or may not
 // be defined in the Configuration instance
 func (c *Configuration) IntDefault(key string, b *IntBounds) (int, error) {
-	if value, foundKey := c.iMap[key]; foundKey {
+	if value, foundKey := c.IntMap[key]; foundKey {
 		return b.constrainedValue(value), nil
 	}
-	value, foundKey := c.sMap[key]
+	value, foundKey := c.StringMap[key]
 	if !foundKey {
-		return b.Default(), nil
+		return b.DefaultValue, nil
 	}
 	rawValue, dereferenceErr := DereferenceEnvVar(value)
 	if dereferenceErr != nil {
-		return b.Default(), fmt.Errorf("invalid value %q for flag %s%s: %v", rawValue, flagIndicator(), key, dereferenceErr)
+		return b.DefaultValue, fmt.Errorf("invalid value %q for flag %s%s: %v", rawValue, FlagIndicator(), key, dereferenceErr)
 	}
 	cookedValue, e := strconv.Atoi(rawValue)
 	if e != nil {
 		// note: deliberately imitating flags behavior when parsing an
 		// invalid int
-		return b.Default(), fmt.Errorf("invalid value %q for flag %s%s: parse error", rawValue, flagIndicator(), key)
+		return b.DefaultValue, fmt.Errorf("invalid value %q for flag %s%s: parse error", rawValue, FlagIndicator(), key)
 	}
 	return b.constrainedValue(cookedValue), nil
 }
@@ -264,15 +272,15 @@ func (c *Configuration) StringDefault(key, defaultValue string) (string, error) 
 	var dereferencedDefault string
 	var dereferenceErr error
 	if dereferencedDefault, dereferenceErr = DereferenceEnvVar(defaultValue); dereferenceErr != nil {
-		return "", fmt.Errorf("invalid value %q for flag %s%s: %v", defaultValue, flagIndicator(), key, dereferenceErr)
+		return "", fmt.Errorf("invalid value %q for flag %s%s: %v", defaultValue, FlagIndicator(), key, dereferenceErr)
 	}
-	value, found := c.sMap[key]
+	value, found := c.StringMap[key]
 	if !found {
 		return dereferencedDefault, nil
 	}
 	var dereferencedValue string
 	if dereferencedValue, dereferenceErr = DereferenceEnvVar(value); dereferenceErr != nil {
-		return "", fmt.Errorf("invalid value %q for flag %s%s: %v", value, flagIndicator(), key, dereferenceErr)
+		return "", fmt.Errorf("invalid value %q for flag %s%s: %v", value, FlagIndicator(), key, dereferenceErr)
 	}
 	return dereferencedValue, nil
 }
@@ -280,29 +288,30 @@ func (c *Configuration) StringDefault(key, defaultValue string) (string, error) 
 // stringValue returns the definition of the specified key and whether the value
 // is defined
 func (c *Configuration) stringValue(key string) (value string, found bool) {
-	value, found = c.sMap[key]
+	value, found = c.StringMap[key]
 	return
 }
 
 // SubConfiguration returns a specified sub-configuration
 func (c *Configuration) SubConfiguration(key string) *Configuration {
-	if configuration, found := c.cMap[key]; found {
+	if configuration, found := c.ConfigurationMap[key]; found {
 		return configuration
 	}
 	return EmptyConfiguration()
 }
 
 // Default returns the default value for a bounded int
+// Deprecated: just access the DefaultValue member directly
 func (b *IntBounds) Default() int {
-	return b.defaultValue
+	return b.DefaultValue
 }
 
 func (b *IntBounds) constrainedValue(value int) (i int) {
 	switch {
-	case value < b.minValue:
-		i = b.minValue
-	case value > b.maxValue:
-		i = b.maxValue
+	case value < b.MinValue:
+		i = b.MinValue
+	case value > b.MaxValue:
+		i = b.MaxValue
 	default:
 		i = value
 	}
