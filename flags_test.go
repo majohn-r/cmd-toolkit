@@ -1,6 +1,7 @@
-package cmd_toolkit
+package cmd_toolkit_test
 
 import (
+	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
 	"testing"
 )
 
@@ -18,7 +19,7 @@ func TestDecorateBoolFlagUsage(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if got := DecorateBoolFlagUsage(tt.args.usage, tt.args.defaultValue); got != tt.want {
+			if got := cmdtoolkit.DecorateBoolFlagUsage(tt.args.usage, tt.args.defaultValue); got != tt.want {
 				t.Errorf("DecorateBoolFlagUsage() = %v, want %v", got, tt.want)
 			}
 		})
@@ -39,7 +40,7 @@ func TestDecorateIntFlagUsage(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if got := DecorateIntFlagUsage(tt.args.usage, tt.args.defaultValue); got != tt.want {
+			if got := cmdtoolkit.DecorateIntFlagUsage(tt.args.usage, tt.args.defaultValue); got != tt.want {
 				t.Errorf("DecorateIntFlagUsage() = %v, want %v", got, tt.want)
 			}
 		})
@@ -60,7 +61,7 @@ func TestDecorateStringFlagUsage(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if got := DecorateStringFlagUsage(tt.args.usage, tt.args.defaultValue); got != tt.want {
+			if got := cmdtoolkit.DecorateStringFlagUsage(tt.args.usage, tt.args.defaultValue); got != tt.want {
 				t.Errorf("DecorateStringFlagUsage() = %v, want %v", got, tt.want)
 			}
 		})

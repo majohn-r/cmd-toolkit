@@ -20,10 +20,25 @@ var (
 
 type byLength []string // used for sorting environment variable references
 
-type envVarMemento struct {
+// EnvVarMemento encapsulates information about an environment variable: its name, its value, and whether it was set
+// when accessed
+type EnvVarMemento struct {
 	name  string
 	value string
 	set   bool
+}
+
+// UnsafeAppName returns the application name, regardless of whether it's unset; this function
+// exists solely to support unit testing
+func UnsafeAppName() string {
+	return appName
+}
+
+// UnsafeSetAppName sets the application name in an unsafe fashion, regardless of whether the
+// name parameter is empty or whether the application name has already been set; this function
+// exists solely to support unit testing
+func UnsafeSetAppName(name string) {
+	appName = name
 }
 
 // AppName retrieves the name of the application
@@ -76,8 +91,10 @@ func DereferenceEnvVar(s string) (string, error) {
 	return s, nil
 }
 
-func newEnvVarMemento(name string) *envVarMemento {
-	s := &envVarMemento{name: name}
+// NewEnvVarMemento creates a new instance of EnvVarMemento based on the state of the
+// environment variable 'name'
+func NewEnvVarMemento(name string) *EnvVarMemento {
+	s := &EnvVarMemento{name: name}
 	if value, varDefined := os.LookupEnv(name); varDefined {
 		s.value = value
 		s.set = true
@@ -85,9 +102,8 @@ func newEnvVarMemento(name string) *envVarMemento {
 	return s
 }
 
-// SetAppName sets the name of the application, returning an error if the name
-// has already been set to a different value or if it is being set to an empty
-// string
+// SetAppName sets the name of the application, returning an error if the name has already
+// been set to a different value or if the caller is attempting to set it to an empty string
 func SetAppName(s string) error {
 	if s == "" {
 		return errors.New("cannot initialize app name with an empty string")
@@ -130,19 +146,25 @@ func findReferences(s string) []string {
 	return matches
 }
 
+// Len returns the length of the byLength instance - in other words, the number of strings
 func (bl byLength) Len() int {
 	return len(bl)
 }
 
+// Less is a function that returns true if the length of string 'j' is less than that of
+// string 'i'
 func (bl byLength) Less(i, j int) bool {
 	return len(bl[i]) > len(bl[j])
 }
 
+// Swap swaps the ith and jth elements
 func (bl byLength) Swap(i, j int) {
 	bl[i], bl[j] = bl[j], bl[i]
 }
 
-func (mem *envVarMemento) restore() {
+// Restore restores the environment variable encapsulated by the EnvVarMemento instance to
+// its original state
+func (mem *EnvVarMemento) Restore() {
 	switch mem.set {
 	case true:
 		_ = os.Setenv(mem.name, mem.value)

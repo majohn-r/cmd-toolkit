@@ -13,14 +13,14 @@ import (
 )
 
 func Test_initWriter(t *testing.T) {
-	originalTmp := newEnvVarMemento("TMP")
-	originalTemp := newEnvVarMemento("TEMP")
+	originalTmp := NewEnvVarMemento("TMP")
+	originalTemp := NewEnvVarMemento("TEMP")
 	originalAppName := appName
 	originalLogPath := logPath
 	originalFileSystem := fileSystem
 	defer func() {
-		originalTmp.restore()
-		originalTemp.restore()
+		originalTmp.Restore()
+		originalTemp.Restore()
 		appName = originalAppName
 		logPath = originalLogPath
 		fileSystem = originalFileSystem
@@ -233,11 +233,11 @@ func Test_deleteLogFile(t *testing.T) {
 }
 
 func Test_findTemp(t *testing.T) {
-	savedTmp := newEnvVarMemento("TMP")
-	savedTemp := newEnvVarMemento("TEMP")
+	savedTmp := NewEnvVarMemento("TMP")
+	savedTemp := NewEnvVarMemento("TEMP")
 	defer func() {
-		savedTmp.restore()
-		savedTemp.restore()
+		savedTmp.Restore()
+		savedTemp.Restore()
 	}()
 	tests := map[string]struct {
 		preTest func()
