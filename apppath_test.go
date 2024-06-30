@@ -1,6 +1,7 @@
-package cmd_toolkit
+package cmd_toolkit_test
 
 import (
+	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
 	"os"
 	"testing"
 
@@ -9,18 +10,16 @@ import (
 )
 
 func TestApplicationPath(t *testing.T) {
-	savedApplicationPath := applicationPath
-	defer func() {
-		applicationPath = savedApplicationPath
-	}()
+	originalApplicationPath := cmdtoolkit.ApplicationPath()
+	defer cmdtoolkit.UnsafeSetApplicationPath(originalApplicationPath)
 	tests := map[string]struct {
 		applicationPath string
 		want            string
 	}{"dummy": {applicationPath: "foo/bar", want: "foo/bar"}}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			applicationPath = tt.applicationPath
-			if got := ApplicationPath(); got != tt.want {
+			cmdtoolkit.UnsafeSetApplicationPath(tt.applicationPath)
+			if got := cmdtoolkit.ApplicationPath(); got != tt.want {
 				t.Errorf("ApplicationPath() = %v, want %v", got, tt.want)
 			}
 		})
@@ -28,26 +27,17 @@ func TestApplicationPath(t *testing.T) {
 }
 
 func TestInitApplicationPath(t *testing.T) {
-	originalAppName := appName
-	originalApplicationPath := applicationPath
-	originalFileSystem := fileSystem
-	var appDataWasSet bool
-	var savedAppDataValue string
-	if value, varDefined := os.LookupEnv(applicationDataEnvVarName); varDefined {
-		appDataWasSet = true
-		savedAppDataValue = value
-	}
+	originalAppName := cmdtoolkit.UnsafeAppName()
+	originalApplicationPath := cmdtoolkit.ApplicationPath()
+	originalFileSystem := cmdtoolkit.FileSystem()
+	appDataMemento := cmdtoolkit.NewEnvVarMemento("APPDATA")
 	defer func() {
-		appName = originalAppName
-		applicationPath = originalApplicationPath
-		if appDataWasSet {
-			_ = os.Setenv(applicationDataEnvVarName, savedAppDataValue)
-		} else {
-			_ = os.Unsetenv(applicationDataEnvVarName)
-		}
-		fileSystem = originalFileSystem
+		cmdtoolkit.UnsafeSetAppName(originalAppName)
+		cmdtoolkit.UnsafeSetApplicationPath(originalApplicationPath)
+		appDataMemento.Restore()
+		cmdtoolkit.AssignFileSystem(originalFileSystem)
 	}()
-	fileSystem = afero.NewMemMapFs()
+	cmdtoolkit.AssignFileSystem(afero.NewMemMapFs())
 	tests := map[string]struct {
 		appName         string
 		appDataValue    string
@@ -92,7 +82,7 @@ func TestInitApplicationPath(t *testing.T) {
 			appDataValue:    ".",
 			wantInitialized: false,
 			preTest: func() {
-				_ = afero.WriteFile(fileSystem, "myApp1", []byte{1, 2, 3}, StdFilePermissions)
+				_ = afero.WriteFile(cmdtoolkit.FileSystem(), "myApp1", []byte{1, 2, 3}, cmdtoolkit.StdFilePermissions)
 			},
 			WantedRecording: output.WantedRecording{
 				Error: "The directory \"myApp1\" cannot be created: file exists and is not a directory.\n",
@@ -109,7 +99,7 @@ func TestInitApplicationPath(t *testing.T) {
 			appDataValue:    ".",
 			wantInitialized: true,
 			preTest: func() {
-				_ = fileSystem.Mkdir("myApp2", StdDirPermissions)
+				_ = cmdtoolkit.FileSystem().Mkdir("myApp2", cmdtoolkit.StdDirPermissions)
 			},
 		},
 		"subdirectory does not yet exist": {
@@ -122,16 +112,16 @@ func TestInitApplicationPath(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			appName = tt.appName
-			applicationPath = ""
+			cmdtoolkit.UnsafeSetAppName(tt.appName)
+			cmdtoolkit.UnsafeSetApplicationPath("")
 			if tt.appDataSet {
-				_ = os.Setenv(applicationDataEnvVarName, tt.appDataValue)
+				_ = os.Setenv("APPDATA", tt.appDataValue)
 			} else {
-				_ = os.Unsetenv(applicationDataEnvVarName)
+				_ = os.Unsetenv("APPDATA")
 			}
 			tt.preTest()
 			o := output.NewRecorder()
-			if gotInitialized := InitApplicationPath(o); gotInitialized != tt.wantInitialized {
+			if gotInitialized := cmdtoolkit.InitApplicationPath(o); gotInitialized != tt.wantInitialized {
 				t.Errorf("InitApplicationPath() = %v, want %v", gotInitialized, tt.wantInitialized)
 			}
 			o.Report(t, "InitApplicationPath()", tt.WantedRecording)
@@ -140,10 +130,8 @@ func TestInitApplicationPath(t *testing.T) {
 }
 
 func TestSetApplicationPath(t *testing.T) {
-	savedApplicationPath := applicationPath
-	defer func() {
-		applicationPath = savedApplicationPath
-	}()
+	originalApplicationPath := cmdtoolkit.ApplicationPath()
+	defer cmdtoolkit.UnsafeSetApplicationPath(originalApplicationPath)
 	tests := map[string]struct {
 		applicationPath string
 		s               string
@@ -151,11 +139,11 @@ func TestSetApplicationPath(t *testing.T) {
 	}{"simple": {applicationPath: "foo", s: "bar", wantPrevious: "foo"}}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			applicationPath = tt.applicationPath
-			if gotPrevious := SetApplicationPath(tt.s); gotPrevious != tt.wantPrevious {
+			cmdtoolkit.UnsafeSetApplicationPath(tt.applicationPath)
+			if gotPrevious := cmdtoolkit.SetApplicationPath(tt.s); gotPrevious != tt.wantPrevious {
 				t.Errorf("SetApplicationPath() = %v, want %v", gotPrevious, tt.wantPrevious)
 			}
-			if gotNew := applicationPath; gotNew != tt.s {
+			if gotNew := cmdtoolkit.ApplicationPath(); gotNew != tt.s {
 				t.Errorf("SetApplicationPath() gotNew = %v, want %v", gotNew, tt.s)
 			}
 		})
