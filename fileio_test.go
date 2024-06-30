@@ -1,7 +1,8 @@
-package cmd_toolkit
+package cmd_toolkit_test
 
 import (
 	"errors"
+	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
 	"path/filepath"
 	"testing"
 
@@ -12,24 +13,24 @@ import (
 func TestCopyFile(t *testing.T) {
 	// note: use os filesystem - Create never returns an error in the
 	// memory-mapped file system
-	_ = fileSystem.Mkdir("sourceDir1", StdDirPermissions)
-	_ = fileSystem.Mkdir("sourceDir2", StdDirPermissions)
-	_ = fileSystem.Mkdir("sourceDir3", StdDirPermissions)
-	_ = fileSystem.Mkdir("sourceDir4", StdDirPermissions)
-	_ = fileSystem.Mkdir("destinationDir1", StdDirPermissions)
-	_ = fileSystem.MkdirAll(filepath.Join("destinationDir2", "file1"), StdDirPermissions)
-	_ = fileSystem.Mkdir("destinationDir3", StdDirPermissions)
-	_ = afero.WriteFile(fileSystem, filepath.Join("sourceDir2", "file1"), []byte{1, 2, 3}, StdFilePermissions)
-	_ = afero.WriteFile(fileSystem, filepath.Join("sourceDir3", "file1"), []byte{1, 2, 3}, StdFilePermissions)
-	_ = afero.WriteFile(fileSystem, filepath.Join("sourceDir4", "file1"), []byte{1, 2, 3}, StdFilePermissions)
+	_ = cmdtoolkit.FileSystem().Mkdir("sourceDir1", cmdtoolkit.StdDirPermissions)
+	_ = cmdtoolkit.FileSystem().Mkdir("sourceDir2", cmdtoolkit.StdDirPermissions)
+	_ = cmdtoolkit.FileSystem().Mkdir("sourceDir3", cmdtoolkit.StdDirPermissions)
+	_ = cmdtoolkit.FileSystem().Mkdir("sourceDir4", cmdtoolkit.StdDirPermissions)
+	_ = cmdtoolkit.FileSystem().Mkdir("destinationDir1", cmdtoolkit.StdDirPermissions)
+	_ = cmdtoolkit.FileSystem().MkdirAll(filepath.Join("destinationDir2", "file1"), cmdtoolkit.StdDirPermissions)
+	_ = cmdtoolkit.FileSystem().Mkdir("destinationDir3", cmdtoolkit.StdDirPermissions)
+	_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join("sourceDir2", "file1"), []byte{1, 2, 3}, cmdtoolkit.StdFilePermissions)
+	_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join("sourceDir3", "file1"), []byte{1, 2, 3}, cmdtoolkit.StdFilePermissions)
+	_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join("sourceDir4", "file1"), []byte{1, 2, 3}, cmdtoolkit.StdFilePermissions)
 	defer func() {
-		_ = fileSystem.RemoveAll("sourceDir1")
-		_ = fileSystem.RemoveAll("sourceDir2")
-		_ = fileSystem.RemoveAll("sourceDir3")
-		_ = fileSystem.RemoveAll("sourceDir4")
-		_ = fileSystem.RemoveAll("destinationDir1")
-		_ = fileSystem.RemoveAll("destinationDir2")
-		_ = fileSystem.RemoveAll("destinationDir3")
+		_ = cmdtoolkit.FileSystem().RemoveAll("sourceDir1")
+		_ = cmdtoolkit.FileSystem().RemoveAll("sourceDir2")
+		_ = cmdtoolkit.FileSystem().RemoveAll("sourceDir3")
+		_ = cmdtoolkit.FileSystem().RemoveAll("sourceDir4")
+		_ = cmdtoolkit.FileSystem().RemoveAll("destinationDir1")
+		_ = cmdtoolkit.FileSystem().RemoveAll("destinationDir2")
+		_ = cmdtoolkit.FileSystem().RemoveAll("destinationDir3")
 	}()
 	type args struct {
 		src         string
@@ -73,7 +74,7 @@ func TestCopyFile(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if gotErr := CopyFile(tt.args.src, tt.args.destination); (gotErr != nil) != tt.wantErr {
+			if gotErr := cmdtoolkit.CopyFile(tt.args.src, tt.args.destination); (gotErr != nil) != tt.wantErr {
 				t.Errorf("CopyFile() error = %v, wantErr %v", gotErr, tt.wantErr)
 			}
 		})
@@ -91,7 +92,7 @@ func TestDirExists(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if got := DirExists(tt.path); got != tt.want {
+			if got := cmdtoolkit.DirExists(tt.path); got != tt.want {
 				t.Errorf("DirExists() = %v, want %v", got, tt.want)
 			}
 		})
@@ -115,41 +116,16 @@ func TestLogFileDeletionFailure(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
-			LogFileDeletionFailure(o, tt.args.s, tt.args.e)
+			cmdtoolkit.LogFileDeletionFailure(o, tt.args.s, tt.args.e)
 			o.Report(t, "LogFileDeletionFailure()", tt.WantedRecording)
 		})
 	}
 }
 
-func TestLogUnreadableDirectory(t *testing.T) {
-	type args struct {
-		s string
-		e error
-	}
-	tests := map[string]struct {
-		args
-		output.WantedRecording
-	}{
-		"basic": {
-			args:            args{s: "directory name", e: errors.New("directory is missing")},
-			WantedRecording: output.WantedRecording{Log: "level='error' directory='directory name' error='directory is missing' msg='cannot read directory'\n"},
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			o := output.NewRecorder()
-			logUnreadableDirectory(o, tt.args.s, tt.args.e)
-			o.Report(t, "logUnreadableDirectory()", tt.WantedRecording)
-		})
-	}
-}
-
 func TestMkdir(t *testing.T) {
-	originalFileSystem := fileSystem
-	defer func() {
-		fileSystem = originalFileSystem
-	}()
-	fileSystem = afero.NewMemMapFs()
+	originalFileSystem := cmdtoolkit.FileSystem()
+	defer cmdtoolkit.AssignFileSystem(originalFileSystem)
+	cmdtoolkit.AssignFileSystem(afero.NewMemMapFs())
 	tests := map[string]struct {
 		preTest func()
 		dir     string
@@ -162,22 +138,22 @@ func TestMkdir(t *testing.T) {
 		},
 		"dir is a plain file": {
 			preTest: func() {
-				_ = fileSystem.Mkdir("plainFile", StdDirPermissions)
-				_ = afero.WriteFile(fileSystem, filepath.Join("plainFile", "subDir"), []byte{0, 1, 2}, StdFilePermissions)
+				_ = cmdtoolkit.FileSystem().Mkdir("plainFile", cmdtoolkit.StdDirPermissions)
+				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join("plainFile", "subDir"), []byte{0, 1, 2}, cmdtoolkit.StdFilePermissions)
 			},
 			dir:     filepath.Join("plainFile", "subDir"),
 			wantErr: true,
 		},
 		"successfully create new directory": {
 			preTest: func() {
-				_ = fileSystem.Mkdir("emptyDir", StdDirPermissions)
+				_ = cmdtoolkit.FileSystem().Mkdir("emptyDir", cmdtoolkit.StdDirPermissions)
 			},
 			dir:     filepath.Join("emptyDir", "subDir"),
 			wantErr: false,
 		},
 		"directory already exists": {
 			preTest: func() {
-				_ = fileSystem.MkdirAll(filepath.Join("dirExists", "subDir"), StdDirPermissions)
+				_ = cmdtoolkit.FileSystem().MkdirAll(filepath.Join("dirExists", "subDir"), cmdtoolkit.StdDirPermissions)
 			},
 			dir:     filepath.Join("dirExists", "subDir"),
 			wantErr: false,
@@ -186,7 +162,7 @@ func TestMkdir(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
-			if gotErr := Mkdir(tt.dir); (gotErr != nil) != tt.wantErr {
+			if gotErr := cmdtoolkit.Mkdir(tt.dir); (gotErr != nil) != tt.wantErr {
 				t.Errorf("Mkdir() error = %v, wantErr %v", gotErr, tt.wantErr)
 			}
 		})
@@ -194,11 +170,9 @@ func TestMkdir(t *testing.T) {
 }
 
 func TestPlainFileExists(t *testing.T) {
-	originalFileSystem := fileSystem
-	defer func() {
-		fileSystem = originalFileSystem
-	}()
-	fileSystem = afero.NewMemMapFs()
+	originalFileSystem := cmdtoolkit.FileSystem()
+	defer cmdtoolkit.AssignFileSystem(originalFileSystem)
+	cmdtoolkit.AssignFileSystem(afero.NewMemMapFs())
 	tests := map[string]struct {
 		preTest func()
 		path    string
@@ -211,15 +185,15 @@ func TestPlainFileExists(t *testing.T) {
 		},
 		"directory": {
 			preTest: func() {
-				_ = fileSystem.Mkdir("file", StdDirPermissions)
+				_ = cmdtoolkit.FileSystem().Mkdir("file", cmdtoolkit.StdDirPermissions)
 			},
 			path: "file",
 			want: false,
 		},
 		"real file": {
 			preTest: func() {
-				_ = fileSystem.Mkdir("dir", StdDirPermissions)
-				_ = afero.WriteFile(fileSystem, filepath.Join("dir", "file"), []byte{0, 1, 2}, StdFilePermissions)
+				_ = cmdtoolkit.FileSystem().Mkdir("dir", cmdtoolkit.StdDirPermissions)
+				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join("dir", "file"), []byte{0, 1, 2}, cmdtoolkit.StdFilePermissions)
 			},
 			path: filepath.Join("dir", "file"),
 			want: true,
@@ -228,7 +202,7 @@ func TestPlainFileExists(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
-			if got := PlainFileExists(tt.path); got != tt.want {
+			if got := cmdtoolkit.PlainFileExists(tt.path); got != tt.want {
 				t.Errorf("PlainFileExists() = %v, want %v", got, tt.want)
 			}
 		})
@@ -236,11 +210,9 @@ func TestPlainFileExists(t *testing.T) {
 }
 
 func TestReadDirectory(t *testing.T) {
-	originalFileSystem := fileSystem
-	defer func() {
-		fileSystem = originalFileSystem
-	}()
-	fileSystem = afero.NewMemMapFs()
+	originalFileSystem := cmdtoolkit.FileSystem()
+	defer cmdtoolkit.AssignFileSystem(originalFileSystem)
+	cmdtoolkit.AssignFileSystem(afero.NewMemMapFs())
 	tests := map[string]struct {
 		preTest         func()
 		dir             string
@@ -259,7 +231,7 @@ func TestReadDirectory(t *testing.T) {
 		},
 		"empty directory": {
 			preTest: func() {
-				_ = fileSystem.Mkdir("empty", StdDirPermissions)
+				_ = cmdtoolkit.FileSystem().Mkdir("empty", cmdtoolkit.StdDirPermissions)
 			},
 			dir:             "empty",
 			wantFilesLength: 0,
@@ -267,14 +239,14 @@ func TestReadDirectory(t *testing.T) {
 		},
 		"directory with content": {
 			preTest: func() {
-				_ = fileSystem.Mkdir("full", StdDirPermissions)
+				_ = cmdtoolkit.FileSystem().Mkdir("full", cmdtoolkit.StdDirPermissions)
 				// make a few files
 				for _, filename := range []string{"file1", "file2", "file3"} {
-					_ = afero.WriteFile(fileSystem, filepath.Join("full", filename), []byte{}, StdFilePermissions)
+					_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join("full", filename), []byte{}, cmdtoolkit.StdFilePermissions)
 				}
 				// and a few directories
 				for _, subDirectory := range []string{"sub1", "sub2", "sub3"} {
-					_ = fileSystem.Mkdir(filepath.Join("full", subDirectory), StdDirPermissions)
+					_ = cmdtoolkit.FileSystem().Mkdir(filepath.Join("full", subDirectory), cmdtoolkit.StdDirPermissions)
 				}
 			},
 			dir:             "full",
@@ -286,7 +258,7 @@ func TestReadDirectory(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
 			o := output.NewRecorder()
-			gotFiles, gotOk := ReadDirectory(o, tt.dir)
+			gotFiles, gotOk := cmdtoolkit.ReadDirectory(o, tt.dir)
 			if len(gotFiles) != tt.wantFilesLength {
 				t.Errorf("ReadDirectory() got %d files, want %d", len(gotFiles), tt.wantFilesLength)
 			}
@@ -319,31 +291,8 @@ func TestReportFileCreationFailure(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
-			ReportFileCreationFailure(o, tt.args.cmd, tt.args.file, tt.args.e)
+			cmdtoolkit.ReportFileCreationFailure(o, tt.args.cmd, tt.args.file, tt.args.e)
 			o.Report(t, "ReportFileCreationFailure()", tt.WantedRecording)
-		})
-	}
-}
-
-func TestWriteDirectoryCreationError(t *testing.T) {
-	type args struct {
-		d string
-		e error
-	}
-	tests := map[string]struct {
-		args
-		output.WantedRecording
-	}{
-		"basic": {
-			args:            args{d: "dirName", e: errors.New("parent directory does not exist")},
-			WantedRecording: output.WantedRecording{Error: "The directory \"dirName\" cannot be created: parent directory does not exist.\n"},
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			o := output.NewRecorder()
-			writeDirectoryCreationError(o, tt.args.d, tt.args.e)
-			o.Report(t, "writeDirectoryCreationError()", tt.WantedRecording)
 		})
 	}
 }
