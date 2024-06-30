@@ -20,40 +20,31 @@ const (
 	maxLogFiles      = 10
 )
 
-var (
-	logPath string
-	// exposed so that unit tests can close the writer!
-	logWriter io.WriteCloser
-)
+var logWriter io.WriteCloser
 
-// LogPath returns the path for log files; see https://github.com/majohn-r/cmd-toolkit/issues/16
-func LogPath() string {
-	return logPath
-}
-
-func initWriter(o output.Bus) io.Writer {
+func initWriter(o output.Bus) (w io.Writer, path string) {
 	var tmpFolder string
 	var found bool
 	if tmpFolder, found = findTemp(o); !found {
-		return nil
+		return nil, ""
 	}
 	if PlainFileExists(tmpFolder) {
 		o.WriteCanonicalError("The temporary folder %q exists as a plain file", tmpFolder)
-		return nil
+		return nil, ""
 	}
 	tmp, creationError := CreateAppSpecificPath(tmpFolder)
 	if creationError != nil {
 		o.WriteCanonicalError("A programming error has occurred: %v", creationError)
-		return nil
+		return nil, ""
 	}
-	logPath = filepath.Join(tmp, logDirName)
-	_ = fileSystem.MkdirAll(logPath, StdDirPermissions)
-	cleanup(o, logPath)
+	path = filepath.Join(tmp, logDirName)
+	_ = fileSystem.MkdirAll(path, StdDirPermissions)
+	cleanup(o, path)
 	logWriter = cronowriter.MustNew(
-		filepath.Join(logPath, logFilePrefix()+"%Y%m%d"+logFileExtension),
-		cronowriter.WithSymlink(filepath.Join(logPath, symlinkName)),
+		filepath.Join(path, logFilePrefix()+"%Y%m%d"+logFileExtension),
+		cronowriter.WithSymlink(filepath.Join(path, symlinkName)),
 		cronowriter.WithInit())
-	return logWriter
+	return logWriter, path
 }
 
 func cleanup(o output.Bus, logPath string) (found, deleted int) {

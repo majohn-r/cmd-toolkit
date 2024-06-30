@@ -15,8 +15,6 @@ import (
 
 type exitFunc func(int)
 
-// ProductionLogger is the production implementation of the output.Logger
-// interface
 type simpleLogger struct {
 	writer          io.Writer
 	exitFunction    exitFunc
@@ -26,15 +24,24 @@ type simpleLogger struct {
 
 const defaultLoggingLevel = output.Info
 
-var ProductionLogger = &simpleLogger{
-	exitFunction:    os.Exit,
-	currentLogLevel: defaultLoggingLevel,
-	lock:            &sync.RWMutex{},
-}
+// ProductionLogger is the production implementation of the output.Logger interface
+var (
+	ProductionLogger = &simpleLogger{
+		exitFunction:    os.Exit,
+		currentLogLevel: defaultLoggingLevel,
+		lock:            &sync.RWMutex{},
+	}
+	logPath string
+)
 
-// function to get an io.Writer with which to initialize the logger; this makes
-// it easy to substitute another function in unit tests
-var writerGetter = initWriter
+// LogWriterInitFn is a function to get an io.Writer with which to initialize the logger;
+// this variable setting makes it easy to substitute another function in unit tests
+var LogWriterInitFn = initWriter
+
+// LogPath returns the path for log files; see https://github.com/majohn-r/cmd-toolkit/issues/16
+func LogPath() string {
+	return logPath
+}
 
 // InitLogging sets up logging at the default log level
 func InitLogging(o output.Bus) (ok bool) {
@@ -43,7 +50,8 @@ func InitLogging(o output.Bus) (ok bool) {
 
 // InitLoggingWithLevel initializes logging with a specific log level
 func InitLoggingWithLevel(o output.Bus, l output.Level) (ok bool) {
-	if w := writerGetter(o); w != nil {
+	if w, p := LogWriterInitFn(o); w != nil {
+		logPath = p
 		ProductionLogger.writer = w
 		ProductionLogger.currentLogLevel = l
 		ok = true
@@ -51,7 +59,8 @@ func InitLoggingWithLevel(o output.Bus, l output.Level) (ok bool) {
 	return
 }
 
-func (sl *simpleLogger) willLog(l output.Level) bool {
+// WillLog returns true if the implementation will log messages at a specified level
+func (sl *simpleLogger) WillLog(l output.Level) bool {
 	return l <= sl.currentLogLevel
 }
 
@@ -83,7 +92,7 @@ var levelsToString = map[output.Level]string{
 }
 
 func (sl *simpleLogger) log(l output.Level, msg string, fields map[string]any) {
-	if !sl.willLog(l) {
+	if !sl.WillLog(l) {
 		return
 	}
 	var fieldMap = map[string]string{}
@@ -146,11 +155,4 @@ func (sl *simpleLogger) Trace(msg string, fields map[string]any) {
 // Warning outputs a warning log message
 func (sl *simpleLogger) Warning(msg string, fields map[string]any) {
 	sl.log(output.Warning, msg, fields)
-}
-
-func (sl *simpleLogger) ExitFunc() exitFunc {
-	return sl.exitFunction
-}
-func (sl *simpleLogger) SetExitFunc(f exitFunc) {
-	sl.exitFunction = f
 }

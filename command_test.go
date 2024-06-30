@@ -1,6 +1,7 @@
-package cmd_toolkit
+package cmd_toolkit_test
 
 import (
+	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
 	"testing"
 
 	"github.com/majohn-r/output"
@@ -16,12 +17,16 @@ func TestLogCommandStart(t *testing.T) {
 		output.WantedRecording
 	}{
 		"bad map": {
-			args:            args{name: "nasty command", m: nil},
-			WantedRecording: output.WantedRecording{Log: "level='info' command='nasty command' msg='executing command'\n"},
+			args: args{name: "nasty command", m: nil},
+			WantedRecording: output.WantedRecording{
+				Log: "level='info' command='nasty command' msg='executing command'\n",
+			},
 		},
 		"empty map": {
-			args:            args{name: "niceCommand", m: map[string]any{}},
-			WantedRecording: output.WantedRecording{Log: "level='info' command='niceCommand' msg='executing command'\n"},
+			args: args{name: "niceCommand", m: map[string]any{}},
+			WantedRecording: output.WantedRecording{
+				Log: "level='info' command='niceCommand' msg='executing command'\n",
+			},
 		},
 		"busy map": {
 			args: args{
@@ -32,13 +37,20 @@ func TestLogCommandStart(t *testing.T) {
 					"-flag2":  25,
 				},
 			},
-			WantedRecording: output.WantedRecording{Log: "level='info' -flag1='value1' -flag2='25' command='BusyCommand' msg='executing command'\n"},
+			WantedRecording: output.WantedRecording{
+				Log: "" +
+					"level='info'" +
+					" -flag1='value1'" +
+					" -flag2='25'" +
+					" command='BusyCommand'" +
+					" msg='executing command'\n",
+			},
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			o := output.NewRecorder()
-			LogCommandStart(o, tt.args.name, tt.args.m)
+			cmdtoolkit.LogCommandStart(o, tt.args.name, tt.args.m)
 			o.Report(t, "LogCommandStart()", tt.WantedRecording)
 		})
 	}

@@ -98,11 +98,12 @@ func Test_initWriter(t *testing.T) {
 			defer tt.postTest()
 			logPath = ""
 			o := output.NewRecorder()
-			if gotNil := initWriter(o) == nil; !gotNil == tt.wantNil {
+			w, p := initWriter(o)
+			if gotNil := w == nil; !gotNil == tt.wantNil {
 				t.Errorf("initWriter() gotNil= %t, wantNil %t", gotNil, tt.wantNil)
 			}
-			if got := LogPath(); got != tt.wantLogPath {
-				t.Errorf("initWriter() got logPath=%q, want %q", got, tt.wantLogPath)
+			if p != tt.wantLogPath {
+				t.Errorf("initWriter() got logPath=%q, want %q", p, tt.wantLogPath)
 			}
 			o.Report(t, "initWriter()", tt.WantedRecording)
 		})
