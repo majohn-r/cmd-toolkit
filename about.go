@@ -3,7 +3,6 @@ package cmd_toolkit
 import (
 	"fmt"
 	"runtime/debug"
-	"strings"
 	"time"
 
 	"github.com/majohn-r/output"
@@ -12,45 +11,10 @@ import (
 // the code in this file is for the "about" command, which is a common need for
 // applications.
 
-const (
-	aboutCommandName = "about"
-)
-
-var (
-	// these are set by InitBuildData
-	appVersion        string
-	buildTimestamp    string
-	goVersion         string
-	buildDependencies []string
-	// this may be reset by SetAuthor()
-	author = "Marc Johnson"
-	// this should be reset by SetFirstYear()
-	firstYear       = time.Now().Year()
-	buildInfoReader = debug.ReadBuildInfo
-)
-
-// BuildDependencies returns information about the dependencies used to compile
-// the program
-func BuildDependencies() []string {
-	return buildDependencies
-}
-
-// GoVersion returns the version of Go used to compile the program
-func GoVersion() string {
-	return goVersion
-}
-
-// InitBuildData captures information about how the program was compiled, the
-// version of the program, and the timestamp for when the program was built.
-func InitBuildData(version, creation string) {
-	goVersion, buildDependencies = InterpretBuildData()
-	appVersion = version
-	buildTimestamp = creation
-}
-
-// InterpretBuildData interprets the output of calling buildInfoReader() into easily consumed forms;
-// created and/or published per https://github.com/majohn-r/cmd-toolkit/issues/17
-func InterpretBuildData() (goVersion string, dependencies []string) {
+// InterpretBuildData interprets the output of calling buildInfoReader() into easily
+// consumed forms; see https://github.com/majohn-r/cmd-toolkit/issues/17. for production
+// callers, pass in debug.ReadBuildInfo
+func InterpretBuildData(buildInfoReader func() (*debug.BuildInfo, bool)) (goVersion string, dependencies []string) {
 	buildInfo, infoObtained := buildInfoReader()
 	if !infoObtained || buildInfo == nil {
 		goVersion = "unknown"
@@ -64,12 +28,7 @@ func InterpretBuildData() (goVersion string, dependencies []string) {
 	return
 }
 
-// SetFirstYear sets the first year of application development
-func SetFirstYear(i int) {
-	firstYear = i
-}
-
-func finalYear(o output.Bus, timestamp string) int {
+func finalYear(o output.Bus, timestamp string, initialYear int) int {
 	t, parseErr := time.Parse(time.RFC3339, timestamp)
 	if parseErr != nil {
 		o.WriteCanonicalError("The build time %q cannot be parsed: %v", timestamp, parseErr)
@@ -77,21 +36,9 @@ func finalYear(o output.Bus, timestamp string) int {
 			"error": parseErr,
 			"value": timestamp,
 		})
-		return firstYear
+		return initialYear
 	}
 	return t.Year()
-}
-
-func formatBuildData() []string {
-	s := make([]string, 0, 2+len(buildDependencies))
-	s = append(s, BuildInformationHeader(), FormatGoVersion(goVersion))
-	return append(s, FormatBuildDependencies(buildDependencies)...)
-}
-
-// BuildInformationHeader returns the canonical heading for build information.
-// See https://github.com/majohn-r/cmd-toolkit/issues/17
-func BuildInformationHeader() string {
-	return "Build Information"
 }
 
 // FormatBuildDependencies returns build dependency data formatted nicely;
@@ -106,7 +53,8 @@ func FormatBuildDependencies(dependencies []string) []string {
 	return formatted
 }
 
-// FormatGoVersion returns the formatted go version; see https://github.com/majohn-r/cmd-toolkit/issues/17
+// FormatGoVersion returns the formatted go version;
+// see https://github.com/majohn-r/cmd-toolkit/issues/17cmdtoolkit.
 func FormatGoVersion(version string) string {
 	return fmt.Sprintf(" - Go version: %s", version)
 }
@@ -116,10 +64,6 @@ func formatCopyright(firstYear, lastYear int, owner string) string {
 		return fmt.Sprintf("Copyright © %d %s", firstYear, owner)
 	}
 	return fmt.Sprintf("Copyright © %d-%d %s", firstYear, lastYear, owner)
-}
-
-func reportAbout(o output.Bus, lines []string) {
-	o.WriteConsole(strings.Join(FlowerBox(lines), "\n"))
 }
 
 // FlowerBox draws a box around the provided slice of strings; see https://github.com/majohn-r/cmd-toolkit/issues/17
@@ -157,31 +101,6 @@ func translateTimestamp(s string) string {
 	return t.Format("Monday, January 2 2006, 15:04:05 -0700")
 }
 
-type aboutCmd struct {
-}
-
-// Exec runs the command. The args parameter is ignored, and the method always
-// returns true.
-func (a *aboutCmd) Exec(o output.Bus, _ []string) (ok bool) {
-	LogCommandStart(o, aboutCommandName, map[string]any{})
-	generateAboutContent(o)
-	return true
-}
-
-func generateAboutContent(o output.Bus) {
-	formattedBuildData := formatBuildData()
-	s := make([]string, 0, 2+len(formattedBuildData))
-	name, appNameInitErr := AppName()
-	if appNameInitErr != nil {
-		o.Log(output.Error, "program error", map[string]any{"error": appNameInitErr})
-		name = "unknown application name"
-	}
-	s = append(s, DecoratedAppName(name, appVersion, buildTimestamp),
-		Copyright(o, firstYear, buildTimestamp, author))
-	s = append(s, formattedBuildData...)
-	reportAbout(o, s)
-}
-
 // DecoratedAppName returns the app name with its version and build timestamp; see https://github.com/majohn-r/cmd-toolkit/issues/17
 func DecoratedAppName(applicationName, applicationVersion, timestamp string) string {
 	return fmt.Sprintf("%s version %s, built on %s", applicationName, applicationVersion,
@@ -190,5 +109,5 @@ func DecoratedAppName(applicationName, applicationVersion, timestamp string) str
 
 // Copyright returns an appropriately formatted copyright statement; see https://github.com/majohn-r/cmd-toolkit/issues/17
 func Copyright(o output.Bus, first int, timestamp, owner string) string {
-	return formatCopyright(first, finalYear(o, timestamp), owner)
+	return formatCopyright(first, finalYear(o, timestamp, first), owner)
 }

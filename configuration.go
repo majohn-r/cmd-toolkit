@@ -300,12 +300,6 @@ func (c *Configuration) SubConfiguration(key string) *Configuration {
 	return EmptyConfiguration()
 }
 
-// Default returns the default value for a bounded int
-// Deprecated: just access the DefaultValue member directly
-func (b *IntBounds) Default() int {
-	return b.DefaultValue
-}
-
 func (b *IntBounds) constrainedValue(value int) (i int) {
 	switch {
 	case value < b.MinValue:
