@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 
@@ -33,38 +34,138 @@ func Test_initWriter(t *testing.T) {
 		wantLogPath string
 		output.WantedRecording
 	}{
+		"app name not defined": {
+			preTest: func() {
+				appName = ""
+			},
+			postTest:    func() {},
+			wantNil:     true,
+			wantLogPath: "",
+			WantedRecording: output.WantedRecording{
+				Error: "Log initialization is not possible due to a coding error: app name has not been initialized.\n",
+			},
+		},
 		"no temp folder defined": {
 			preTest: func() {
+				appName = "myApp"
 				_ = os.Unsetenv("TMP")
 				_ = os.Unsetenv("TEMP")
 			},
-			postTest:        func() {},
-			wantNil:         true,
-			WantedRecording: output.WantedRecording{Error: "Neither the TMP nor TEMP environment variables are defined.\n"},
-		},
-		"uninitialized appName": {
-			preTest: func() {
-				_ = os.Setenv("TMP", "logs1")
-				_ = os.Unsetenv("TEMP")
-				appName = ""
+			postTest:    func() {},
+			wantNil:     true,
+			wantLogPath: "",
+			WantedRecording: output.WantedRecording{
+				Error: "Log initialization is not possible because neither the TMP nor TEMP environment variables are defined.\n",
 			},
-			postTest:        func() {},
-			wantNil:         true,
-			WantedRecording: output.WantedRecording{Error: "A programming error has occurred: app name has not been initialized.\n"},
 		},
-		"bad TMP setting": {
+		"bad TMP setting, no TEMP setting": {
 			preTest: func() {
 				_ = os.Setenv("TMP", "logs2")
 				_ = os.Unsetenv("TEMP")
 				appName = "myApp"
 				_ = afero.WriteFile(fileSystem, "logs2", []byte{}, StdFilePermissions)
 			},
-			postTest: func() {
-			},
+			postTest:    func() {},
 			wantNil:     true,
 			wantLogPath: "",
 			WantedRecording: output.WantedRecording{
-				Error: "The temporary folder \"logs2\" exists as a plain file.\n",
+				Error: "The TMP environment variable value \"logs2\" is not a directory.\n",
+			},
+		},
+		"TMP ok, TEMP not ok": {
+			preTest: func() {
+				_ = os.Setenv("TMP", "tmp")
+				_ = os.Setenv("TEMP", "temp")
+				appName = "myApp"
+				_ = fileSystem.Mkdir("tmp", StdDirPermissions)
+				_ = afero.WriteFile(fileSystem, "temp", []byte("temp"), StdFilePermissions)
+			},
+			postTest: func() {
+				if closeErr := logWriter.Close(); closeErr != nil {
+					t.Errorf("error closing logWriter: %v", closeErr)
+				} else {
+					// this is necessary because the logging library creates the
+					// directory in the os file system, not in the one our tests
+					// use
+					if fileErr := afero.NewOsFs().RemoveAll("tmp"); fileErr != nil {
+						t.Errorf("Error removing tmp: %v", fileErr)
+					}
+				}
+			},
+			wantNil:     false,
+			wantLogPath: "tmp\\myApp\\logs",
+		},
+		"TEMP ok, TMP not ok": {
+			preTest: func() {
+				_ = os.Setenv("TMP", "temp")
+				_ = os.Setenv("TEMP", "tmp")
+				appName = "myApp"
+				_ = fileSystem.Mkdir("tmp", StdDirPermissions)
+				_ = afero.WriteFile(fileSystem, "temp", []byte("temp"), StdFilePermissions)
+			},
+			postTest: func() {
+				if closeErr := logWriter.Close(); closeErr != nil {
+					t.Errorf("error closing logWriter: %v", closeErr)
+				} else {
+					// this is necessary because the logging library creates the
+					// directory in the os file system, not in the one our tests
+					// use
+					if fileErr := afero.NewOsFs().RemoveAll("tmp"); fileErr != nil {
+						t.Errorf("Error removing tmp: %v", fileErr)
+					}
+				}
+			},
+			wantNil:     false,
+			wantLogPath: "tmp\\myApp\\logs",
+			WantedRecording: output.WantedRecording{
+				Error: "The TMP environment variable value \"temp\" is not a directory.\n",
+			},
+		},
+		"neither TEMP nor TMP ok": {
+			preTest: func() {
+				_ = os.Setenv("TMP", "temp")
+				_ = os.Setenv("TEMP", "temp")
+				appName = "myApp"
+				_ = afero.WriteFile(fileSystem, "temp", []byte("temp"), StdFilePermissions)
+			},
+			postTest:    func() {},
+			wantNil:     true,
+			wantLogPath: "",
+			WantedRecording: output.WantedRecording{
+				Error: "" +
+					"The TMP environment variable value \"temp\" is not a directory.\n" +
+					"The TEMP environment variable value \"temp\" is not a directory.\n",
+			},
+		},
+		"cannot create TMP/myapp, but can create TEMP/myapp": {
+			preTest: func() {
+				fileSystem = afero.NewOsFs()
+				_ = os.Setenv("TMP", ".\\tmp")
+				_ = os.Setenv("TEMP", "temp")
+				appName = "myApp"
+				_ = fileSystem.MkdirAll(filepath.Join("tmp", "myApp"), StdDirPermissions)
+				_ = afero.WriteFile(fileSystem, filepath.Join("tmp", "myApp", "logs"), []byte("tmp"), StdFilePermissions)
+				_ = fileSystem.Mkdir("temp", StdDirPermissions)
+			},
+			postTest: func() {
+				_ = fileSystem.RemoveAll("tmp")
+				_ = fileSystem.RemoveAll("temp")
+				if closeErr := logWriter.Close(); closeErr != nil {
+					t.Errorf("error closing logWriter: %v", closeErr)
+				} else {
+					// this is necessary because the logging library creates the
+					// directory in the os file system, not in the one our tests
+					// use
+					if fileErr := fileSystem.RemoveAll("temp"); fileErr != nil {
+						t.Errorf("Error removing temp: %v", fileErr)
+					}
+				}
+				fileSystem = afero.NewMemMapFs()
+			},
+			wantNil:     false,
+			wantLogPath: "temp\\myApp\\logs",
+			WantedRecording: output.WantedRecording{
+				Error: "The TMP environment variable value \".\\\\tmp\" cannot be used to create a directory for log files.\n",
 			},
 		},
 		"success": {
@@ -72,6 +173,7 @@ func Test_initWriter(t *testing.T) {
 				_ = os.Setenv("TMP", "goodLogs")
 				_ = os.Unsetenv("TEMP")
 				appName = "myApp"
+				_ = fileSystem.Mkdir("goodLogs", StdDirPermissions)
 			},
 			postTest: func() {
 				// critical to close logWriter, otherwise, "goodLogs" cannot be
@@ -241,54 +343,44 @@ func Test_findTemp(t *testing.T) {
 	}()
 	tests := map[string]struct {
 		preTest func()
-		want    string
-		want1   bool
-		output.WantedRecording
+		want    map[string]string
 	}{
 		"no temp vars": {
 			preTest: func() {
 				_ = os.Unsetenv("TMP")
 				_ = os.Unsetenv("TEMP")
 			},
-			WantedRecording: output.WantedRecording{Error: "Neither the TMP nor TEMP environment variables are defined.\n"},
+			want: map[string]string{},
 		},
 		"TMP, no TEMP": {
 			preTest: func() {
 				_ = os.Setenv("TMP", "tmp")
 				_ = os.Unsetenv("TEMP")
 			},
-			want:  "tmp",
-			want1: true,
+			want: map[string]string{"TMP": "tmp"},
 		},
 		"TEMP, no TMP": {
 			preTest: func() {
 				_ = os.Setenv("TEMP", "temp")
 				_ = os.Unsetenv("TMP")
 			},
-			want:  "temp",
-			want1: true,
+			want: map[string]string{"TEMP": "temp"},
 		},
 		"TMP and TEMP": {
 			preTest: func() {
 				_ = os.Setenv("TMP", "tmp")
 				_ = os.Setenv("TEMP", "temp")
 			},
-			want:  "tmp",
-			want1: true,
+			want: map[string]string{"TMP": "tmp", "TEMP": "temp"},
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
-			o := output.NewRecorder()
-			got, got1 := findTemp(o)
-			if got != tt.want {
+			got := findTemp()
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("findTemp() got = %v, want %v", got, tt.want)
 			}
-			if got1 != tt.want1 {
-				t.Errorf("findTemp() got1 = %v, want %v", got1, tt.want1)
-			}
-			o.Report(t, "findTemp()", tt.WantedRecording)
 		})
 	}
 }

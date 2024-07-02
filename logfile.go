@@ -21,30 +21,50 @@ const (
 )
 
 var logWriter io.WriteCloser
+var tmpEnvironmentVariableNames = []string{"TMP", "TEMP"}
 
 func initWriter(o output.Bus) (w io.Writer, path string) {
-	var tmpFolder string
-	var found bool
-	if tmpFolder, found = findTemp(o); !found {
-		return nil, ""
+	// pre-check!
+	if _, err := AppName(); err != nil {
+		o.WriteCanonicalError("Log initialization is not possible due to a coding error: %v", err)
+		return
 	}
-	if PlainFileExists(tmpFolder) {
-		o.WriteCanonicalError("The temporary folder %q exists as a plain file", tmpFolder)
-		return nil, ""
+	// get the temporary folder values
+	tmpFolderMap := findTemp()
+	if len(tmpFolderMap) == 0 {
+		o.WriteCanonicalError("Log initialization is not possible because neither the TMP nor TEMP environment variables are defined")
+		return
 	}
-	tmp, creationError := CreateAppSpecificPath(tmpFolder)
-	if creationError != nil {
-		o.WriteCanonicalError("A programming error has occurred: %v", creationError)
-		return nil, ""
+	path = findLogFilePath(o, tmpFolderMap)
+	if path != "" {
+		cleanup(o, path)
+		logWriter = cronowriter.MustNew(
+			filepath.Join(path, logFilePrefix()+"%Y%m%d"+logFileExtension),
+			cronowriter.WithSymlink(filepath.Join(path, symlinkName)),
+			cronowriter.WithInit())
+		w = logWriter
 	}
-	path = filepath.Join(tmp, logDirName)
-	_ = fileSystem.MkdirAll(path, StdDirPermissions)
-	cleanup(o, path)
-	logWriter = cronowriter.MustNew(
-		filepath.Join(path, logFilePrefix()+"%Y%m%d"+logFileExtension),
-		cronowriter.WithSymlink(filepath.Join(path, symlinkName)),
-		cronowriter.WithInit())
-	return logWriter, path
+	return
+}
+
+func findLogFilePath(o output.Bus, tmpFolderMap map[string]string) string {
+	for _, variableName := range tmpEnvironmentVariableNames {
+		if tmpFolder, found := tmpFolderMap[variableName]; found {
+			if !DirExists(tmpFolder) {
+				o.WriteCanonicalError("The %s environment variable value %q is not a directory", variableName, tmpFolder)
+			} else {
+				// this is safe because we know the app name has been set
+				tmp, _ := CreateAppSpecificPath(tmpFolder)
+				path := filepath.Join(tmp, logDirName)
+				_ = fileSystem.MkdirAll(path, StdDirPermissions)
+				if DirExists(path) {
+					return path
+				}
+				o.WriteCanonicalError("The %s environment variable value %q cannot be used to create a directory for log files", variableName, tmpFolder)
+			}
+		}
+	}
+	return ""
 }
 
 func cleanup(o output.Bus, logPath string) (found, deleted int) {
@@ -86,14 +106,14 @@ func deleteLogFile(o output.Bus, logFile string) bool {
 	return true
 }
 
-func findTemp(o output.Bus) (string, bool) {
-	for _, v := range []string{"TMP", "TEMP"} {
-		if tmpFolder, found := os.LookupEnv(v); found {
-			return tmpFolder, found
+func findTemp() map[string]string {
+	result := map[string]string{}
+	for _, variableName := range tmpEnvironmentVariableNames {
+		if tmpFolder, found := os.LookupEnv(variableName); found {
+			result[variableName] = tmpFolder
 		}
 	}
-	o.WriteCanonicalError("Neither the TMP nor TEMP environment variables are defined")
-	return "", false
+	return result
 }
 
 func isLogFile(file fs.FileInfo) (ok bool) {
