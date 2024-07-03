@@ -11,7 +11,7 @@ import (
 
 func TestInitLogging(t *testing.T) {
 	tests := map[string]struct {
-		logWriterInitFn func(o output.Bus) (io.Writer, string)
+		logWriterInitFn func(output.Bus, string) (io.Writer, string)
 		want            bool
 		wantLogPath     string
 		logsDebug       bool
@@ -23,14 +23,14 @@ func TestInitLogging(t *testing.T) {
 		logsWarning     bool
 	}{
 		"no writer available": {
-			logWriterInitFn: func(o output.Bus) (io.Writer, string) {
+			logWriterInitFn: func(o output.Bus, _ string) (io.Writer, string) {
 				return nil, ""
 			},
 			want:        false,
 			wantLogPath: "",
 		},
 		"success": {
-			logWriterInitFn: func(o output.Bus) (io.Writer, string) {
+			logWriterInitFn: func(o output.Bus, _ string) (io.Writer, string) {
 				return &bytes.Buffer{}, ""
 			},
 			want:        true,
@@ -50,7 +50,7 @@ func TestInitLogging(t *testing.T) {
 				cmdtoolkit.LogWriterInitFn = originalLogWriterInitFn
 			}()
 			cmdtoolkit.LogWriterInitFn = tt.logWriterInitFn
-			got := cmdtoolkit.InitLogging(nil)
+			got := cmdtoolkit.InitLogging(nil, "")
 			if got != tt.want {
 				t.Errorf("InitLogging() = %v, want %v", got, tt.want)
 			}
@@ -86,7 +86,7 @@ func TestInitLoggingWithLevel(t *testing.T) {
 	defer func() {
 		cmdtoolkit.LogWriterInitFn = originalLogWriterInitFn
 	}()
-	cmdtoolkit.LogWriterInitFn = func(_ output.Bus) (io.Writer, string) {
+	cmdtoolkit.LogWriterInitFn = func(_ output.Bus, _ string) (io.Writer, string) {
 		return &bytes.Buffer{}, "testingLogPath"
 	}
 	// only going to vary the logging level - TestInitLogging handles the error
@@ -109,7 +109,7 @@ func TestInitLoggingWithLevel(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if gotOk := cmdtoolkit.InitLoggingWithLevel(nil, tt.l); gotOk != tt.wantOk {
+			if gotOk := cmdtoolkit.InitLoggingWithLevel(nil, tt.l, ""); gotOk != tt.wantOk {
 				t.Errorf("InitLoggingWithLevel() = %t, want %t", gotOk, tt.wantOk)
 			}
 			if got := cmdtoolkit.LogPath(); got != "testingLogPath" {

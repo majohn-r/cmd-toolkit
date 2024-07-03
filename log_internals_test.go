@@ -73,10 +73,10 @@ func Test_simpleLogger_Debug(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			buffer := &bytes.Buffer{}
-			LogWriterInitFn = func(_ output.Bus) (io.Writer, string) {
+			LogWriterInitFn = func(_ output.Bus, _ string) (io.Writer, string) {
 				return buffer, ""
 			}
-			InitLoggingWithLevel(nil, tt.l)
+			InitLoggingWithLevel(nil, tt.l, "myApp")
 			ProductionLogger.Debug(tt.args.msg, tt.args.fields)
 			if got := buffer.String(); got != tt.want {
 				if got != "" {
@@ -154,10 +154,10 @@ func Test_simpleLogger_Error(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			buffer := &bytes.Buffer{}
-			LogWriterInitFn = func(_ output.Bus) (io.Writer, string) {
+			LogWriterInitFn = func(_ output.Bus, _ string) (io.Writer, string) {
 				return buffer, ""
 			}
-			InitLoggingWithLevel(nil, tt.l)
+			InitLoggingWithLevel(nil, tt.l, "myApp")
 			ProductionLogger.Error(tt.args.msg, tt.args.fields)
 			if got := buffer.String(); got != tt.want {
 				if got != "" {
@@ -242,10 +242,10 @@ func Test_simpleLogger_Fatal(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			buffer := &bytes.Buffer{}
-			LogWriterInitFn = func(_ output.Bus) (io.Writer, string) {
+			LogWriterInitFn = func(_ output.Bus, _ string) (io.Writer, string) {
 				return buffer, ""
 			}
-			InitLoggingWithLevel(nil, tt.l)
+			InitLoggingWithLevel(nil, tt.l, "myApp")
 			exited = false
 			f := ProductionLogger.exitFunction
 			if f == nil {
@@ -331,10 +331,10 @@ func Test_simpleLogger_Info(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			buffer := &bytes.Buffer{}
-			LogWriterInitFn = func(_ output.Bus) (io.Writer, string) {
+			LogWriterInitFn = func(_ output.Bus, _ string) (io.Writer, string) {
 				return buffer, ""
 			}
-			InitLoggingWithLevel(nil, tt.l)
+			InitLoggingWithLevel(nil, tt.l, "myApp")
 			ProductionLogger.Info(tt.args.msg, tt.args.fields)
 			if got := buffer.String(); got != tt.want {
 				if got != "" {
@@ -412,10 +412,10 @@ func Test_simpleLogger_Panic(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			buffer := &bytes.Buffer{}
-			LogWriterInitFn = func(_ output.Bus) (io.Writer, string) {
+			LogWriterInitFn = func(_ output.Bus, _ string) (io.Writer, string) {
 				return buffer, ""
 			}
-			InitLoggingWithLevel(nil, tt.l)
+			InitLoggingWithLevel(nil, tt.l, "myApp")
 			defer func(t *testing.T) {
 				if r := recover(); r == nil {
 					t.Errorf("simpleLogger.Panic() did not panic")
@@ -498,10 +498,10 @@ func Test_simpleLogger_Trace(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			buffer := &bytes.Buffer{}
-			LogWriterInitFn = func(_ output.Bus) (io.Writer, string) {
+			LogWriterInitFn = func(_ output.Bus, _ string) (io.Writer, string) {
 				return buffer, ""
 			}
-			InitLoggingWithLevel(nil, tt.l)
+			InitLoggingWithLevel(nil, tt.l, "myApp")
 			ProductionLogger.Trace(tt.args.msg, tt.args.fields)
 			if got := buffer.String(); got != tt.want {
 				if got != "" {
@@ -579,10 +579,10 @@ func Test_simpleLogger_Warning(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			buffer := &bytes.Buffer{}
-			LogWriterInitFn = func(_ output.Bus) (io.Writer, string) {
+			LogWriterInitFn = func(_ output.Bus, _ string) (io.Writer, string) {
 				return buffer, ""
 			}
-			InitLoggingWithLevel(nil, tt.l)
+			InitLoggingWithLevel(nil, tt.l, "myApp")
 			ProductionLogger.Warning(tt.args.msg, tt.args.fields)
 			if got := buffer.String(); got != tt.want {
 				if got != "" {

@@ -1,7 +1,6 @@
 package cmd_toolkit
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,8 +10,6 @@ import (
 )
 
 var (
-	// the name of the application
-	appName string
 	// regular expressions for detecting environment variable references ($VAR or %VAR%)
 	unixPattern    = regexp.MustCompile(`[$][a-zA-Z_]+[a-zA-Z0-9_]*`)
 	windowsPattern = regexp.MustCompile(`%[a-zA-Z_]+[a-zA-Z0-9_]*%`)
@@ -28,34 +25,12 @@ type EnvVarMemento struct {
 	set   bool
 }
 
-// UnsafeAppName returns the application name, regardless of whether it's unset; this function
-// exists solely to support unit testing
-func UnsafeAppName() string {
-	return appName
-}
-
-// UnsafeSetAppName sets the application name in an unsafe fashion, regardless of whether the
-// name parameter is empty or whether the application name has already been set; this function
-// exists solely to support unit testing
-func UnsafeSetAppName(name string) {
-	appName = name
-}
-
-// AppName retrieves the name of the application
-func AppName() (string, error) {
-	if appName == "" {
-		return "", errors.New("app name has not been initialized")
-	}
-	return appName, nil
-}
-
 // CreateAppSpecificPath creates a path string for an app-related directory
-func CreateAppSpecificPath(topDir string) (string, error) {
-	s, appNameInitErr := AppName()
-	if appNameInitErr != nil {
-		return "", appNameInitErr
+func CreateAppSpecificPath(topDir, applicationName string) (string, error) {
+	if !isLegalApplicationName(applicationName) {
+		return "", fmt.Errorf("application name %q is not valid", applicationName)
 	}
-	return filepath.Join(topDir, s), nil
+	return filepath.Join(topDir, applicationName), nil
 }
 
 // DereferenceEnvVar scans a string for environment variable references, looks
@@ -100,19 +75,6 @@ func NewEnvVarMemento(name string) *EnvVarMemento {
 		s.set = true
 	}
 	return s
-}
-
-// SetAppName sets the name of the application, returning an error if the name has already
-// been set to a different value or if the caller is attempting to set it to an empty string
-func SetAppName(s string) error {
-	if s == "" {
-		return errors.New("cannot initialize app name with an empty string")
-	}
-	if appName != "" && appName != s {
-		return fmt.Errorf("app name has already been initialized: %s", appName)
-	}
-	appName = s
-	return nil
 }
 
 func findReferences(s string) []string {

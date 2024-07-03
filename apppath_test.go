@@ -27,19 +27,17 @@ func TestApplicationPath(t *testing.T) {
 }
 
 func TestInitApplicationPath(t *testing.T) {
-	originalAppName := cmdtoolkit.UnsafeAppName()
 	originalApplicationPath := cmdtoolkit.ApplicationPath()
 	originalFileSystem := cmdtoolkit.FileSystem()
 	appDataMemento := cmdtoolkit.NewEnvVarMemento("APPDATA")
 	defer func() {
-		cmdtoolkit.UnsafeSetAppName(originalAppName)
 		cmdtoolkit.UnsafeSetApplicationPath(originalApplicationPath)
 		appDataMemento.Restore()
 		cmdtoolkit.AssignFileSystem(originalFileSystem)
 	}()
 	cmdtoolkit.AssignFileSystem(afero.NewMemMapFs())
 	tests := map[string]struct {
-		appName         string
+		applicationName string
 		appDataValue    string
 		appDataSet      bool
 		wantInitialized bool
@@ -47,22 +45,26 @@ func TestInitApplicationPath(t *testing.T) {
 		output.WantedRecording
 	}{
 		"no appdata": {
-			appName:         "beautifulApp",
+			applicationName: "beautifulApp",
 			appDataSet:      false,
 			wantInitialized: false,
 			preTest:         func() {},
-			WantedRecording: output.WantedRecording{Log: "level='error' environmentVariable='APPDATA' msg='not set'\n"},
+			WantedRecording: output.WantedRecording{
+				Log: "level='error' environmentVariable='APPDATA' msg='not set'\n",
+			},
 		},
 		"no app name": {
-			appName:         "",
+			applicationName: "",
 			appDataSet:      true,
 			appDataValue:    "foo", // doesn't matter ...
 			wantInitialized: false,
 			preTest:         func() {},
-			WantedRecording: output.WantedRecording{Log: "level='error' error='app name has not been initialized' msg='program error'\n"},
+			WantedRecording: output.WantedRecording{
+				Log: "level='error' error='application name \"\" is not valid' msg='program error'\n",
+			},
 		},
 		"appData not a directory": {
-			appName:         "myApp",
+			applicationName: "myApp",
 			appDataSet:      true,
 			appDataValue:    "apppath_test.go",
 			wantInitialized: false,
@@ -77,7 +79,7 @@ func TestInitApplicationPath(t *testing.T) {
 			},
 		},
 		"cannot create subdirectory": {
-			appName:         "myApp1",
+			applicationName: "myApp1",
 			appDataSet:      true,
 			appDataValue:    ".",
 			wantInitialized: false,
@@ -94,7 +96,7 @@ func TestInitApplicationPath(t *testing.T) {
 			},
 		},
 		"subdirectory already exists": {
-			appName:         "myApp2",
+			applicationName: "myApp2",
 			appDataSet:      true,
 			appDataValue:    ".",
 			wantInitialized: true,
@@ -103,7 +105,7 @@ func TestInitApplicationPath(t *testing.T) {
 			},
 		},
 		"subdirectory does not yet exist": {
-			appName:         "myApp3",
+			applicationName: "myApp3",
 			appDataSet:      true,
 			appDataValue:    ".",
 			wantInitialized: true,
@@ -112,7 +114,6 @@ func TestInitApplicationPath(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			cmdtoolkit.UnsafeSetAppName(tt.appName)
 			cmdtoolkit.UnsafeSetApplicationPath("")
 			if tt.appDataSet {
 				_ = os.Setenv("APPDATA", tt.appDataValue)
@@ -121,7 +122,7 @@ func TestInitApplicationPath(t *testing.T) {
 			}
 			tt.preTest()
 			o := output.NewRecorder()
-			if gotInitialized := cmdtoolkit.InitApplicationPath(o); gotInitialized != tt.wantInitialized {
+			if gotInitialized := cmdtoolkit.InitApplicationPath(o, tt.applicationName); gotInitialized != tt.wantInitialized {
 				t.Errorf("InitApplicationPath() = %v, want %v", gotInitialized, tt.wantInitialized)
 			}
 			o.Report(t, "InitApplicationPath()", tt.WantedRecording)

@@ -27,13 +27,13 @@ func UnsafeSetApplicationPath(path string) {
 }
 
 // InitApplicationPath ensures that the application path exists
-func InitApplicationPath(o output.Bus) bool {
+func InitApplicationPath(o output.Bus, applicationName string) bool {
 	value, varDefined := os.LookupEnv(applicationDataEnvVarName)
 	if !varDefined {
 		o.Log(output.Error, "not set", map[string]any{"environmentVariable": applicationDataEnvVarName})
 		return false
 	}
-	dir, pathErr := CreateAppSpecificPath(value)
+	dir, pathErr := CreateAppSpecificPath(value, applicationName)
 	if pathErr != nil {
 		o.Log(output.Error, "program error", map[string]any{"error": pathErr})
 		return false
@@ -57,4 +57,8 @@ func SetApplicationPath(s string) (previous string) {
 	previous = applicationPath
 	applicationPath = s
 	return
+}
+
+func isLegalApplicationName(applicationName string) bool {
+	return applicationNameRegex.MatchString(applicationName)
 }

@@ -16,44 +16,42 @@ import (
 func Test_initWriter(t *testing.T) {
 	originalTmp := NewEnvVarMemento("TMP")
 	originalTemp := NewEnvVarMemento("TEMP")
-	originalAppName := appName
 	originalLogPath := logPath
 	originalFileSystem := fileSystem
 	defer func() {
 		originalTmp.Restore()
 		originalTemp.Restore()
-		appName = originalAppName
 		logPath = originalLogPath
 		fileSystem = originalFileSystem
 	}()
 	fileSystem = afero.NewMemMapFs()
 	tests := map[string]struct {
-		preTest     func()
-		postTest    func()
-		wantNil     bool
-		wantLogPath string
+		preTest         func()
+		postTest        func()
+		applicationName string
+		wantNil         bool
+		wantLogPath     string
 		output.WantedRecording
 	}{
 		"app name not defined": {
-			preTest: func() {
-				appName = ""
-			},
-			postTest:    func() {},
-			wantNil:     true,
-			wantLogPath: "",
+			preTest:         func() {},
+			postTest:        func() {},
+			applicationName: "",
+			wantNil:         true,
+			wantLogPath:     "",
 			WantedRecording: output.WantedRecording{
-				Error: "Log initialization is not possible due to a coding error: app name has not been initialized.\n",
+				Error: "Log initialization is not possible due to a coding error; the application name \"\" is not valid.\n",
 			},
 		},
 		"no temp folder defined": {
 			preTest: func() {
-				appName = "myApp"
 				_ = os.Unsetenv("TMP")
 				_ = os.Unsetenv("TEMP")
 			},
-			postTest:    func() {},
-			wantNil:     true,
-			wantLogPath: "",
+			postTest:        func() {},
+			applicationName: "myApp",
+			wantNil:         true,
+			wantLogPath:     "",
 			WantedRecording: output.WantedRecording{
 				Error: "Log initialization is not possible because neither the TMP nor TEMP environment variables are defined.\n",
 			},
@@ -62,12 +60,12 @@ func Test_initWriter(t *testing.T) {
 			preTest: func() {
 				_ = os.Setenv("TMP", "logs2")
 				_ = os.Unsetenv("TEMP")
-				appName = "myApp"
 				_ = afero.WriteFile(fileSystem, "logs2", []byte{}, StdFilePermissions)
 			},
-			postTest:    func() {},
-			wantNil:     true,
-			wantLogPath: "",
+			postTest:        func() {},
+			applicationName: "myApp",
+			wantNil:         true,
+			wantLogPath:     "",
 			WantedRecording: output.WantedRecording{
 				Error: "The TMP environment variable value \"logs2\" is not a directory.\n",
 			},
@@ -76,7 +74,6 @@ func Test_initWriter(t *testing.T) {
 			preTest: func() {
 				_ = os.Setenv("TMP", "tmp")
 				_ = os.Setenv("TEMP", "temp")
-				appName = "myApp"
 				_ = fileSystem.Mkdir("tmp", StdDirPermissions)
 				_ = afero.WriteFile(fileSystem, "temp", []byte("temp"), StdFilePermissions)
 			},
@@ -92,14 +89,14 @@ func Test_initWriter(t *testing.T) {
 					}
 				}
 			},
-			wantNil:     false,
-			wantLogPath: "tmp\\myApp\\logs",
+			applicationName: "myApp",
+			wantNil:         false,
+			wantLogPath:     "tmp\\myApp\\logs",
 		},
 		"TEMP ok, TMP not ok": {
 			preTest: func() {
 				_ = os.Setenv("TMP", "temp")
 				_ = os.Setenv("TEMP", "tmp")
-				appName = "myApp"
 				_ = fileSystem.Mkdir("tmp", StdDirPermissions)
 				_ = afero.WriteFile(fileSystem, "temp", []byte("temp"), StdFilePermissions)
 			},
@@ -115,8 +112,9 @@ func Test_initWriter(t *testing.T) {
 					}
 				}
 			},
-			wantNil:     false,
-			wantLogPath: "tmp\\myApp\\logs",
+			applicationName: "myApp",
+			wantNil:         false,
+			wantLogPath:     "tmp\\myApp\\logs",
 			WantedRecording: output.WantedRecording{
 				Error: "The TMP environment variable value \"temp\" is not a directory.\n",
 			},
@@ -125,12 +123,12 @@ func Test_initWriter(t *testing.T) {
 			preTest: func() {
 				_ = os.Setenv("TMP", "temp")
 				_ = os.Setenv("TEMP", "temp")
-				appName = "myApp"
 				_ = afero.WriteFile(fileSystem, "temp", []byte("temp"), StdFilePermissions)
 			},
-			postTest:    func() {},
-			wantNil:     true,
-			wantLogPath: "",
+			postTest:        func() {},
+			applicationName: "myApp",
+			wantNil:         true,
+			wantLogPath:     "",
 			WantedRecording: output.WantedRecording{
 				Error: "" +
 					"The TMP environment variable value \"temp\" is not a directory.\n" +
@@ -142,7 +140,6 @@ func Test_initWriter(t *testing.T) {
 				fileSystem = afero.NewOsFs()
 				_ = os.Setenv("TMP", ".\\tmp")
 				_ = os.Setenv("TEMP", "temp")
-				appName = "myApp"
 				_ = fileSystem.MkdirAll(filepath.Join("tmp", "myApp"), StdDirPermissions)
 				_ = afero.WriteFile(fileSystem, filepath.Join("tmp", "myApp", "logs"), []byte("tmp"), StdFilePermissions)
 				_ = fileSystem.Mkdir("temp", StdDirPermissions)
@@ -162,8 +159,9 @@ func Test_initWriter(t *testing.T) {
 				}
 				fileSystem = afero.NewMemMapFs()
 			},
-			wantNil:     false,
-			wantLogPath: "temp\\myApp\\logs",
+			applicationName: "myApp",
+			wantNil:         false,
+			wantLogPath:     "temp\\myApp\\logs",
 			WantedRecording: output.WantedRecording{
 				Error: "The TMP environment variable value \".\\\\tmp\" cannot be used to create a directory for log files.\n",
 			},
@@ -172,7 +170,6 @@ func Test_initWriter(t *testing.T) {
 			preTest: func() {
 				_ = os.Setenv("TMP", "goodLogs")
 				_ = os.Unsetenv("TEMP")
-				appName = "myApp"
 				_ = fileSystem.Mkdir("goodLogs", StdDirPermissions)
 			},
 			postTest: func() {
@@ -190,8 +187,9 @@ func Test_initWriter(t *testing.T) {
 					}
 				}
 			},
-			wantNil:     false,
-			wantLogPath: "goodLogs\\myApp\\logs",
+			applicationName: "myApp",
+			wantNil:         false,
+			wantLogPath:     "goodLogs\\myApp\\logs",
 		},
 	}
 	for name, tt := range tests {
@@ -200,7 +198,7 @@ func Test_initWriter(t *testing.T) {
 			defer tt.postTest()
 			logPath = ""
 			o := output.NewRecorder()
-			w, p := initWriter(o)
+			w, p := initWriter(o, tt.applicationName)
 			if gotNil := w == nil; !gotNil == tt.wantNil {
 				t.Errorf("initWriter() gotNil= %t, wantNil %t", gotNil, tt.wantNil)
 			}
@@ -245,7 +243,7 @@ func Test_cleanup(t *testing.T) {
 		"maxLogFiles present": {
 			preTest: func() {
 				_ = fileSystem.Mkdir("maxLogFiles", StdDirPermissions)
-				prefix := logFilePrefix()
+				prefix := logFilePrefix("")
 				for k := 0; k < maxLogFiles; k++ {
 					fileName := fmt.Sprintf("%s%d%s", prefix, k, logFileExtension)
 					_ = afero.WriteFile(fileSystem, filepath.Join("maxLogFiles", fileName), []byte{0, 1, 2}, StdFilePermissions)
@@ -258,7 +256,7 @@ func Test_cleanup(t *testing.T) {
 		"lots of files present": {
 			preTest: func() {
 				_ = fileSystem.Mkdir("manyLogFiles", StdDirPermissions)
-				prefix := logFilePrefix()
+				prefix := logFilePrefix("")
 				for k := 0; k < maxLogFiles+1; k++ {
 					fileName := fmt.Sprintf("%s%d%s", prefix, k, logFileExtension)
 					_ = afero.WriteFile(fileSystem, filepath.Join("manyLogFiles", fileName), []byte{0, 1, 2}, StdFilePermissions)
@@ -266,7 +264,7 @@ func Test_cleanup(t *testing.T) {
 				}
 			},
 			postTest: func(t *testing.T) {
-				fileName := fmt.Sprintf("%s0%s", logFilePrefix(), logFileExtension)
+				fileName := fmt.Sprintf("%s0%s", logFilePrefix(""), logFileExtension)
 				if PlainFileExists(filepath.Join("manyLogFiles", fileName)) {
 					t.Logf("cleanup() %s should have been deleted", fileName)
 					remaining, _ := ReadDirectory(output.NewNilBus(), "manyLogFiles")
@@ -286,7 +284,7 @@ func Test_cleanup(t *testing.T) {
 			tt.preTest()
 			defer tt.postTest(t)
 			o := output.NewRecorder()
-			gotFound, gotDeleted := cleanup(o, tt.path)
+			gotFound, gotDeleted := cleanup(o, tt.path, "")
 			if gotFound != tt.wantFound {
 				t.Errorf("cleanup() found %d want %d", gotFound, tt.wantFound)
 			}
@@ -421,13 +419,13 @@ func Test_isLogFile(t *testing.T) {
 	}{
 		"directory": {
 			file: fi{
-				name: fmt.Sprintf("%s-dir-%s", logFilePrefix(), logFileExtension),
+				name: fmt.Sprintf("%s-dir-%s", logFilePrefix(""), logFileExtension),
 				mode: fs.ModeDir,
 			},
 		},
 		"symbolic link": {
 			file: fi{
-				name: fmt.Sprintf("%s-dir-%s", logFilePrefix(), logFileExtension),
+				name: fmt.Sprintf("%s-dir-%s", logFilePrefix(""), logFileExtension),
 				mode: fs.ModeSymlink,
 			},
 		},
@@ -439,7 +437,7 @@ func Test_isLogFile(t *testing.T) {
 		},
 		"well named file": {
 			file: fi{
-				name: fmt.Sprintf("%sxx%s", logFilePrefix(), logFileExtension),
+				name: fmt.Sprintf("%sxx%s", logFilePrefix(""), logFileExtension),
 				mode: 0,
 			},
 			wantOk: true,
@@ -447,7 +445,7 @@ func Test_isLogFile(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if gotOk := isLogFile(tt.file); gotOk != tt.wantOk {
+			if gotOk := isLogFile(tt.file, ""); gotOk != tt.wantOk {
 				t.Errorf("isLogFile() = %v, want %v", gotOk, tt.wantOk)
 			}
 		})
@@ -455,31 +453,22 @@ func Test_isLogFile(t *testing.T) {
 }
 
 func Test_logFilePrefix(t *testing.T) {
-	savedAppName := appName
-	defer func() {
-		appName = savedAppName
-	}()
 	tests := map[string]struct {
-		preTest func()
-		want    string
+		applicationName string
+		want            string
 	}{
 		"bad app name": {
-			preTest: func() {
-				appName = ""
-			},
-			want: "_log_.",
+			applicationName: "",
+			want:            "_log_.",
 		},
 		"good app name": {
-			preTest: func() {
-				appName = "myApp"
-			},
-			want: "myApp.",
+			applicationName: "myApp",
+			want:            "myApp.",
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			tt.preTest()
-			if got := logFilePrefix(); got != tt.want {
+			if got := logFilePrefix(tt.applicationName); got != tt.want {
 				t.Errorf("logFilePrefix() = %v, want %v", got, tt.want)
 			}
 		})

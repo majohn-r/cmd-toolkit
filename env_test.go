@@ -7,56 +7,27 @@ import (
 	"testing"
 )
 
-func TestAppName(t *testing.T) {
-	originalAppName := cmdtoolkit.UnsafeAppName()
-	defer func() {
-		cmdtoolkit.UnsafeSetAppName(originalAppName)
-	}()
-	tests := map[string]struct {
-		appName string
-		want    string
-		wantErr bool
-	}{
-		"get empty value":     {wantErr: true},
-		"get non-empty value": {appName: "myApp", want: "myApp"},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			cmdtoolkit.UnsafeSetAppName(tt.appName)
-			got, gotErr := cmdtoolkit.AppName()
-			if (gotErr != nil) != tt.wantErr {
-				t.Errorf("AppName() error = %v, wantErr %v", gotErr, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("AppName() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestCreateAppSpecificPath(t *testing.T) {
-	originalAppName := cmdtoolkit.UnsafeAppName()
-	defer func() {
-		cmdtoolkit.UnsafeSetAppName(originalAppName)
-	}()
 	tests := map[string]struct {
-		appName string
-		topDir  string
-		want    string
-		wantErr bool
+		applicationName string
+		topDir          string
+		want            string
+		wantErr         bool
 	}{
-		"uninitialized appName": {wantErr: true},
-		"initialized appName": {
-			appName: "myApp",
-			topDir:  "dir",
-			want:    filepath.Join("dir", "myApp"),
+		"uninitialized applicationName": {
+			applicationName: "",
+			topDir:          "topDir",
+			wantErr:         true,
+		},
+		"initialized applicationName": {
+			applicationName: "myApp",
+			topDir:          "dir",
+			want:            filepath.Join("dir", "myApp"),
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			cmdtoolkit.UnsafeSetAppName(tt.appName)
-			got, gotErr := cmdtoolkit.CreateAppSpecificPath(tt.topDir)
+			got, gotErr := cmdtoolkit.CreateAppSpecificPath(tt.topDir, tt.applicationName)
 			if (gotErr != nil) != tt.wantErr {
 				t.Errorf("CreateAppSpecificPath() error = %v, wantErr %v", gotErr, tt.wantErr)
 				return
@@ -118,31 +89,6 @@ func TestDereferenceEnvVar(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("DereferenceEnvVar() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestSetAppName(t *testing.T) {
-	originalAppName := cmdtoolkit.UnsafeAppName()
-	defer func() {
-		cmdtoolkit.UnsafeSetAppName(originalAppName)
-	}()
-	tests := map[string]struct {
-		appName string
-		s       string
-		wantErr bool
-	}{
-		"unset, set to empty":         {wantErr: true},
-		"unset, set to non-empty":     {s: "myApp"},
-		"set, set to same value":      {appName: "myApp", s: "myApp"},
-		"set, set to different value": {appName: "myApp", s: "myOtherApp", wantErr: true},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			cmdtoolkit.UnsafeSetAppName(tt.appName)
-			if gotErr := cmdtoolkit.SetAppName(tt.s); (gotErr != nil) != tt.wantErr {
-				t.Errorf("SetAppName() error = %v, wantErr %v", gotErr, tt.wantErr)
 			}
 		})
 	}

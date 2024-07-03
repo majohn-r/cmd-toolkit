@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -20,13 +21,16 @@ const (
 	maxLogFiles      = 10
 )
 
-var logWriter io.WriteCloser
-var tmpEnvironmentVariableNames = []string{"TMP", "TEMP"}
+var (
+	logWriter                   io.WriteCloser
+	tmpEnvironmentVariableNames = []string{"TMP", "TEMP"}
+	applicationNameRegex        = regexp.MustCompile("^[._a-zA-Z][._a-zA-Z0-9-]+$")
+)
 
-func initWriter(o output.Bus) (w io.Writer, path string) {
+func initWriter(o output.Bus, applicationName string) (w io.Writer, path string) {
 	// pre-check!
-	if _, err := AppName(); err != nil {
-		o.WriteCanonicalError("Log initialization is not possible due to a coding error: %v", err)
+	if !isLegalApplicationName(applicationName) {
+		o.WriteCanonicalError("Log initialization is not possible due to a coding error; the application name %q is not valid", applicationName)
 		return
 	}
 	// get the temporary folder values
@@ -35,11 +39,11 @@ func initWriter(o output.Bus) (w io.Writer, path string) {
 		o.WriteCanonicalError("Log initialization is not possible because neither the TMP nor TEMP environment variables are defined")
 		return
 	}
-	path = findLogFilePath(o, tmpFolderMap)
+	path = findLogFilePath(o, tmpFolderMap, applicationName)
 	if path != "" {
-		cleanup(o, path)
+		cleanup(o, path, applicationName)
 		logWriter = cronowriter.MustNew(
-			filepath.Join(path, logFilePrefix()+"%Y%m%d"+logFileExtension),
+			filepath.Join(path, logFilePrefix(applicationName)+"%Y%m%d"+logFileExtension),
 			cronowriter.WithSymlink(filepath.Join(path, symlinkName)),
 			cronowriter.WithInit())
 		w = logWriter
@@ -47,14 +51,14 @@ func initWriter(o output.Bus) (w io.Writer, path string) {
 	return
 }
 
-func findLogFilePath(o output.Bus, tmpFolderMap map[string]string) string {
+func findLogFilePath(o output.Bus, tmpFolderMap map[string]string, applicationName string) string {
 	for _, variableName := range tmpEnvironmentVariableNames {
 		if tmpFolder, found := tmpFolderMap[variableName]; found {
 			if !DirExists(tmpFolder) {
 				o.WriteCanonicalError("The %s environment variable value %q is not a directory", variableName, tmpFolder)
 			} else {
-				// this is safe because we know the app name has been set
-				tmp, _ := CreateAppSpecificPath(tmpFolder)
+				// this is safe because we know the application name has been validated
+				tmp, _ := CreateAppSpecificPath(tmpFolder, applicationName)
 				path := filepath.Join(tmp, logDirName)
 				_ = fileSystem.MkdirAll(path, StdDirPermissions)
 				if DirExists(path) {
@@ -67,12 +71,12 @@ func findLogFilePath(o output.Bus, tmpFolderMap map[string]string) string {
 	return ""
 }
 
-func cleanup(o output.Bus, logPath string) (found, deleted int) {
+func cleanup(o output.Bus, logPath, applicationName string) (found, deleted int) {
 	if files, dirRead := ReadDirectory(o, logPath); dirRead {
 		var fileMap = make(map[time.Time]fs.FileInfo)
 		times := make([]time.Time, 0, len(files))
 		for _, file := range files {
-			if isLogFile(file) {
+			if isLogFile(file, applicationName) {
 				modificationTime := file.ModTime()
 				fileMap[modificationTime] = file
 				times = append(times, modificationTime)
@@ -116,18 +120,17 @@ func findTemp() map[string]string {
 	return result
 }
 
-func isLogFile(file fs.FileInfo) (ok bool) {
+func isLogFile(file fs.FileInfo, applicationName string) (ok bool) {
 	if file.Mode().IsRegular() {
 		fileName := file.Name()
-		ok = strings.HasPrefix(fileName, logFilePrefix()) && strings.HasSuffix(fileName, logFileExtension)
+		ok = strings.HasPrefix(fileName, logFilePrefix(applicationName)) && strings.HasSuffix(fileName, logFileExtension)
 	}
 	return
 }
 
-func logFilePrefix() string {
-	prefix, appNameInitErr := AppName()
-	if appNameInitErr != nil {
-		return "_log_."
+func logFilePrefix(applicationName string) string {
+	if isLegalApplicationName(applicationName) {
+		return applicationName + "."
 	}
-	return prefix + "."
+	return "_log_."
 }

@@ -44,13 +44,13 @@ func LogPath() string {
 }
 
 // InitLogging sets up logging at the default log level
-func InitLogging(o output.Bus) (ok bool) {
-	return InitLoggingWithLevel(o, defaultLoggingLevel)
+func InitLogging(o output.Bus, applicationName string) (ok bool) {
+	return InitLoggingWithLevel(o, defaultLoggingLevel, applicationName)
 }
 
 // InitLoggingWithLevel initializes logging with a specific log level
-func InitLoggingWithLevel(o output.Bus, l output.Level) (ok bool) {
-	if w, p := LogWriterInitFn(o); w != nil {
+func InitLoggingWithLevel(o output.Bus, l output.Level, applicationName string) (ok bool) {
+	if w, p := LogWriterInitFn(o, applicationName); w != nil {
 		logPath = p
 		ProductionLogger.writer = w
 		ProductionLogger.currentLogLevel = l
