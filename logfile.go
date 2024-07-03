@@ -5,7 +5,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -24,7 +23,6 @@ const (
 var (
 	logWriter                   io.WriteCloser
 	tmpEnvironmentVariableNames = []string{"TMP", "TEMP"}
-	applicationNameRegex        = regexp.MustCompile("^[._a-zA-Z][._a-zA-Z0-9-]+$")
 )
 
 func initWriter(o output.Bus, applicationName string) (w io.Writer, path string) {

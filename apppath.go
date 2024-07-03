@@ -2,6 +2,7 @@ package cmd_toolkit
 
 import (
 	"os"
+	"regexp"
 
 	"github.com/majohn-r/output"
 )
@@ -12,7 +13,10 @@ import (
 // that value is assumed to be a writable directory, and a subdirectory whose
 // name is the application name is looked for, and, if missing, is created.
 
-var applicationPath string
+var (
+	applicationPath      string
+	applicationNameRegex = regexp.MustCompile("^[._a-zA-Z][._a-zA-Z0-9-]+$")
+)
 
 const applicationDataEnvVarName = "APPDATA"
 
