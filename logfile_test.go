@@ -53,7 +53,12 @@ func Test_initWriter(t *testing.T) {
 			wantNil:         true,
 			wantLogPath:     "",
 			WantedRecording: output.WantedRecording{
-				Error: "Log initialization is not possible because neither the TMP nor TEMP environment variables are defined.\n",
+				Error: "" +
+					"Log initialization is not possible because neither the TMP nor TEMP environment variables are defined.\n" +
+					"What to do:\n" +
+					"Define at least one of TMP and TEMP, setting the value to a directory path, e.g., '/tmp'.\n" +
+					"Either it should contain a subdirectory named \"myApp\", which in turn contains a subdirectory named \"logs\".\n" +
+					"Or, if they do not exist, it must be possible to create those subdirectories.\n",
 			},
 		},
 		"bad TMP setting, no TEMP setting": {
@@ -67,8 +72,35 @@ func Test_initWriter(t *testing.T) {
 			wantNil:         true,
 			wantLogPath:     "",
 			WantedRecording: output.WantedRecording{
-				Error: "The TMP environment variable value \"logs2\" is not a directory.\n",
+				Error: "" +
+					"The TMP environment variable value \"logs2\" is not a directory, nor can it be created as a directory.\n" +
+					"What to do:\n" +
+					"The values of TMP and TEMP should be a directory path, e.g., '/tmp'.\n" +
+					"Either it should contain a subdirectory named \"myApp\", which in turn contains a subdirectory named \"logs\".\n" +
+					"Or, if they do not exist, it must be possible to create those subdirectories.\n",
 			},
+		},
+		"TMP does not exist yet, TEMP not ok": {
+			preTest: func() {
+				_ = os.Setenv("TMP", "tmp")
+				_ = os.Setenv("TEMP", "temp")
+				_ = afero.WriteFile(fileSystem, "temp", []byte("temp"), StdFilePermissions)
+			},
+			postTest: func() {
+				if closeErr := logWriter.Close(); closeErr != nil {
+					t.Errorf("error closing logWriter: %v", closeErr)
+				} else {
+					// this is necessary because the logging library creates the
+					// directory in the os file system, not in the one our tests
+					// use
+					if fileErr := afero.NewOsFs().RemoveAll("tmp"); fileErr != nil {
+						t.Errorf("Error removing tmp: %v", fileErr)
+					}
+				}
+			},
+			applicationName: "myApp",
+			wantNil:         false,
+			wantLogPath:     "tmp\\myApp\\logs",
 		},
 		"TMP ok, TEMP not ok": {
 			preTest: func() {
@@ -116,7 +148,7 @@ func Test_initWriter(t *testing.T) {
 			wantNil:         false,
 			wantLogPath:     "tmp\\myApp\\logs",
 			WantedRecording: output.WantedRecording{
-				Error: "The TMP environment variable value \"temp\" is not a directory.\n",
+				Error: "The TMP environment variable value \"temp\" is not a directory, nor can it be created as a directory.\n",
 			},
 		},
 		"neither TEMP nor TMP ok": {
@@ -131,8 +163,12 @@ func Test_initWriter(t *testing.T) {
 			wantLogPath:     "",
 			WantedRecording: output.WantedRecording{
 				Error: "" +
-					"The TMP environment variable value \"temp\" is not a directory.\n" +
-					"The TEMP environment variable value \"temp\" is not a directory.\n",
+					"The TMP environment variable value \"temp\" is not a directory, nor can it be created as a directory.\n" +
+					"The TEMP environment variable value \"temp\" is not a directory, nor can it be created as a directory.\n" +
+					"What to do:\n" +
+					"The values of TMP and TEMP should be a directory path, e.g., '/tmp'.\n" +
+					"Either it should contain a subdirectory named \"myApp\", which in turn contains a subdirectory named \"logs\".\n" +
+					"Or, if they do not exist, it must be possible to create those subdirectories.\n",
 			},
 		},
 		"cannot create TMP/myapp, but can create TEMP/myapp": {

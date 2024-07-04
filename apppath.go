@@ -34,11 +34,27 @@ func UnsafeSetApplicationPath(path string) {
 func InitApplicationPath(o output.Bus, applicationName string) bool {
 	value, varDefined := os.LookupEnv(applicationDataEnvVarName)
 	if !varDefined {
-		o.Log(output.Error, "not set", map[string]any{"environmentVariable": applicationDataEnvVarName})
+		o.Log(output.Error, "not set", map[string]any{
+			"environmentVariable": applicationDataEnvVarName,
+		})
+		o.WriteCanonicalError("Files used by %s cannot be read or written because the environment variable %s has not been set", applicationName, applicationDataEnvVarName)
+		o.WriteCanonicalError("What to do:\nDefine %s, giving it a value that is a directory path, typically %%HOMEPATH%%\\AppData\\Roaming", applicationDataEnvVarName)
+		return false
+	}
+	if err := Mkdir(value); err != nil {
+		o.Log(output.Error, "directory check failed", map[string]any{
+			"error":    err,
+			"fileName": value,
+		})
+		o.WriteCanonicalError("The %s environment variable value %q is not a directory, nor can it be created as a directory", applicationDataEnvVarName, value)
+		o.WriteCanonicalError("What to do:\nThe value of %s should be a directory path, typically %%HOMEPATH%%\\AppData\\Roaming", applicationDataEnvVarName)
+		o.WriteCanonicalError("Either it should contain a subdirectory named %q", applicationName)
+		o.WriteCanonicalError("Or, if it does not exist, it must be possible to create that subdirectory")
 		return false
 	}
 	dir, pathErr := CreateAppSpecificPath(value, applicationName)
 	if pathErr != nil {
+		// note: not writing anything to stderr; creating a logging path should have already caught it.
 		o.Log(output.Error, "program error", map[string]any{"error": pathErr})
 		return false
 	}

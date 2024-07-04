@@ -50,6 +50,10 @@ func TestInitApplicationPath(t *testing.T) {
 			wantInitialized: false,
 			preTest:         func() {},
 			WantedRecording: output.WantedRecording{
+				Error: "" +
+					"Files used by beautifulApp cannot be read or written because the environment variable APPDATA has not been set.\n" +
+					"What to do:\n" +
+					"Define APPDATA, giving it a value that is a directory path, typically %HOMEPATH%\\AppData\\Roaming.\n",
 				Log: "level='error' environmentVariable='APPDATA' msg='not set'\n",
 			},
 		},
@@ -66,16 +70,23 @@ func TestInitApplicationPath(t *testing.T) {
 		"appData not a directory": {
 			applicationName: "myApp",
 			appDataSet:      true,
-			appDataValue:    "apppath_test.go",
+			appDataValue:    "foo.bar",
 			wantInitialized: false,
-			preTest:         func() {},
+			preTest: func() {
+				_ = afero.WriteFile(cmdtoolkit.FileSystem(), "foo.bar", []byte("foo"), cmdtoolkit.StdFilePermissions)
+			},
 			WantedRecording: output.WantedRecording{
-				Error: "The directory \"apppath_test.go\\\\myApp\" cannot be created: parent directory is not a directory.\n",
+				Error: "" +
+					"The APPDATA environment variable value \"foo.bar\" is not a directory, nor can it be created as a directory.\n" +
+					"What to do:\n" +
+					"The value of APPDATA should be a directory path, typically %HOMEPATH%\\AppData\\Roaming.\n" +
+					"Either it should contain a subdirectory named \"myApp\".\n" +
+					"Or, if it does not exist, it must be possible to create that subdirectory.\n",
 				Log: "" +
 					"level='error'" +
-					" directory='apppath_test.go\\myApp'" +
-					" error='parent directory is not a directory'" +
-					" msg='cannot create directory'\n",
+					" error='file exists and is not a directory'" +
+					" fileName='foo.bar'" +
+					" msg='directory check failed'\n",
 			},
 		},
 		"cannot create subdirectory": {

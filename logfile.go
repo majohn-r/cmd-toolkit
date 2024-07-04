@@ -35,6 +35,9 @@ func initWriter(o output.Bus, applicationName string) (w io.Writer, path string)
 	tmpFolderMap := findTemp()
 	if len(tmpFolderMap) == 0 {
 		o.WriteCanonicalError("Log initialization is not possible because neither the TMP nor TEMP environment variables are defined")
+		o.WriteCanonicalError("What to do:\nDefine at least one of TMP and TEMP, setting the value to a directory path, e.g., '/tmp'")
+		o.WriteCanonicalError("Either it should contain a subdirectory named %q, which in turn contains a subdirectory named %q", applicationName, logDirName)
+		o.WriteCanonicalError("Or, if they do not exist, it must be possible to create those subdirectories")
 		return
 	}
 	path = findLogFilePath(o, tmpFolderMap, applicationName)
@@ -52,8 +55,8 @@ func initWriter(o output.Bus, applicationName string) (w io.Writer, path string)
 func findLogFilePath(o output.Bus, tmpFolderMap map[string]string, applicationName string) string {
 	for _, variableName := range tmpEnvironmentVariableNames {
 		if tmpFolder, found := tmpFolderMap[variableName]; found {
-			if !DirExists(tmpFolder) {
-				o.WriteCanonicalError("The %s environment variable value %q is not a directory", variableName, tmpFolder)
+			if err := Mkdir(tmpFolder); err != nil {
+				o.WriteCanonicalError("The %s environment variable value %q is not a directory, nor can it be created as a directory", variableName, tmpFolder)
 			} else {
 				// this is safe because we know the application name has been validated
 				tmp, _ := CreateAppSpecificPath(tmpFolder, applicationName)
@@ -66,6 +69,9 @@ func findLogFilePath(o output.Bus, tmpFolderMap map[string]string, applicationNa
 			}
 		}
 	}
+	o.WriteCanonicalError("What to do:\nThe values of TMP and TEMP should be a directory path, e.g., '/tmp'")
+	o.WriteCanonicalError("Either it should contain a subdirectory named %q, which in turn contains a subdirectory named %q", applicationName, logDirName)
+	o.WriteCanonicalError("Or, if they do not exist, it must be possible to create those subdirectories")
 	return ""
 }
 

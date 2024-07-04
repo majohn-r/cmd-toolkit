@@ -101,8 +101,15 @@ func TestReadConfigurationFile(t *testing.T) {
 			},
 			wantC: cmdtoolkit.EmptyConfiguration(),
 			WantedRecording: output.WantedRecording{
-				Error: "The configuration file \"configFileDir\\\\dir.yaml\" is a directory.\n",
-				Log:   "level='error' directory='configFileDir' fileName='dir.yaml' msg='file is a directory'\n",
+				Error: "" +
+					"The configuration file \"configFileDir\\\\dir.yaml\" is a directory.\n" +
+					"What to do:\n" +
+					"Delete the directory \"dir.yaml\" from \"configFileDir\" and restart the application.\n",
+				Log: "" +
+					"level='error'" +
+					" directory='configFileDir'" +
+					" fileName='dir.yaml'" +
+					" msg='file is a directory'\n",
 			},
 		},
 		"no config file does not exist": {
@@ -128,8 +135,16 @@ func TestReadConfigurationFile(t *testing.T) {
 			},
 			wantC: cmdtoolkit.EmptyConfiguration(),
 			WantedRecording: output.WantedRecording{
-				Error: "The configuration file \"garbageDir\\\\trash.yaml\" is not well-formed YAML: yaml: control characters are not allowed.\n",
-				Log:   "level='error' directory='garbageDir' error='yaml: control characters are not allowed' fileName='trash.yaml' msg='cannot unmarshal yaml content'\n",
+				Error: "" +
+					"The configuration file \"garbageDir\\\\trash.yaml\" is not well-formed YAML: yaml: control characters are not allowed.\n" +
+					"What to do:\n" +
+					"Delete the file \"trash.yaml\" from \"garbageDir\" and restart the application.\n",
+				Log: "" +
+					"level='error'" +
+					" directory='garbageDir'" +
+					" error='yaml: control characters are not allowed'" +
+					" fileName='trash.yaml'" +
+					" msg='cannot unmarshal yaml content'\n",
 			},
 		},
 		"config file contains usable data": {
@@ -245,14 +260,8 @@ func TestConfiguration_String(t *testing.T) {
 
 func TestConfiguration_BoolDefault(t *testing.T) {
 	envVar := "TEST_VAR"
-	savedValue, savedStatus := os.LookupEnv(envVar)
-	defer func() {
-		if savedStatus {
-			_ = os.Setenv(envVar, savedValue)
-		} else {
-			_ = os.Unsetenv(envVar)
-		}
-	}()
+	envVarMemento := cmdtoolkit.NewEnvVarMemento(envVar)
+	defer envVarMemento.Restore()
 	type args struct {
 		key          string
 		defaultValue bool
@@ -382,14 +391,8 @@ func TestConfiguration_BoolDefault(t *testing.T) {
 
 func TestConfiguration_IntDefault(t *testing.T) {
 	envVar := "TEST_VAR"
-	savedValue, savedStatus := os.LookupEnv(envVar)
-	defer func() {
-		if savedStatus {
-			_ = os.Setenv(envVar, savedValue)
-		} else {
-			_ = os.Unsetenv(envVar)
-		}
-	}()
+	envVarMemento := cmdtoolkit.NewEnvVarMemento(envVar)
+	defer envVarMemento.Restore()
 	type args struct {
 		key string
 		b   *cmdtoolkit.IntBounds

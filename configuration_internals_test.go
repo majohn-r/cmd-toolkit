@@ -89,8 +89,11 @@ func Test_verifyDefaultConfigFileExists(t *testing.T) {
 			path:    "testPath",
 			wantErr: true,
 			WantedRecording: output.WantedRecording{
-				Error: "The configuration file \"testPath\" is a directory.\n",
-				Log:   "level='error' directory='.' fileName='testPath' msg='file is a directory'\n",
+				Error: "" +
+					"The configuration file \"testPath\" is a directory.\n" +
+					"What to do:\n" +
+					"Delete the directory \"testPath\" from \".\" and restart the application.\n",
+				Log: "level='error' directory='.' fileName='testPath' msg='file is a directory'\n",
 			},
 		},
 		"path does not exist": {

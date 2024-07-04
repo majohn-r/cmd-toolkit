@@ -8,14 +8,8 @@ import (
 
 func Test_newEnvVarMemento(t *testing.T) {
 	const varName = "VAR1"
-	savedValue, savedSet := os.LookupEnv(varName)
-	defer func() {
-		if savedSet {
-			_ = os.Setenv(varName, savedValue)
-		} else {
-			_ = os.Unsetenv(varName)
-		}
-	}()
+	envVarMemento := NewEnvVarMemento(varName)
+	defer envVarMemento.Restore()
 	tests := map[string]struct {
 		value string
 		set   bool
@@ -140,14 +134,8 @@ func Test_byLength_Swap(t *testing.T) {
 
 func Test_envVarMemento_restore(t *testing.T) {
 	const varName = "VAR1"
-	savedValue, savedSet := os.LookupEnv(varName)
-	defer func() {
-		if savedSet {
-			_ = os.Setenv(varName, savedValue)
-		} else {
-			_ = os.Unsetenv(varName)
-		}
-	}()
+	envVarMemento := NewEnvVarMemento(varName)
+	defer envVarMemento.Restore()
 	tests := map[string]struct {
 		preValue  string
 		preSet    bool
