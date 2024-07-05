@@ -554,32 +554,6 @@ func Test_mergeArguments(t *testing.T) {
 	}
 }
 
-func Test_processIsElevated(t *testing.T) {
-	originalGetCurrentProcessToken := GetCurrentProcessToken
-	originalIsElevatedFunc := IsElevated
-	defer func() {
-		GetCurrentProcessToken = originalGetCurrentProcessToken
-		IsElevated = originalIsElevatedFunc
-	}()
-	GetCurrentProcessToken = func() (t windows.Token) {
-		return
-	}
-	tests := map[string]struct {
-		want bool
-	}{
-		"no":  {want: false},
-		"yes": {want: true},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			IsElevated = func(_ windows.Token) bool { return tt.want }
-			if got := processIsElevated(); got != tt.want {
-				t.Errorf("processIsElevated() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func Test_redirectedDescriptor(t *testing.T) {
 	originalIsTerminal := IsTerminal
 	originalIsCygwinTerminal := IsCygwinTerminal

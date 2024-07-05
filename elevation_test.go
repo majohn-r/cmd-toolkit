@@ -419,3 +419,29 @@ func TestElevationControl_WillRunElevated(t *testing.T) {
 		})
 	}
 }
+
+func TestProcessIsElevated(t *testing.T) {
+	originalGetCurrentProcessToken := cmdtoolkit.GetCurrentProcessToken
+	originalIsElevatedFunc := cmdtoolkit.IsElevated
+	defer func() {
+		cmdtoolkit.GetCurrentProcessToken = originalGetCurrentProcessToken
+		cmdtoolkit.IsElevated = originalIsElevatedFunc
+	}()
+	cmdtoolkit.GetCurrentProcessToken = func() (t windows.Token) {
+		return
+	}
+	tests := map[string]struct {
+		want bool
+	}{
+		"no":  {want: false},
+		"yes": {want: true},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			cmdtoolkit.IsElevated = func(_ windows.Token) bool { return tt.want }
+			if got := cmdtoolkit.ProcessIsElevated(); got != tt.want {
+				t.Errorf("processIsElevated() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

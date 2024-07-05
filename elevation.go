@@ -49,7 +49,7 @@ type ElevationControl struct {
 func NewElevationControl() *ElevationControl {
 	return &ElevationControl{
 		adminPermitted:   true,
-		elevated:         processIsElevated(),
+		elevated:         ProcessIsElevated(),
 		envVarName:       "",
 		stderrRedirected: stderrState(),
 		stdinRedirected:  stdinState(),
@@ -62,7 +62,7 @@ func NewElevationControl() *ElevationControl {
 func NewElevationControlWithEnvVar(envVarName string, defaultEnvVarValue bool) *ElevationControl {
 	return &ElevationControl{
 		adminPermitted:   environmentPermits(envVarName, defaultEnvVarValue),
-		elevated:         processIsElevated(),
+		elevated:         ProcessIsElevated(),
 		envVarName:       envVarName,
 		stderrRedirected: stderrState(),
 		stdinRedirected:  stdinState(),
@@ -185,7 +185,8 @@ func mergeArguments(args []string) string {
 	return merged
 }
 
-func processIsElevated() bool {
+// ProcessIsElevated determines whether the current process is running with elevated privileges
+func ProcessIsElevated() bool {
 	t := GetCurrentProcessToken()
 	return IsElevated(t)
 }
