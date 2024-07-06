@@ -35,8 +35,23 @@ var (
 	IsElevated = windows.Token.IsElevated
 )
 
-// ElevationControl determines whether the current process can run with elevated privileges
-type ElevationControl struct {
+// ElevationControl defines behavior for code pertaining to running a process with elevated
+// privileges
+type ElevationControl interface {
+	// ConfigureExit sets up a new exit function that calls the original exit function, if
+	// the process is running with elevated privileges; otherwise, it returns the original
+	// exit function
+	ConfigureExit(func(int)) func(int)
+	// Log logs the elevationControl state
+	Log(output.Bus, output.Level)
+	// Status returns a slice of status data suitable to display to the user
+	Status(string) []string
+	// WillRunElevated checks whether the process can run with elevated privileges, and if so,
+	// attempts to do so
+	WillRunElevated() bool
+}
+
+type elevationControl struct {
 	adminPermitted   bool
 	elevated         bool
 	envVarName       string
@@ -45,9 +60,9 @@ type ElevationControl struct {
 	stdoutRedirected bool
 }
 
-// NewElevationControl creates a new instance of ElevationControl that does not use an environment variable to determine whether execution with elevated privileges is desired
-func NewElevationControl() *ElevationControl {
-	return &ElevationControl{
+// NewElevationControl creates a new instance of elevationControl that does not use an environment variable to determine whether execution with elevated privileges is desired
+func NewElevationControl() ElevationControl {
+	return &elevationControl{
 		adminPermitted:   true,
 		elevated:         ProcessIsElevated(),
 		envVarName:       "",
@@ -57,10 +72,10 @@ func NewElevationControl() *ElevationControl {
 	}
 }
 
-// NewElevationControlWithEnvVar creates a new instance of ElevationControl that uses an
+// NewElevationControlWithEnvVar creates a new instance of elevationControl that uses an
 // environment variable to determine whether execution with elevated privileges is desired
-func NewElevationControlWithEnvVar(envVarName string, defaultEnvVarValue bool) *ElevationControl {
-	return &ElevationControl{
+func NewElevationControlWithEnvVar(envVarName string, defaultEnvVarValue bool) ElevationControl {
+	return &elevationControl{
 		adminPermitted:   environmentPermits(envVarName, defaultEnvVarValue),
 		elevated:         ProcessIsElevated(),
 		envVarName:       envVarName,
@@ -70,9 +85,8 @@ func NewElevationControlWithEnvVar(envVarName string, defaultEnvVarValue bool) *
 	}
 }
 
-// ConfigureExit sets up a new exit function that calls the original exit function, if the
-// process is running with elevated privileges; otherwise, it returns the original exit function
-func (ec *ElevationControl) ConfigureExit(oldExitFn func(int)) func(int) {
+// ConfigureExit is the reference implementation of the ElevationControl function
+func (ec *elevationControl) ConfigureExit(oldExitFn func(int)) func(int) {
 	returnFunc := oldExitFn
 	if ec.elevated {
 		originalExit := oldExitFn
@@ -87,8 +101,8 @@ func (ec *ElevationControl) ConfigureExit(oldExitFn func(int)) func(int) {
 	return returnFunc
 }
 
-// Log logs the ElevationControl state
-func (ec *ElevationControl) Log(o output.Bus, level output.Level) {
+// Log is the reference implementation of the ElevationControl function
+func (ec *elevationControl) Log(o output.Bus, level output.Level) {
 	o.Log(level, "elevation state", map[string]any{
 		"elevated":             ec.elevated,
 		"admin_permission":     ec.adminPermitted,
@@ -99,8 +113,8 @@ func (ec *ElevationControl) Log(o output.Bus, level output.Level) {
 	})
 }
 
-// Status returns a slice of status data suitable to display to the user
-func (ec *ElevationControl) Status(appName string) []string {
+// Status is the reference implementation of the ElevationControl function
+func (ec *elevationControl) Status(appName string) []string {
 	results := make([]string, 0, 3)
 	if ec.elevated {
 		results = append(results, fmt.Sprintf("%s is running with elevated privileges", appName))
@@ -116,9 +130,8 @@ func (ec *ElevationControl) Status(appName string) []string {
 	return results
 }
 
-// WillRunElevated checks whether the process can run with elevated privileges, and if so,
-// attempts to do so
-func (ec *ElevationControl) WillRunElevated() bool {
+// WillRunElevated is the reference implementation of the ElevationControl function
+func (ec *elevationControl) WillRunElevated() bool {
 	if ec.canElevate() {
 		// https://github.com/majohn-r/mp3repair/issues/157 if privileges can be
 		// elevated successfully, return true, else assume user declined and
@@ -128,7 +141,7 @@ func (ec *ElevationControl) WillRunElevated() bool {
 	return false
 }
 
-func (ec *ElevationControl) canElevate() bool {
+func (ec *elevationControl) canElevate() bool {
 	if ec.elevated {
 		return false // already there, so, no
 	}
@@ -138,7 +151,7 @@ func (ec *ElevationControl) canElevate() bool {
 	return ec.adminPermitted // do what the environment variable says
 }
 
-func (ec *ElevationControl) describeRedirection() string {
+func (ec *elevationControl) describeRedirection() string {
 	redirectedIO := make([]string, 0, 3)
 	if ec.stderrRedirected {
 		redirectedIO = append(redirectedIO, "stderr")
@@ -161,7 +174,7 @@ func (ec *ElevationControl) describeRedirection() string {
 	return result
 }
 
-func (ec *ElevationControl) redirected() bool {
+func (ec *elevationControl) redirected() bool {
 	return ec.stderrRedirected || ec.stdinRedirected || ec.stdoutRedirected
 }
 

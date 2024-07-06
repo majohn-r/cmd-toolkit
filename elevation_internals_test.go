@@ -342,7 +342,7 @@ func TestElevationControl_canElevate(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			ec := &ElevationControl{
+			ec := &elevationControl{
 				adminPermitted:   tt.fields.adminPermitted,
 				elevated:         tt.fields.elevated,
 				stderrRedirected: tt.fields.stderrRedirected,
@@ -442,7 +442,7 @@ func TestElevationControl_redirected(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			ec := &ElevationControl{
+			ec := &elevationControl{
 				stderrRedirected: tt.fields.stderrRedirected,
 				stdinRedirected:  tt.fields.stdinRedirected,
 				stdoutRedirected: tt.fields.stdoutRedirected,
@@ -645,5 +645,13 @@ func Test_runElevated(t *testing.T) {
 				t.Errorf("runElevated() = %v, want %v", gotStatus, tt.wantStatus)
 			}
 		})
+	}
+}
+
+func TestElevationControlImplemented(t *testing.T) {
+	var ec any
+	ec = &elevationControl{}
+	if _, ok := ec.(ElevationControl); !ok {
+		t.Errorf("&elevationControl does not implement ElevationControl")
 	}
 }
