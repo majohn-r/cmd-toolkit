@@ -66,30 +66,126 @@ func formatCopyright(firstYear, lastYear int, owner string) string {
 	return fmt.Sprintf("Copyright © %d-%d %s", firstYear, lastYear, owner)
 }
 
-// FlowerBox draws a box around the provided slice of strings; see https://github.com/majohn-r/cmd-toolkit/issues/17
-func FlowerBox(lines []string) []string {
+type boxChars interface {
+	upperLeftCorner() rune
+	upperRightCorner() rune
+	lowerLeftCorner() rune
+	lowerRightCorner() rune
+	verticalLine() rune
+	horizontalLine() rune
+}
+
+type asciiBoxChars struct{}
+
+func (asciiBoxChars) upperLeftCorner() rune  { return '+' }
+func (asciiBoxChars) upperRightCorner() rune { return '+' }
+func (asciiBoxChars) lowerLeftCorner() rune  { return '+' }
+func (asciiBoxChars) lowerRightCorner() rune { return '+' }
+func (asciiBoxChars) verticalLine() rune     { return '|' }
+func (asciiBoxChars) horizontalLine() rune   { return '-' }
+
+type curvedBoxChars struct{}
+
+func (curvedBoxChars) upperLeftCorner() rune  { return '╭' }
+func (curvedBoxChars) upperRightCorner() rune { return '╮' }
+func (curvedBoxChars) lowerLeftCorner() rune  { return '╰' }
+func (curvedBoxChars) lowerRightCorner() rune { return '╯' }
+func (curvedBoxChars) verticalLine() rune     { return '│' }
+func (curvedBoxChars) horizontalLine() rune   { return '─' }
+
+type doubleLineBoxChars struct{}
+
+func (doubleLineBoxChars) upperLeftCorner() rune  { return '╔' }
+func (doubleLineBoxChars) upperRightCorner() rune { return '╗' }
+func (doubleLineBoxChars) lowerLeftCorner() rune  { return '╚' }
+func (doubleLineBoxChars) lowerRightCorner() rune { return '╝' }
+func (doubleLineBoxChars) verticalLine() rune     { return '║' }
+func (doubleLineBoxChars) horizontalLine() rune   { return '═' }
+
+type heavyLineBoxChars struct{}
+
+func (heavyLineBoxChars) upperLeftCorner() rune  { return '┏' }
+func (heavyLineBoxChars) upperRightCorner() rune { return '┓' }
+func (heavyLineBoxChars) lowerLeftCorner() rune  { return '┗' }
+func (heavyLineBoxChars) lowerRightCorner() rune { return '┛' }
+func (heavyLineBoxChars) verticalLine() rune     { return '┃' }
+func (heavyLineBoxChars) horizontalLine() rune   { return '━' }
+
+type lightLineBoxChars struct{}
+
+func (lightLineBoxChars) upperLeftCorner() rune  { return '┌' }
+func (lightLineBoxChars) upperRightCorner() rune { return '┐' }
+func (lightLineBoxChars) lowerLeftCorner() rune  { return '└' }
+func (lightLineBoxChars) lowerRightCorner() rune { return '┘' }
+func (lightLineBoxChars) verticalLine() rune     { return '│' }
+func (lightLineBoxChars) horizontalLine() rune   { return '─' }
+
+// FlowerBoxStyle specifies a style of drawing flower box borders
+type FlowerBoxStyle uint32
+
+const (
+	// ASCIIFlowerBox uses ASCII characters ('+', '+', '+', '+', '-', and '|')
+	ASCIIFlowerBox = iota
+	// CurvedFlowerBox is uses light lines rounded corners ('╭', '╮', '╰', '╯', '─', and '│')
+	CurvedFlowerBox
+	// DoubleLinedFlowerBox uses double line characters ('╔', '╗', '╚', '╝', '═', and '║')
+	DoubleLinedFlowerBox
+	// HeavyLinedFlowerBox uses heavy lined characters ('┏', '┓', '┗', '┛', '━', and '┃')
+	HeavyLinedFlowerBox
+	// LightLinedFlowerBox uses heavy lined characters ('┌', '┐', '└', '┘', '─', and '│')
+	LightLinedFlowerBox
+)
+
+func getBoxChars(style FlowerBoxStyle) boxChars {
+	switch style {
+	case CurvedFlowerBox:
+		return curvedBoxChars{}
+	case DoubleLinedFlowerBox:
+		return doubleLineBoxChars{}
+	case HeavyLinedFlowerBox:
+		return heavyLineBoxChars{}
+	case LightLinedFlowerBox:
+		return lightLineBoxChars{}
+	default:
+		return asciiBoxChars{}
+	}
+}
+
+// StyledFlowerBox draws a box around the provided slice of strings in a specified style
+func StyledFlowerBox(lines []string, style FlowerBoxStyle) []string {
 	maxRunesPerLine := 0
 	for _, s := range lines {
 		maxRunesPerLine = max(maxRunesPerLine, len([]rune(s)))
 	}
+	bc := getBoxChars(style)
 	headerRunes := make([]rune, maxRunesPerLine+4)
-	headerRunes[0] = '+'
+	headerRunes[0] = bc.upperLeftCorner()
 	for i := 1; i < maxRunesPerLine+3; i++ {
-		headerRunes[i] = '-'
+		headerRunes[i] = bc.horizontalLine()
 	}
-	headerRunes[maxRunesPerLine+3] = '+'
-	hLine := string(headerRunes)
+	headerRunes[maxRunesPerLine+3] = bc.upperRightCorner()
 	// size: 2 for horizontal lines + 1 for empty string at the end + 1 per line
 	formattedLines := make([]string, 3+len(lines))
-	formattedLines[0] = hLine
+	formattedLines[0] = string(headerRunes)
 	index := 1
 	for _, s := range lines {
-		formattedLines[index] = fmt.Sprintf("| %s%*s |", s, maxRunesPerLine-len([]rune(s)), "")
+		formattedLines[index] = fmt.Sprintf("%c %s%*s %c", bc.verticalLine(), s, maxRunesPerLine-len([]rune(s)), "", bc.verticalLine())
 		index++
 	}
-	formattedLines[index] = hLine
+	footerRunes := make([]rune, maxRunesPerLine+4)
+	footerRunes[0] = bc.lowerLeftCorner()
+	for i := 1; i < maxRunesPerLine+3; i++ {
+		footerRunes[i] = bc.horizontalLine()
+	}
+	footerRunes[maxRunesPerLine+3] = bc.lowerRightCorner()
+	formattedLines[index] = string(footerRunes)
 	formattedLines[index+1] = ""
 	return formattedLines
+}
+
+// FlowerBox draws a box around the provided slice of strings; see https://github.com/majohn-r/cmd-toolkit/issues/17
+func FlowerBox(lines []string) []string {
+	return StyledFlowerBox(lines, ASCIIFlowerBox)
 }
 
 func translateTimestamp(s string) string {

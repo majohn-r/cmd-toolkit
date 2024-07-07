@@ -233,3 +233,82 @@ func TestFlowerBox(t *testing.T) {
 		})
 	}
 }
+
+func TestStyledFlowerBox(t *testing.T) {
+	type args struct {
+		lines []string
+		style cmdtoolkit.FlowerBoxStyle
+	}
+	tests := map[string]struct {
+		args
+		want []string
+	}{
+		"ASCII": {
+			args: args{
+				lines: []string{"abc"},
+				style: cmdtoolkit.ASCIIFlowerBox,
+			},
+			want: []string{
+				"+-----+",
+				"| abc |",
+				"+-----+",
+				"",
+			},
+		},
+		"curved": {
+			args: args{
+				lines: []string{"abc"},
+				style: cmdtoolkit.CurvedFlowerBox,
+			},
+			want: []string{
+				"╭─────╮",
+				"│ abc │",
+				"╰─────╯",
+				"",
+			},
+		},
+		"light lined": {
+			args: args{
+				lines: []string{"abc"},
+				style: cmdtoolkit.LightLinedFlowerBox,
+			},
+			want: []string{
+				"┌─────┐",
+				"│ abc │",
+				"└─────┘",
+				"",
+			},
+		},
+		"Double lined": {
+			args: args{
+				lines: []string{"abc"},
+				style: cmdtoolkit.DoubleLinedFlowerBox,
+			},
+			want: []string{
+				"╔═════╗",
+				"║ abc ║",
+				"╚═════╝",
+				"",
+			},
+		},
+		"Heavy lined": {
+			args: args{
+				lines: []string{"abc"},
+				style: cmdtoolkit.HeavyLinedFlowerBox,
+			},
+			want: []string{
+				"┏━━━━━┓",
+				"┃ abc ┃",
+				"┗━━━━━┛",
+				"",
+			},
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := cmdtoolkit.StyledFlowerBox(tt.args.lines, tt.args.style); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("StyledFlowerBox() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
