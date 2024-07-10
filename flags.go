@@ -3,6 +3,7 @@ package cmd_toolkit
 import (
 	"fmt"
 	"github.com/majohn-r/output"
+	"github.com/spf13/pflag"
 	"reflect"
 	"slices"
 )
@@ -63,7 +64,7 @@ type configSource interface {
 	StringDefault(string, string) (string, error)
 }
 
-func (fD *FlagDetails) addFlag(o output.Bus, c configSource, consumer FlagConsumer, flag flagParam) {
+func (fD *FlagDetails) addFlag(o output.Bus, c configSource, consumer *pflag.FlagSet, flag flagParam) {
 	switch fD.ExpectedType {
 	case StringType:
 		statedDefault, _ok := fD.DefaultValue.(string)
@@ -143,22 +144,6 @@ type FlagSet struct {
 	Details map[string]*FlagDetails // keys are flag names
 }
 
-// FlagConsumer encapsulates certain behaviors of a pflag.FlagSet
-type FlagConsumer interface {
-	// String creates a string-valued flag
-	String(name string, value string, usage string) *string
-	// StringP creates a string-valued flag with an abbreviated (shorthand) name
-	StringP(name, shorthand string, value string, usage string) *string
-	// Bool creates a boolean-valued flag
-	Bool(name string, value bool, usage string) *bool
-	// BoolP creates a boolean-valued flag with an abbreviated (shorthand) name
-	BoolP(name, shorthand string, value bool, usage string) *bool
-	// Int creates an integer-valued flag
-	Int(name string, value int, usage string) *int
-	// IntP creates an integer-valued flag with an abbreviated (shorthand) name
-	IntP(name, shorthand string, value int, usage string) *int
-}
-
 // FlagProducer encapsulates critical behavior of the cobra command flags for reading flag values
 // and whether those values are changed (i.e., are defined on the command line)
 type FlagProducer interface {
@@ -179,7 +164,7 @@ type flagParam struct {
 
 // AddFlags adds collections of flags to a flag consumer (typically a cobra command flags
 // instance)
-func AddFlags(o output.Bus, c *Configuration, flags FlagConsumer, sets ...*FlagSet) {
+func AddFlags(o output.Bus, c *Configuration, flags *pflag.FlagSet, sets ...*FlagSet) {
 	for _, set := range sets {
 		config := c.SubConfiguration(set.Name)
 		// sort names for deterministic test output

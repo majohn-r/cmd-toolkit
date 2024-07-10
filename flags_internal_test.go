@@ -3,19 +3,9 @@ package cmd_toolkit
 import (
 	"errors"
 	"github.com/majohn-r/output"
+	"github.com/spf13/pflag"
 	"testing"
 )
-
-type testFlagConsumer struct{}
-
-func (testFlagConsumer) Bool(_ string, value bool, _ string) *bool     { return &value }
-func (testFlagConsumer) Int(_ string, value int, _ string) *int        { return &value }
-func (testFlagConsumer) String(_, value, _ string) *string             { return &value }
-func (testFlagConsumer) BoolP(_, _ string, value bool, _ string) *bool { return &value }
-func (testFlagConsumer) IntP(_, _ string, value int, _ string) *int    { return &value }
-func (testFlagConsumer) StringP(_, _, value, _ string) *string {
-	return &value
-}
 
 type testConfigSource struct {
 	generateError bool
@@ -45,7 +35,7 @@ func (tcs testConfigSource) StringDefault(_, defaultValue string) (string, error
 func TestFlagDetails_addFlag(t *testing.T) {
 	type args struct {
 		c        configSource
-		consumer FlagConsumer
+		consumer *pflag.FlagSet
 		flag     flagParam
 	}
 	tests := map[string]struct {
@@ -87,7 +77,7 @@ func TestFlagDetails_addFlag(t *testing.T) {
 			},
 			args: args{
 				c:        nil,
-				consumer: testFlagConsumer{},
+				consumer: &pflag.FlagSet{},
 				flag:     flagParam{set: "mySet", name: "myFlag"},
 			},
 			WantedRecording: output.WantedRecording{
@@ -111,7 +101,7 @@ func TestFlagDetails_addFlag(t *testing.T) {
 			},
 			args: args{
 				c:        testConfigSource{generateError: true},
-				consumer: testFlagConsumer{},
+				consumer: &pflag.FlagSet{},
 				flag:     flagParam{set: "mySet", name: "myFlag"},
 			},
 			WantedRecording: output.WantedRecording{
@@ -132,7 +122,7 @@ func TestFlagDetails_addFlag(t *testing.T) {
 			},
 			args: args{
 				c:        testConfigSource{generateError: false},
-				consumer: testFlagConsumer{},
+				consumer: &pflag.FlagSet{},
 				flag:     flagParam{set: "mySet", name: "myFlag"},
 			},
 			WantedRecording: output.WantedRecording{},
@@ -146,7 +136,7 @@ func TestFlagDetails_addFlag(t *testing.T) {
 			},
 			args: args{
 				c:        testConfigSource{generateError: false},
-				consumer: testFlagConsumer{},
+				consumer: &pflag.FlagSet{},
 				flag:     flagParam{set: "mySet", name: "myFlag"},
 			},
 			WantedRecording: output.WantedRecording{},
@@ -160,7 +150,7 @@ func TestFlagDetails_addFlag(t *testing.T) {
 			},
 			args: args{
 				c:        nil,
-				consumer: testFlagConsumer{},
+				consumer: &pflag.FlagSet{},
 				flag:     flagParam{set: "mySet", name: "myFlag"},
 			},
 			WantedRecording: output.WantedRecording{
@@ -184,7 +174,7 @@ func TestFlagDetails_addFlag(t *testing.T) {
 			},
 			args: args{
 				c:        testConfigSource{generateError: true},
-				consumer: testFlagConsumer{},
+				consumer: &pflag.FlagSet{},
 				flag:     flagParam{set: "mySet", name: "myFlag"},
 			},
 			WantedRecording: output.WantedRecording{
@@ -205,7 +195,7 @@ func TestFlagDetails_addFlag(t *testing.T) {
 			},
 			args: args{
 				c:        testConfigSource{generateError: false},
-				consumer: testFlagConsumer{},
+				consumer: &pflag.FlagSet{},
 				flag:     flagParam{set: "mySet", name: "myFlag"},
 			},
 			WantedRecording: output.WantedRecording{},
@@ -219,7 +209,7 @@ func TestFlagDetails_addFlag(t *testing.T) {
 			},
 			args: args{
 				c:        testConfigSource{generateError: false},
-				consumer: testFlagConsumer{},
+				consumer: &pflag.FlagSet{},
 				flag:     flagParam{set: "mySet", name: "myFlag"},
 			},
 			WantedRecording: output.WantedRecording{},
@@ -233,7 +223,7 @@ func TestFlagDetails_addFlag(t *testing.T) {
 			},
 			args: args{
 				c:        nil,
-				consumer: testFlagConsumer{},
+				consumer: &pflag.FlagSet{},
 				flag:     flagParam{set: "mySet", name: "myFlag"},
 			},
 			WantedRecording: output.WantedRecording{
@@ -257,7 +247,7 @@ func TestFlagDetails_addFlag(t *testing.T) {
 			},
 			args: args{
 				c:        testConfigSource{generateError: true},
-				consumer: testFlagConsumer{},
+				consumer: &pflag.FlagSet{},
 				flag:     flagParam{set: "mySet", name: "myFlag"},
 			},
 			WantedRecording: output.WantedRecording{
@@ -278,7 +268,7 @@ func TestFlagDetails_addFlag(t *testing.T) {
 			},
 			args: args{
 				c:        testConfigSource{generateError: false},
-				consumer: testFlagConsumer{},
+				consumer: &pflag.FlagSet{},
 				flag:     flagParam{set: "mySet", name: "myFlag"},
 			},
 			WantedRecording: output.WantedRecording{},
@@ -292,7 +282,7 @@ func TestFlagDetails_addFlag(t *testing.T) {
 			},
 			args: args{
 				c:        testConfigSource{generateError: false},
-				consumer: testFlagConsumer{},
+				consumer: &pflag.FlagSet{},
 				flag:     flagParam{set: "mySet", name: "myFlag"},
 			},
 			WantedRecording: output.WantedRecording{},

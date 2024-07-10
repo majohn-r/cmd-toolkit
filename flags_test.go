@@ -4,6 +4,7 @@ import (
 	"errors"
 	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
 	"github.com/majohn-r/output"
+	"github.com/spf13/pflag"
 	"reflect"
 	"testing"
 )
@@ -65,21 +66,10 @@ func TestFlagDetails_Copy(t *testing.T) {
 	}
 }
 
-type testFlagConsumer struct{}
-
-func (testFlagConsumer) Bool(_ string, value bool, _ string) *bool     { return &value }
-func (testFlagConsumer) Int(_ string, value int, _ string) *int        { return &value }
-func (testFlagConsumer) String(_, value, _ string) *string             { return &value }
-func (testFlagConsumer) BoolP(_, _ string, value bool, _ string) *bool { return &value }
-func (testFlagConsumer) IntP(_, _ string, value int, _ string) *int    { return &value }
-func (testFlagConsumer) StringP(_, _, value, _ string) *string {
-	return &value
-}
-
 func TestAddFlags(t *testing.T) {
 	type args struct {
 		c     *cmdtoolkit.Configuration
-		flags cmdtoolkit.FlagConsumer
+		flags *pflag.FlagSet
 		sets  []*cmdtoolkit.FlagSet
 	}
 	tests := map[string]struct {
@@ -89,7 +79,7 @@ func TestAddFlags(t *testing.T) {
 		"thorough": {
 			args: args{
 				c:     cmdtoolkit.EmptyConfiguration(),
-				flags: testFlagConsumer{},
+				flags: &pflag.FlagSet{},
 				sets: []*cmdtoolkit.FlagSet{
 					{
 						Name: "mySet",
@@ -511,7 +501,7 @@ func TestReadFlags(t *testing.T) {
 							AbbreviatedName: "",
 							Usage:           "",
 							ExpectedType:    cmdtoolkit.IntType,
-							DefaultValue:    &cmdtoolkit.IntBounds{0, 1, 2},
+							DefaultValue:    &cmdtoolkit.IntBounds{DefaultValue: 1, MaxValue: 2},
 						},
 						"s": {
 							AbbreviatedName: "",
