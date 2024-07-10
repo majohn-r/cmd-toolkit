@@ -1,7 +1,6 @@
 package cmd_toolkit_test
 
 import (
-	"fmt"
 	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
 	"os"
 	"path/filepath"
@@ -191,37 +190,6 @@ func TestReadConfigurationFile(t *testing.T) {
 				t.Errorf("ReadConfigurationFile() gotOk = %v, want %v", gotOk, tt.wantOk)
 			}
 			o.Report(t, "ReadConfigurationFile()", tt.WantedRecording)
-		})
-	}
-}
-
-func TestReportInvalidConfigurationData(t *testing.T) {
-	originalDefaultConfigFileName := cmdtoolkit.DefaultConfigFileName()
-	defer cmdtoolkit.UnsafeSetDefaultConfigFileName(originalDefaultConfigFileName)
-	type args struct {
-		s string
-		e error
-	}
-	tests := map[string]struct {
-		defaultConfigFileName string
-		args
-		output.WantedRecording
-	}{
-		"simple": {
-			defaultConfigFileName: "defaultConfig.yaml",
-			args:                  args{s: "defaults", e: fmt.Errorf("illegal value")},
-			WantedRecording: output.WantedRecording{
-				Error: "The configuration file \"defaultConfig.yaml\" contains an invalid value for \"defaults\": illegal value.\n",
-				Log:   "level='error' error='illegal value' section='defaults' msg='invalid content in configuration file'\n",
-			},
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			cmdtoolkit.UnsafeSetDefaultConfigFileName(tt.defaultConfigFileName)
-			o := output.NewRecorder()
-			cmdtoolkit.ReportInvalidConfigurationData(o, tt.args.s, tt.args.e)
-			o.Report(t, "ReportInvalidConfigurationData()", tt.WantedRecording)
 		})
 	}
 }

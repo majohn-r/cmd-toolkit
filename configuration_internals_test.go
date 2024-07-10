@@ -1,6 +1,7 @@
 package cmd_toolkit
 
 import (
+	"fmt"
 	"github.com/majohn-r/output"
 	"github.com/spf13/afero"
 	"path/filepath"
@@ -188,6 +189,37 @@ func TestIntBounds_constrainedValue(t *testing.T) {
 			if gotI := tt.b.constrainedValue(tt.value); gotI != tt.wantI {
 				t.Errorf("IntBounds.constrainedValue() = %v, want %v", gotI, tt.wantI)
 			}
+		})
+	}
+}
+
+func Test_reportInvalidConfigurationData(t *testing.T) {
+	originalDefaultConfigFileName := DefaultConfigFileName()
+	defer UnsafeSetDefaultConfigFileName(originalDefaultConfigFileName)
+	type args struct {
+		s string
+		e error
+	}
+	tests := map[string]struct {
+		defaultConfigFileName string
+		args
+		output.WantedRecording
+	}{
+		"simple": {
+			defaultConfigFileName: "defaultConfig.yaml",
+			args:                  args{s: "defaults", e: fmt.Errorf("illegal value")},
+			WantedRecording: output.WantedRecording{
+				Error: "The configuration file \"defaultConfig.yaml\" contains an invalid value for \"defaults\": illegal value.\n",
+				Log:   "level='error' error='illegal value' section='defaults' msg='invalid content in configuration file'\n",
+			},
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			UnsafeSetDefaultConfigFileName(tt.defaultConfigFileName)
+			o := output.NewRecorder()
+			reportInvalidConfigurationData(o, tt.args.s, tt.args.e)
+			o.Report(t, "reportInvalidConfigurationData()", tt.WantedRecording)
 		})
 	}
 }

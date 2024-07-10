@@ -156,10 +156,7 @@ func ReadConfigurationFile(o output.Bus) (*Configuration, bool) {
 	return c, true
 }
 
-// ReportInvalidConfigurationData handles errors found when attempting to parse
-// a YAML configuration file, both logging the error and notifying the user of
-// the error
-func ReportInvalidConfigurationData(o output.Bus, s string, e error) {
+func reportInvalidConfigurationData(o output.Bus, s string, e error) {
 	o.WriteCanonicalError("The configuration file %q contains an invalid value for %q: %v", defaultConfigFileName, s, e)
 	o.Log(output.Error, "invalid content in configuration file", map[string]any{
 		"section": s,
