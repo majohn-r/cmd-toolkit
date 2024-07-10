@@ -559,25 +559,6 @@ func TestConfiguration_SubConfiguration(t *testing.T) {
 	}
 }
 
-func TestSetFlagIndicator(t *testing.T) {
-	originalIndicator := cmdtoolkit.FlagIndicator()
-	defer cmdtoolkit.SetFlagIndicator(originalIndicator)
-	tests := map[string]struct {
-		val string
-	}{
-		"-":  {val: "-"},
-		"--": {val: "--"},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			cmdtoolkit.SetFlagIndicator(tt.val)
-			if got := cmdtoolkit.FlagIndicator(); got != tt.val {
-				t.Errorf("SetFlagIndicator got %q want %q", got, tt.val)
-			}
-		})
-	}
-}
-
 func TestAssignFileSystem(t *testing.T) {
 	originalFileSystem := cmdtoolkit.FileSystem()
 	defer cmdtoolkit.AssignFileSystem(originalFileSystem)

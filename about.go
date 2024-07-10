@@ -183,11 +183,6 @@ func StyledFlowerBox(lines []string, style FlowerBoxStyle) []string {
 	return formattedLines
 }
 
-// FlowerBox draws a box around the provided slice of strings; see https://github.com/majohn-r/cmd-toolkit/issues/17
-func FlowerBox(lines []string) []string {
-	return StyledFlowerBox(lines, ASCIIFlowerBox)
-}
-
 func translateTimestamp(s string) string {
 	t, parseErr := time.Parse(time.RFC3339, s)
 	if parseErr != nil {

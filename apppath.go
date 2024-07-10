@@ -52,7 +52,7 @@ func InitApplicationPath(o output.Bus, applicationName string) bool {
 		o.WriteCanonicalError("Or, if it does not exist, it must be possible to create that subdirectory")
 		return false
 	}
-	dir, pathErr := CreateAppSpecificPath(value, applicationName)
+	dir, pathErr := createAppSpecificPath(value, applicationName)
 	if pathErr != nil {
 		// note: not writing anything to stderr; creating a logging path should have already caught it.
 		o.Log(output.Error, "program error", map[string]any{"error": pathErr})

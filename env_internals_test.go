@@ -2,6 +2,7 @@ package cmd_toolkit
 
 import (
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -158,6 +159,38 @@ func Test_envVarMemento_restore(t *testing.T) {
 			tt.mem.Restore()
 			if gotValue, gotSet := os.LookupEnv(varName); gotValue != tt.wantValue || gotSet != tt.wantSet {
 				t.Errorf("EnvVarMemento.Restore = (%q, %t) want (%q, %t)", gotValue, gotSet, tt.wantValue, tt.wantSet)
+			}
+		})
+	}
+}
+
+func Test_createAppSpecificPath(t *testing.T) {
+	tests := map[string]struct {
+		applicationName string
+		topDir          string
+		want            string
+		wantErr         bool
+	}{
+		"uninitialized applicationName": {
+			applicationName: "",
+			topDir:          "topDir",
+			wantErr:         true,
+		},
+		"initialized applicationName": {
+			applicationName: "myApp",
+			topDir:          "dir",
+			want:            filepath.Join("dir", "myApp"),
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, gotErr := createAppSpecificPath(tt.topDir, tt.applicationName)
+			if (gotErr != nil) != tt.wantErr {
+				t.Errorf("createAppSpecificPath() error = %v, wantErr %v", gotErr, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("createAppSpecificPath() = %v, want %v", got, tt.want)
 			}
 		})
 	}

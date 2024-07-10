@@ -190,50 +190,6 @@ func TestFormatGoVersion(t *testing.T) {
 	}
 }
 
-func TestFlowerBox(t *testing.T) {
-	tests := map[string]struct {
-		lines []string
-		want  []string
-	}{
-		"empty": {
-			lines: nil,
-			want: []string{
-				"+--+",
-				"+--+",
-				"",
-			},
-		},
-		"one line": {
-			lines: []string{"line1"},
-			want: []string{
-				"+-------+",
-				"| line1 |",
-				"+-------+",
-				"",
-			},
-		},
-		"multiple lines": {
-			lines: []string{"line1", "line2", "", "line 4"},
-			want: []string{
-				"+--------+",
-				"| line1  |",
-				"| line2  |",
-				"|        |",
-				"| line 4 |",
-				"+--------+",
-				"",
-			},
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			if got := cmdtoolkit.FlowerBox(tt.lines); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("FlowerBox() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestStyledFlowerBox(t *testing.T) {
 	type args struct {
 		lines []string

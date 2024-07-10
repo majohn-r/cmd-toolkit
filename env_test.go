@@ -3,41 +3,8 @@ package cmd_toolkit_test
 import (
 	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
 	"os"
-	"path/filepath"
 	"testing"
 )
-
-func TestCreateAppSpecificPath(t *testing.T) {
-	tests := map[string]struct {
-		applicationName string
-		topDir          string
-		want            string
-		wantErr         bool
-	}{
-		"uninitialized applicationName": {
-			applicationName: "",
-			topDir:          "topDir",
-			wantErr:         true,
-		},
-		"initialized applicationName": {
-			applicationName: "myApp",
-			topDir:          "dir",
-			want:            filepath.Join("dir", "myApp"),
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			got, gotErr := cmdtoolkit.CreateAppSpecificPath(tt.topDir, tt.applicationName)
-			if (gotErr != nil) != tt.wantErr {
-				t.Errorf("CreateAppSpecificPath() error = %v, wantErr %v", gotErr, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("CreateAppSpecificPath() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func TestDereferenceEnvVar(t *testing.T) {
 	tests := map[string]struct {

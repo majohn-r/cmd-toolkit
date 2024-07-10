@@ -16,7 +16,6 @@ import (
 
 var (
 	defaultConfigFileName = "defaults.yaml"
-	flagPrefix            = "-"
 	fileSystem            = afero.NewOsFs()
 )
 
@@ -59,17 +58,6 @@ func DefaultConfigFileName() string {
 // strictly for unit testing
 func UnsafeSetDefaultConfigFileName(newConfigFileName string) {
 	defaultConfigFileName = newConfigFileName
-}
-
-// FlagIndicator retrieves the string that indicates a command flag, typically either '-'
-// or '--'
-func FlagIndicator() string {
-	return flagPrefix
-}
-
-// SetFlagIndicator sets the flag indicator to the specified value
-func SetFlagIndicator(val string) {
-	flagPrefix = val
 }
 
 // EmptyConfiguration creates an empty Configuration instance
@@ -221,7 +209,7 @@ func (c *Configuration) BoolDefault(key string, defaultValue bool) (bool, error)
 		default:
 			// note: deliberately imitating flags behavior when parsing an
 			// invalid boolean
-			return defaultValue, fmt.Errorf("invalid boolean value \"%d\" for %s%s: parse error", value, FlagIndicator(), key)
+			return defaultValue, fmt.Errorf("invalid boolean value \"%d\" for --%s: parse error", value, key)
 		}
 	}
 	// True values may be specified as "t", "T", "true", "TRUE", or "True"
@@ -232,13 +220,13 @@ func (c *Configuration) BoolDefault(key string, defaultValue bool) (bool, error)
 	}
 	rawValue, dereferenceErr := DereferenceEnvVar(value)
 	if dereferenceErr != nil {
-		return defaultValue, fmt.Errorf("invalid boolean value %q for %s%s: %v", value, FlagIndicator(), key, dereferenceErr)
+		return defaultValue, fmt.Errorf("invalid boolean value %q for --%s: %v", value, key, dereferenceErr)
 	}
 	cookedValue, e := strconv.ParseBool(rawValue)
 	if e != nil {
 		// note: deliberately imitating flags behavior when parsing
 		// an invalid boolean
-		return defaultValue, fmt.Errorf("invalid boolean value %q for %s%s: parse error", value, FlagIndicator(), key)
+		return defaultValue, fmt.Errorf("invalid boolean value %q for --%s: parse error", value, key)
 	}
 	return cookedValue, nil
 }
@@ -255,13 +243,13 @@ func (c *Configuration) IntDefault(key string, b *IntBounds) (int, error) {
 	}
 	rawValue, dereferenceErr := DereferenceEnvVar(value)
 	if dereferenceErr != nil {
-		return b.DefaultValue, fmt.Errorf("invalid value %q for flag %s%s: %v", rawValue, FlagIndicator(), key, dereferenceErr)
+		return b.DefaultValue, fmt.Errorf("invalid value %q for flag --%s: %v", rawValue, key, dereferenceErr)
 	}
 	cookedValue, e := strconv.Atoi(rawValue)
 	if e != nil {
 		// note: deliberately imitating flags behavior when parsing an
 		// invalid int
-		return b.DefaultValue, fmt.Errorf("invalid value %q for flag %s%s: parse error", rawValue, FlagIndicator(), key)
+		return b.DefaultValue, fmt.Errorf("invalid value %q for flag --%s: parse error", rawValue, key)
 	}
 	return b.constrainedValue(cookedValue), nil
 }
@@ -271,7 +259,7 @@ func (c *Configuration) StringDefault(key, defaultValue string) (string, error) 
 	var dereferencedDefault string
 	var dereferenceErr error
 	if dereferencedDefault, dereferenceErr = DereferenceEnvVar(defaultValue); dereferenceErr != nil {
-		return "", fmt.Errorf("invalid value %q for flag %s%s: %v", defaultValue, FlagIndicator(), key, dereferenceErr)
+		return "", fmt.Errorf("invalid value %q for flag --%s: %v", defaultValue, key, dereferenceErr)
 	}
 	value, found := c.StringMap[key]
 	if !found {
@@ -279,7 +267,7 @@ func (c *Configuration) StringDefault(key, defaultValue string) (string, error) 
 	}
 	var dereferencedValue string
 	if dereferencedValue, dereferenceErr = DereferenceEnvVar(value); dereferenceErr != nil {
-		return "", fmt.Errorf("invalid value %q for flag %s%s: %v", value, FlagIndicator(), key, dereferenceErr)
+		return "", fmt.Errorf("invalid value %q for flag --%s: %v", value, key, dereferenceErr)
 	}
 	return dereferencedValue, nil
 }

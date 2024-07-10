@@ -25,8 +25,7 @@ type EnvVarMemento struct {
 	set   bool
 }
 
-// CreateAppSpecificPath creates a path string for an app-related directory
-func CreateAppSpecificPath(topDir, applicationName string) (string, error) {
+func createAppSpecificPath(topDir, applicationName string) (string, error) {
 	if !isLegalApplicationName(applicationName) {
 		return "", fmt.Errorf("application name %q is not valid", applicationName)
 	}

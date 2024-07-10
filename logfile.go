@@ -59,7 +59,7 @@ func findLogFilePath(o output.Bus, tmpFolderMap map[string]string, applicationNa
 				o.WriteCanonicalError("The %s environment variable value %q is not a directory, nor can it be created as a directory", variableName, tmpFolder)
 			} else {
 				// this is safe because we know the application name has been validated
-				tmp, _ := CreateAppSpecificPath(tmpFolder, applicationName)
+				tmp, _ := createAppSpecificPath(tmpFolder, applicationName)
 				path := filepath.Join(tmp, logDirName)
 				_ = fileSystem.MkdirAll(path, StdDirPermissions)
 				if DirExists(path) {
