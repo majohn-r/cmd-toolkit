@@ -19,8 +19,7 @@ var (
 )
 
 const (
-	// DefaultConfigFileName is the name of the file containing application defaults
-	DefaultConfigFileName = "defaults.yaml"
+	defaultConfigFileName = "defaults.yaml"
 )
 
 // FileSystem returns the current afero.Fs instance
@@ -105,7 +104,7 @@ func NewIntBounds(v1, v2, v3 int) *IntBounds {
 func ReadConfigurationFile(o output.Bus) (*Configuration, bool) {
 	c := EmptyConfiguration()
 	path := ApplicationPath()
-	file := filepath.Join(path, DefaultConfigFileName)
+	file := filepath.Join(path, defaultConfigFileName)
 	exists, fileError := verifyDefaultConfigFileExists(o, file)
 	if fileError != nil {
 		return c, false
@@ -120,28 +119,35 @@ func ReadConfigurationFile(o output.Bus) (*Configuration, bool) {
 	if fileError != nil {
 		o.Log(output.Error, "cannot unmarshal yaml content", map[string]any{
 			"directory": path,
-			"fileName":  DefaultConfigFileName,
+			"fileName":  defaultConfigFileName,
 			"error":     fileError,
 		})
 		o.WriteCanonicalError("The configuration file %q is not well-formed YAML: %v", file, fileError)
-		o.WriteCanonicalError("What to do:\nDelete the file %q from %q and restart the application", DefaultConfigFileName, path)
+		o.WriteCanonicalError("What to do:\nDelete the file %q from %q and restart the application", defaultConfigFileName, path)
 		return c, false
 	}
 	c = newConfiguration(o, data)
 	o.Log(output.Info, "read configuration file", map[string]any{
 		"directory": path,
-		"fileName":  DefaultConfigFileName,
+		"fileName":  defaultConfigFileName,
 		"value":     c,
 	})
 	return c, true
 }
 
 func reportInvalidConfigurationData(o output.Bus, s string, e error) {
-	o.WriteCanonicalError("The configuration file %q contains an invalid value for %q: %v", DefaultConfigFileName, s, e)
+	o.WriteCanonicalError("The configuration file %q contains an invalid value for %q: %v", defaultConfigFileName, s, e)
 	o.Log(output.Error, "invalid content in configuration file", map[string]any{
 		"section": s,
 		"error":   e,
 	})
+}
+
+// DefaultConfigFileStatus returns the path of the defaults config file and whether that file exists
+func DefaultConfigFileStatus() (string, bool) {
+	path := filepath.Join(ApplicationPath(), defaultConfigFileName)
+	exists := PlainFileExists(path)
+	return path, exists
 }
 
 func verifyDefaultConfigFileExists(o output.Bus, path string) (exists bool, err error) {

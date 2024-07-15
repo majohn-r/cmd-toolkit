@@ -76,7 +76,7 @@ func TestReadConfigurationFile(t *testing.T) {
 		"config file is a directory": {
 			preTest: func() {
 				cmdtoolkit.SetApplicationPath("configFileDir")
-				_ = cmdtoolkit.FileSystem().MkdirAll(filepath.Join(cmdtoolkit.ApplicationPath(), cmdtoolkit.DefaultConfigFileName), cmdtoolkit.StdDirPermissions)
+				_ = cmdtoolkit.FileSystem().MkdirAll(filepath.Join(cmdtoolkit.ApplicationPath(), "defaults.yaml"), cmdtoolkit.StdDirPermissions)
 			},
 			wantC: cmdtoolkit.EmptyConfiguration(),
 			WantedRecording: output.WantedRecording{
@@ -108,7 +108,7 @@ func TestReadConfigurationFile(t *testing.T) {
 			preTest: func() {
 				cmdtoolkit.SetApplicationPath("garbageDir")
 				_ = cmdtoolkit.FileSystem().Mkdir(cmdtoolkit.ApplicationPath(), cmdtoolkit.StdDirPermissions)
-				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(cmdtoolkit.ApplicationPath(), cmdtoolkit.DefaultConfigFileName), []byte{1, 2, 3}, cmdtoolkit.StdFilePermissions)
+				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(cmdtoolkit.ApplicationPath(), "defaults.yaml"), []byte{1, 2, 3}, cmdtoolkit.StdFilePermissions)
 			},
 			wantC: cmdtoolkit.EmptyConfiguration(),
 			WantedRecording: output.WantedRecording{
@@ -134,7 +134,7 @@ func TestReadConfigurationFile(t *testing.T) {
 					"s: hello\n" +
 					"command:\n" +
 					"  default: about\n"
-				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(cmdtoolkit.ApplicationPath(), cmdtoolkit.DefaultConfigFileName), []byte(content), cmdtoolkit.StdFilePermissions)
+				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(cmdtoolkit.ApplicationPath(), "defaults.yaml"), []byte(content), cmdtoolkit.StdFilePermissions)
 			},
 			wantC: &cmdtoolkit.Configuration{
 				BoolMap: map[string]bool{"b": true},
@@ -554,6 +554,55 @@ func TestAssignFileSystem(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			if got := cmdtoolkit.AssignFileSystem(tt.fs); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("AssignFileSystem() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDefaultConfigFileStatus(t *testing.T) {
+	originalFileSystem := cmdtoolkit.FileSystem()
+	defer cmdtoolkit.AssignFileSystem(originalFileSystem)
+	originalApplicationPath := cmdtoolkit.ApplicationPath()
+	defer cmdtoolkit.SetApplicationPath(originalApplicationPath)
+	fs := afero.NewMemMapFs()
+	cmdtoolkit.AssignFileSystem(fs)
+	tests := map[string]struct {
+		preTest func()
+		want    string
+		want1   bool
+	}{
+		"does not exist": {
+			preTest: func() {
+				cmdtoolkit.SetApplicationPath("non-existent-path")
+			},
+			want:  `non-existent-path\defaults.yaml`,
+			want1: false,
+		},
+		"exists": {
+			preTest: func() {
+				path := "goodPath"
+				cmdtoolkit.SetApplicationPath(path)
+				_ = cmdtoolkit.Mkdir(path)
+				_ = afero.WriteFile(
+					fs,
+					filepath.Join(path, "defaults.yaml"),
+					[]byte("data"),
+					cmdtoolkit.StdFilePermissions,
+				)
+			},
+			want:  `goodPath\defaults.yaml`,
+			want1: true,
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			tt.preTest()
+			got, got1 := cmdtoolkit.DefaultConfigFileStatus()
+			if got != tt.want {
+				t.Errorf("DefaultConfigFileStatus() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("DefaultConfigFileStatus() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
