@@ -25,11 +25,6 @@ func ApplicationPath() string {
 	return applicationPath
 }
 
-// UnsafeSetApplicationPath sets the application path to an arbitrary string
-func UnsafeSetApplicationPath(path string) {
-	applicationPath = path
-}
-
 // InitApplicationPath ensures that the application path exists
 func InitApplicationPath(o output.Bus, applicationName string) bool {
 	value, varDefined := os.LookupEnv(applicationDataEnvVarName)

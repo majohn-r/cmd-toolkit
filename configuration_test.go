@@ -11,23 +11,6 @@ import (
 	"github.com/spf13/afero"
 )
 
-func TestDefaultConfigFileName(t *testing.T) {
-	originalDefaultConfigFileName := cmdtoolkit.DefaultConfigFileName()
-	defer cmdtoolkit.UnsafeSetDefaultConfigFileName(originalDefaultConfigFileName)
-	tests := map[string]struct {
-		defaultConfigFileName string
-		want                  string
-	}{"simple": {defaultConfigFileName: "myDefaults.yaml", want: "myDefaults.yaml"}}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			cmdtoolkit.UnsafeSetDefaultConfigFileName(tt.defaultConfigFileName)
-			if got := cmdtoolkit.DefaultConfigFileName(); got != tt.want {
-				t.Errorf("DefaultConfigFileName() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestEmptyConfiguration(t *testing.T) {
 	tests := map[string]struct {
 		want *cmdtoolkit.Configuration
@@ -79,11 +62,9 @@ func TestNewIntBounds(t *testing.T) {
 func TestReadConfigurationFile(t *testing.T) {
 	originalFileSystem := cmdtoolkit.FileSystem()
 	originalApplicationPath := cmdtoolkit.ApplicationPath()
-	originalDefaultConfigFileName := cmdtoolkit.DefaultConfigFileName()
 	defer func() {
 		cmdtoolkit.AssignFileSystem(originalFileSystem)
-		cmdtoolkit.UnsafeSetApplicationPath(originalApplicationPath)
-		cmdtoolkit.UnsafeSetDefaultConfigFileName(originalDefaultConfigFileName)
+		cmdtoolkit.SetApplicationPath(originalApplicationPath)
 	}()
 	cmdtoolkit.AssignFileSystem(afero.NewMemMapFs())
 	tests := map[string]struct {
@@ -94,27 +75,25 @@ func TestReadConfigurationFile(t *testing.T) {
 	}{
 		"config file is a directory": {
 			preTest: func() {
-				cmdtoolkit.UnsafeSetApplicationPath("configFileDir")
-				cmdtoolkit.UnsafeSetDefaultConfigFileName("dir.yaml")
-				_ = cmdtoolkit.FileSystem().MkdirAll(filepath.Join(cmdtoolkit.ApplicationPath(), cmdtoolkit.DefaultConfigFileName()), cmdtoolkit.StdDirPermissions)
+				cmdtoolkit.SetApplicationPath("configFileDir")
+				_ = cmdtoolkit.FileSystem().MkdirAll(filepath.Join(cmdtoolkit.ApplicationPath(), cmdtoolkit.DefaultConfigFileName), cmdtoolkit.StdDirPermissions)
 			},
 			wantC: cmdtoolkit.EmptyConfiguration(),
 			WantedRecording: output.WantedRecording{
 				Error: "" +
-					"The configuration file \"configFileDir\\\\dir.yaml\" is a directory.\n" +
+					"The configuration file \"configFileDir\\\\defaults.yaml\" is a directory.\n" +
 					"What to do:\n" +
-					"Delete the directory \"dir.yaml\" from \"configFileDir\" and restart the application.\n",
+					"Delete the directory \"defaults.yaml\" from \"configFileDir\" and restart the application.\n",
 				Log: "" +
 					"level='error'" +
 					" directory='configFileDir'" +
-					" fileName='dir.yaml'" +
+					" fileName='defaults.yaml'" +
 					" msg='file is a directory'\n",
 			},
 		},
 		"no config file does not exist": {
 			preTest: func() {
-				cmdtoolkit.UnsafeSetApplicationPath("non-existent directory")
-				cmdtoolkit.UnsafeSetDefaultConfigFileName("no such file.yaml")
+				cmdtoolkit.SetApplicationPath("non-existent directory")
 			},
 			wantC: &cmdtoolkit.Configuration{
 				BoolMap:          map[string]bool{},
@@ -123,33 +102,31 @@ func TestReadConfigurationFile(t *testing.T) {
 				StringMap:        map[string]string{},
 			},
 			wantOk:          true,
-			WantedRecording: output.WantedRecording{Log: "level='info' directory='non-existent directory' fileName='no such file.yaml' msg='file does not exist'\n"},
+			WantedRecording: output.WantedRecording{Log: "level='info' directory='non-existent directory' fileName='defaults.yaml' msg='file does not exist'\n"},
 		},
 		"config file contains bad data": {
 			preTest: func() {
-				cmdtoolkit.UnsafeSetApplicationPath("garbageDir")
-				cmdtoolkit.UnsafeSetDefaultConfigFileName("trash.yaml")
+				cmdtoolkit.SetApplicationPath("garbageDir")
 				_ = cmdtoolkit.FileSystem().Mkdir(cmdtoolkit.ApplicationPath(), cmdtoolkit.StdDirPermissions)
-				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(cmdtoolkit.ApplicationPath(), cmdtoolkit.DefaultConfigFileName()), []byte{1, 2, 3}, cmdtoolkit.StdFilePermissions)
+				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(cmdtoolkit.ApplicationPath(), cmdtoolkit.DefaultConfigFileName), []byte{1, 2, 3}, cmdtoolkit.StdFilePermissions)
 			},
 			wantC: cmdtoolkit.EmptyConfiguration(),
 			WantedRecording: output.WantedRecording{
 				Error: "" +
-					"The configuration file \"garbageDir\\\\trash.yaml\" is not well-formed YAML: yaml: control characters are not allowed.\n" +
+					"The configuration file \"garbageDir\\\\defaults.yaml\" is not well-formed YAML: yaml: control characters are not allowed.\n" +
 					"What to do:\n" +
-					"Delete the file \"trash.yaml\" from \"garbageDir\" and restart the application.\n",
+					"Delete the file \"defaults.yaml\" from \"garbageDir\" and restart the application.\n",
 				Log: "" +
 					"level='error'" +
 					" directory='garbageDir'" +
 					" error='yaml: control characters are not allowed'" +
-					" fileName='trash.yaml'" +
+					" fileName='defaults.yaml'" +
 					" msg='cannot unmarshal yaml content'\n",
 			},
 		},
 		"config file contains usable data": {
 			preTest: func() {
-				cmdtoolkit.UnsafeSetApplicationPath("happyDir")
-				cmdtoolkit.UnsafeSetDefaultConfigFileName("good.yaml")
+				cmdtoolkit.SetApplicationPath("happyDir")
 				_ = cmdtoolkit.FileSystem().Mkdir(cmdtoolkit.ApplicationPath(), cmdtoolkit.StdDirPermissions)
 				content := "" +
 					"b: true\n" +
@@ -157,7 +134,7 @@ func TestReadConfigurationFile(t *testing.T) {
 					"s: hello\n" +
 					"command:\n" +
 					"  default: about\n"
-				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(cmdtoolkit.ApplicationPath(), cmdtoolkit.DefaultConfigFileName()), []byte(content), cmdtoolkit.StdFilePermissions)
+				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(cmdtoolkit.ApplicationPath(), cmdtoolkit.DefaultConfigFileName), []byte(content), cmdtoolkit.StdFilePermissions)
 			},
 			wantC: &cmdtoolkit.Configuration{
 				BoolMap: map[string]bool{"b": true},
@@ -174,7 +151,12 @@ func TestReadConfigurationFile(t *testing.T) {
 			},
 			wantOk: true,
 			WantedRecording: output.WantedRecording{
-				Log: "level='info' directory='happyDir' fileName='good.yaml' value='map[b:true], map[i:12], map[s:hello], map[command:map[default:about]]' msg='read configuration file'\n",
+				Log: "" +
+					"level='info'" +
+					" directory='happyDir'" +
+					" fileName='defaults.yaml'" +
+					" value='map[b:true], map[i:12], map[s:hello], map[command:map[default:about]]'" +
+					" msg='read configuration file'\n",
 			},
 		},
 	}

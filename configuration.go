@@ -15,8 +15,12 @@ import (
 )
 
 var (
-	defaultConfigFileName = "defaults.yaml"
-	fileSystem            = afero.NewOsFs()
+	fileSystem = afero.NewOsFs()
+)
+
+const (
+	// DefaultConfigFileName is the name of the file containing application defaults
+	DefaultConfigFileName = "defaults.yaml"
 )
 
 // FileSystem returns the current afero.Fs instance
@@ -46,18 +50,6 @@ type IntBounds struct {
 	MinValue     int
 	DefaultValue int
 	MaxValue     int
-}
-
-// DefaultConfigFileName retrieves the name of the configuration file that
-// contains defaults for the commands
-func DefaultConfigFileName() string {
-	return defaultConfigFileName
-}
-
-// UnsafeSetDefaultConfigFileName sets the defaultConfigFileName variable, which is intended
-// strictly for unit testing
-func UnsafeSetDefaultConfigFileName(newConfigFileName string) {
-	defaultConfigFileName = newConfigFileName
 }
 
 // EmptyConfiguration creates an empty Configuration instance
@@ -113,7 +105,7 @@ func NewIntBounds(v1, v2, v3 int) *IntBounds {
 func ReadConfigurationFile(o output.Bus) (*Configuration, bool) {
 	c := EmptyConfiguration()
 	path := ApplicationPath()
-	file := filepath.Join(path, defaultConfigFileName)
+	file := filepath.Join(path, DefaultConfigFileName)
 	exists, fileError := verifyDefaultConfigFileExists(o, file)
 	if fileError != nil {
 		return c, false
@@ -128,24 +120,24 @@ func ReadConfigurationFile(o output.Bus) (*Configuration, bool) {
 	if fileError != nil {
 		o.Log(output.Error, "cannot unmarshal yaml content", map[string]any{
 			"directory": path,
-			"fileName":  defaultConfigFileName,
+			"fileName":  DefaultConfigFileName,
 			"error":     fileError,
 		})
 		o.WriteCanonicalError("The configuration file %q is not well-formed YAML: %v", file, fileError)
-		o.WriteCanonicalError("What to do:\nDelete the file %q from %q and restart the application", defaultConfigFileName, path)
+		o.WriteCanonicalError("What to do:\nDelete the file %q from %q and restart the application", DefaultConfigFileName, path)
 		return c, false
 	}
 	c = newConfiguration(o, data)
 	o.Log(output.Info, "read configuration file", map[string]any{
 		"directory": path,
-		"fileName":  defaultConfigFileName,
+		"fileName":  DefaultConfigFileName,
 		"value":     c,
 	})
 	return c, true
 }
 
 func reportInvalidConfigurationData(o output.Bus, s string, e error) {
-	o.WriteCanonicalError("The configuration file %q contains an invalid value for %q: %v", defaultConfigFileName, s, e)
+	o.WriteCanonicalError("The configuration file %q contains an invalid value for %q: %v", DefaultConfigFileName, s, e)
 	o.Log(output.Error, "invalid content in configuration file", map[string]any{
 		"section": s,
 		"error":   e,

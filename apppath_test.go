@@ -11,14 +11,14 @@ import (
 
 func TestApplicationPath(t *testing.T) {
 	originalApplicationPath := cmdtoolkit.ApplicationPath()
-	defer cmdtoolkit.UnsafeSetApplicationPath(originalApplicationPath)
+	defer cmdtoolkit.SetApplicationPath(originalApplicationPath)
 	tests := map[string]struct {
 		applicationPath string
 		want            string
 	}{"dummy": {applicationPath: "foo/bar", want: "foo/bar"}}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			cmdtoolkit.UnsafeSetApplicationPath(tt.applicationPath)
+			cmdtoolkit.SetApplicationPath(tt.applicationPath)
 			if got := cmdtoolkit.ApplicationPath(); got != tt.want {
 				t.Errorf("ApplicationPath() = %v, want %v", got, tt.want)
 			}
@@ -31,7 +31,7 @@ func TestInitApplicationPath(t *testing.T) {
 	originalFileSystem := cmdtoolkit.FileSystem()
 	appDataMemento := cmdtoolkit.NewEnvVarMemento("APPDATA")
 	defer func() {
-		cmdtoolkit.UnsafeSetApplicationPath(originalApplicationPath)
+		cmdtoolkit.SetApplicationPath(originalApplicationPath)
 		appDataMemento.Restore()
 		cmdtoolkit.AssignFileSystem(originalFileSystem)
 	}()
@@ -125,7 +125,7 @@ func TestInitApplicationPath(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			cmdtoolkit.UnsafeSetApplicationPath("")
+			cmdtoolkit.SetApplicationPath("")
 			if tt.appDataSet {
 				_ = os.Setenv("APPDATA", tt.appDataValue)
 			} else {
@@ -143,7 +143,7 @@ func TestInitApplicationPath(t *testing.T) {
 
 func TestSetApplicationPath(t *testing.T) {
 	originalApplicationPath := cmdtoolkit.ApplicationPath()
-	defer cmdtoolkit.UnsafeSetApplicationPath(originalApplicationPath)
+	defer cmdtoolkit.SetApplicationPath(originalApplicationPath)
 	tests := map[string]struct {
 		applicationPath string
 		s               string
@@ -151,7 +151,7 @@ func TestSetApplicationPath(t *testing.T) {
 	}{"simple": {applicationPath: "foo", s: "bar", wantPrevious: "foo"}}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			cmdtoolkit.UnsafeSetApplicationPath(tt.applicationPath)
+			cmdtoolkit.SetApplicationPath(tt.applicationPath)
 			if gotPrevious := cmdtoolkit.SetApplicationPath(tt.s); gotPrevious != tt.wantPrevious {
 				t.Errorf("SetApplicationPath() = %v, want %v", gotPrevious, tt.wantPrevious)
 			}
