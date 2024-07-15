@@ -14,6 +14,40 @@ const (
 	defaultConfigFileName = "defaults.yaml"
 )
 
+var (
+	defaultConfigurationSettings = map[string]map[string]any{}
+)
+
+// AddDefaults copies data from a FlagSet into the map of default configuration settings
+func AddDefaults(sf *FlagSet) {
+	if sf != nil && len(sf.Details) > 0 {
+		payload := map[string]any{}
+		for flagName, details := range sf.Details {
+			bounded, ok := details.DefaultValue.(*IntBounds)
+			switch ok {
+			case true:
+
+				if bounded != nil {
+					payload[flagName] = bounded.DefaultValue
+				}
+			case false:
+				payload[flagName] = details.DefaultValue
+			}
+		}
+		defaultConfigurationSettings[sf.Name] = payload
+	}
+}
+
+// AsPayload returns the current state of the defaults configuration as a slice of bytes
+func AsPayload() []byte {
+	var payload []byte
+	if len(defaultConfigurationSettings) > 0 {
+		// ignore error return - we're not dealing in structs, but just maps
+		payload, _ = yaml.Marshal(defaultConfigurationSettings)
+	}
+	return payload
+}
+
 // DefaultConfigFileStatus returns the path of the defaults config file and whether that file exists
 func DefaultConfigFileStatus() (string, bool) {
 	path := filepath.Join(ApplicationPath(), defaultConfigFileName)

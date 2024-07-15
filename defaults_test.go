@@ -9,6 +9,51 @@ import (
 	"testing"
 )
 
+func TestAddDefaults(t *testing.T) {
+	var sneakyIntBounds *cmdtoolkit.IntBounds
+	tests := map[string]struct {
+		sf   *cmdtoolkit.FlagSet
+		want []byte
+	}{
+		"variety, including a nil default": {
+			sf: &cmdtoolkit.FlagSet{
+				Name: "set",
+				Details: map[string]*cmdtoolkit.FlagDetails{
+					"boolean": {
+						DefaultValue: true,
+					},
+					"int": {
+						DefaultValue: cmdtoolkit.NewIntBounds(1, 2, 3),
+					},
+					"string": {
+						DefaultValue: "foo",
+					},
+					"empty": {
+						DefaultValue: nil,
+					},
+					"sneaky": {
+						DefaultValue: sneakyIntBounds,
+					},
+				},
+			},
+			want: []byte("" +
+				"set:\n" +
+				"    boolean: true\n" +
+				"    empty: null\n" +
+				"    int: 2\n" +
+				"    string: foo\n"),
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			cmdtoolkit.AddDefaults(tt.sf)
+			if got := cmdtoolkit.AsPayload(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("AddDefaults() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestDefaultConfigFileStatus(t *testing.T) {
 	originalFileSystem := cmdtoolkit.FileSystem()
 	defer cmdtoolkit.AssignFileSystem(originalFileSystem)
@@ -155,6 +200,23 @@ func TestReadDefaultsConfigFile(t *testing.T) {
 					" directory='happyDir'" +
 					" fileName='defaults.yaml'" +
 					" value='map[b:true], map[i:12], map[s:hello], map[command:map[default:about]]'" +
+					" msg='read configuration file'\n",
+			},
+		},
+		"config file is empty": {
+			preTest: func() {
+				cmdtoolkit.SetApplicationPath("happyDir")
+				_ = cmdtoolkit.FileSystem().Mkdir(cmdtoolkit.ApplicationPath(), cmdtoolkit.StdDirPermissions)
+				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(cmdtoolkit.ApplicationPath(), "defaults.yaml"), []byte{}, cmdtoolkit.StdFilePermissions)
+			},
+			wantC:  cmdtoolkit.EmptyConfiguration(),
+			wantOk: true,
+			WantedRecording: output.WantedRecording{
+				Log: "" +
+					"level='info'" +
+					" directory='happyDir'" +
+					" fileName='defaults.yaml'" +
+					" value=''" +
 					" msg='read configuration file'\n",
 			},
 		},
