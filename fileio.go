@@ -20,6 +20,23 @@ const (
 	StdDirPermissions = 0o755 // -rwxr-xr-x
 )
 
+var (
+	fileSystem = afero.NewOsFs()
+)
+
+// FileSystem returns the current afero.Fs instance
+func FileSystem() afero.Fs {
+	return fileSystem
+}
+
+// AssignFileSystem sets the current afero.Fs instance and returns the original
+// pre-assignment value
+func AssignFileSystem(newFileSystem afero.Fs) afero.Fs {
+	originalFs := fileSystem
+	fileSystem = newFileSystem
+	return originalFs
+}
+
 // CopyFile copies a file. Adapted from
 // https://github.com/cleversoap/go-cp/blob/master/cp.go
 func CopyFile(src, destination string) error {

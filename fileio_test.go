@@ -4,6 +4,7 @@ import (
 	"errors"
 	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/majohn-r/output"
@@ -293,6 +294,24 @@ func TestReportFileCreationFailure(t *testing.T) {
 			o := output.NewRecorder()
 			cmdtoolkit.ReportFileCreationFailure(o, tt.args.cmd, tt.args.file, tt.args.e)
 			o.Report(t, "ReportFileCreationFailure()", tt.WantedRecording)
+		})
+	}
+}
+
+func TestAssignFileSystem(t *testing.T) {
+	originalFileSystem := cmdtoolkit.FileSystem()
+	defer cmdtoolkit.AssignFileSystem(originalFileSystem)
+	tests := map[string]struct {
+		fs   afero.Fs
+		want afero.Fs
+	}{
+		"simple": {fs: afero.NewMemMapFs(), want: cmdtoolkit.FileSystem()},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := cmdtoolkit.AssignFileSystem(tt.fs); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("AssignFileSystem() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

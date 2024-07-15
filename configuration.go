@@ -1,39 +1,12 @@
 package cmd_toolkit
 
 import (
-	"errors"
 	"fmt"
-	"io/fs"
-	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/majohn-r/output"
-	"github.com/spf13/afero"
-	"gopkg.in/yaml.v3"
 )
-
-var (
-	fileSystem = afero.NewOsFs()
-)
-
-const (
-	defaultConfigFileName = "defaults.yaml"
-)
-
-// FileSystem returns the current afero.Fs instance
-func FileSystem() afero.Fs {
-	return fileSystem
-}
-
-// AssignFileSystem sets the current afero.Fs instance and returns the original
-// pre-assignment value
-func AssignFileSystem(newFileSystem afero.Fs) afero.Fs {
-	originalFs := fileSystem
-	fileSystem = newFileSystem
-	return originalFs
-}
 
 // Configuration defines the data structure for configuration information.
 type Configuration struct {
@@ -41,14 +14,6 @@ type Configuration struct {
 	BoolMap          map[string]bool
 	IntMap           map[string]int
 	ConfigurationMap map[string]*Configuration
-}
-
-// IntBounds holds the bounds for an int value which has a minimum value, a
-// maximum value, and a default that lies within those bounds
-type IntBounds struct {
-	MinValue     int
-	DefaultValue int
-	MaxValue     int
 }
 
 // EmptyConfiguration creates an empty Configuration instance
@@ -84,96 +49,6 @@ func newConfiguration(o output.Bus, data map[string]any) *Configuration {
 		}
 	}
 	return c
-}
-
-// NewIntBounds creates an instance of IntBounds, sorting the provided value into
-// reasonable fields
-func NewIntBounds(v1, v2, v3 int) *IntBounds {
-	v := []int{v1, v2, v3}
-	sort.Ints(v)
-	return &IntBounds{
-		MinValue:     v[0],
-		DefaultValue: v[1],
-		MaxValue:     v[2],
-	}
-}
-
-// ReadConfigurationFile reads defaults.yaml from the specified path and returns
-// a pointer to a cooked Configuration instance; if there is no such file, then
-// an empty Configuration is returned and ok is true
-func ReadConfigurationFile(o output.Bus) (*Configuration, bool) {
-	c := EmptyConfiguration()
-	path := ApplicationPath()
-	file := filepath.Join(path, defaultConfigFileName)
-	exists, fileError := verifyDefaultConfigFileExists(o, file)
-	if fileError != nil {
-		return c, false
-	}
-	if !exists {
-		return c, true
-	}
-	// only probable error circumvented by verifyFileExists failure
-	rawYaml, _ := afero.ReadFile(fileSystem, file)
-	data := map[string]any{}
-	fileError = yaml.Unmarshal(rawYaml, &data)
-	if fileError != nil {
-		o.Log(output.Error, "cannot unmarshal yaml content", map[string]any{
-			"directory": path,
-			"fileName":  defaultConfigFileName,
-			"error":     fileError,
-		})
-		o.WriteCanonicalError("The configuration file %q is not well-formed YAML: %v", file, fileError)
-		o.WriteCanonicalError("What to do:\nDelete the file %q from %q and restart the application", defaultConfigFileName, path)
-		return c, false
-	}
-	c = newConfiguration(o, data)
-	o.Log(output.Info, "read configuration file", map[string]any{
-		"directory": path,
-		"fileName":  defaultConfigFileName,
-		"value":     c,
-	})
-	return c, true
-}
-
-func reportInvalidConfigurationData(o output.Bus, s string, e error) {
-	o.WriteCanonicalError("The configuration file %q contains an invalid value for %q: %v", defaultConfigFileName, s, e)
-	o.Log(output.Error, "invalid content in configuration file", map[string]any{
-		"section": s,
-		"error":   e,
-	})
-}
-
-// DefaultConfigFileStatus returns the path of the defaults config file and whether that file exists
-func DefaultConfigFileStatus() (string, bool) {
-	path := filepath.Join(ApplicationPath(), defaultConfigFileName)
-	exists := PlainFileExists(path)
-	return path, exists
-}
-
-func verifyDefaultConfigFileExists(o output.Bus, path string) (exists bool, err error) {
-	var f fs.FileInfo
-	f, err = fileSystem.Stat(path)
-	switch {
-	case err == nil:
-		if f.IsDir() {
-			o.Log(output.Error, "file is a directory", map[string]any{
-				"directory": filepath.Dir(path),
-				"fileName":  filepath.Base(path),
-			})
-			o.WriteCanonicalError("The configuration file %q is a directory", path)
-			o.WriteCanonicalError("What to do:\nDelete the directory %q from %q and restart the application", filepath.Base(path), filepath.Dir(path))
-			err = fmt.Errorf("file exists but is a directory")
-		} else {
-			exists = true
-		}
-	case errors.Is(err, afero.ErrFileNotFound):
-		o.Log(output.Info, "file does not exist", map[string]any{
-			"directory": filepath.Dir(path),
-			"fileName":  filepath.Base(path),
-		})
-		err = nil
-	}
-	return
 }
 
 func (c *Configuration) String() string {
@@ -283,16 +158,4 @@ func (c *Configuration) SubConfiguration(key string) *Configuration {
 		return configuration
 	}
 	return EmptyConfiguration()
-}
-
-func (b *IntBounds) constrainedValue(value int) (i int) {
-	switch {
-	case value < b.MinValue:
-		i = b.MinValue
-	case value > b.MaxValue:
-		i = b.MaxValue
-	default:
-		i = value
-	}
-	return
 }
