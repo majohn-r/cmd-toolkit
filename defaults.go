@@ -38,8 +38,8 @@ func AddDefaults(sf *FlagSet) {
 	}
 }
 
-// AsPayload returns the current state of the defaults configuration as a slice of bytes
-func AsPayload() []byte {
+// WritableDefaults returns the current state of the defaults configuration as a slice of bytes
+func WritableDefaults() []byte {
 	var payload []byte
 	if len(defaultConfigurationSettings) > 0 {
 		// ignore error return - we're not dealing in structs, but just maps

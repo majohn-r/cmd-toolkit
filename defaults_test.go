@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestAddDefaults(t *testing.T) {
+func TestWritableDefaults(t *testing.T) {
 	var sneakyIntBounds *cmdtoolkit.IntBounds
 	tests := map[string]struct {
 		sf   *cmdtoolkit.FlagSet
@@ -47,7 +47,7 @@ func TestAddDefaults(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			cmdtoolkit.AddDefaults(tt.sf)
-			if got := cmdtoolkit.AsPayload(); !reflect.DeepEqual(got, tt.want) {
+			if got := cmdtoolkit.WritableDefaults(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("AddDefaults() = %v, want %v", got, tt.want)
 			}
 		})
