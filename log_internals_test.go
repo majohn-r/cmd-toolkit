@@ -930,6 +930,8 @@ func Test_toString(t *testing.T) {
 }
 
 func Test_simpleLogger_doLog(t *testing.T) {
+	timestamp := time.Unix(0, 0)
+	expectedTime := `time="` + timestamp.Format(time.RFC3339) + `"`
 	type args struct {
 		msg    string
 		fields map[string]any
@@ -943,8 +945,7 @@ func Test_simpleLogger_doLog(t *testing.T) {
 				msg:    "",
 				fields: nil,
 			},
-			want: "" +
-				"time=\"1969-12-31T19:00:00-05:00\"" +
+			want: expectedTime +
 				" level=info" +
 				" msg=\"\"\n",
 		},
@@ -953,8 +954,7 @@ func Test_simpleLogger_doLog(t *testing.T) {
 				msg:    "hello",
 				fields: map[string]any{"field1": 45},
 			},
-			want: "" +
-				"time=\"1969-12-31T19:00:00-05:00\"" +
+			want: expectedTime +
 				" level=info" +
 				" msg=hello" +
 				" field1=45\n",
@@ -968,8 +968,7 @@ func Test_simpleLogger_doLog(t *testing.T) {
 					"field3": []string{"hello", "fence post"},
 				},
 			},
-			want: "" +
-				"time=\"1969-12-31T19:00:00-05:00\"" +
+			want: expectedTime +
 				" level=info" +
 				" msg=\"hello fencepost\"" +
 				" field1=45" +
@@ -984,7 +983,7 @@ func Test_simpleLogger_doLog(t *testing.T) {
 				writer: buffer,
 				lock:   &sync.RWMutex{},
 			}
-			sl.doLog(output.Info, time.Unix(0, 0), tt.args.msg, tt.args.fields)
+			sl.doLog(output.Info, timestamp, tt.args.msg, tt.args.fields)
 			if got := buffer.String(); got != tt.want {
 				t.Errorf("simpleLogger.doLog() = %q, want %q", got, tt.want)
 			}
