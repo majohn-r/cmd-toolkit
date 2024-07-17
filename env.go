@@ -82,9 +82,11 @@ func findReferences(s string) []string {
 		for _, name := range s {
 			found[name] = true
 		}
-		keys := make([]string, 0, len(found))
+		keys := make([]string, len(found))
+		index := 0
 		for key := range found {
-			keys = append(keys, key)
+			keys[index] = key
+			index++
 		}
 		return keys
 	}

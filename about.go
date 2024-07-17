@@ -21,9 +21,9 @@ func InterpretBuildData(buildInfoReader func() (*debug.BuildInfo, bool)) (goVers
 		return
 	}
 	goVersion = buildInfo.GoVersion
-	dependencies = make([]string, 0, len(buildInfo.Deps))
-	for _, d := range buildInfo.Deps {
-		dependencies = append(dependencies, fmt.Sprintf("%s %s", d.Path, d.Version))
+	dependencies = make([]string, len(buildInfo.Deps))
+	for k, d := range buildInfo.Deps {
+		dependencies[k] = fmt.Sprintf("%s %s", d.Path, d.Version)
 	}
 	return
 }
@@ -45,10 +45,8 @@ func finalYear(o output.Bus, timestamp string, initialYear int) int {
 // see https://github.com/majohn-r/cmd-toolkit/issues/17
 func FormatBuildDependencies(dependencies []string) []string {
 	formatted := make([]string, len(dependencies))
-	index := 0
-	for _, dep := range dependencies {
+	for index, dep := range dependencies {
 		formatted[index] = fmt.Sprintf(" - Dependency: %s", dep)
-		index++
 	}
 	return formatted
 }
@@ -167,10 +165,8 @@ func StyledFlowerBox(lines []string, style FlowerBoxStyle) []string {
 	// size: 2 for horizontal lines + 1 for empty string at the end + 1 per line
 	formattedLines := make([]string, 3+len(lines))
 	formattedLines[0] = string(headerRunes)
-	index := 1
-	for _, s := range lines {
-		formattedLines[index] = fmt.Sprintf("%c %s%*s %c", bc.verticalLine(), s, maxRunesPerLine-len([]rune(s)), "", bc.verticalLine())
-		index++
+	for index, s := range lines {
+		formattedLines[index+1] = fmt.Sprintf("%c %s%*s %c", bc.verticalLine(), s, maxRunesPerLine-len([]rune(s)), "", bc.verticalLine())
 	}
 	footerRunes := make([]rune, maxRunesPerLine+4)
 	footerRunes[0] = bc.lowerLeftCorner()
@@ -178,8 +174,8 @@ func StyledFlowerBox(lines []string, style FlowerBoxStyle) []string {
 		footerRunes[i] = bc.horizontalLine()
 	}
 	footerRunes[maxRunesPerLine+3] = bc.lowerRightCorner()
-	formattedLines[index] = string(footerRunes)
-	formattedLines[index+1] = ""
+	formattedLines[len(lines)+1] = string(footerRunes)
+	formattedLines[len(lines)+2] = ""
 	return formattedLines
 }
 

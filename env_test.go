@@ -35,9 +35,11 @@ func TestDereferenceEnvVar(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			mementos := make([]*cmdtoolkit.EnvVarMemento, 0)
+			mementos := make([]*cmdtoolkit.EnvVarMemento, len(tt.varSettings))
+			index := 0
 			for varName, varValue := range tt.varSettings {
-				mementos = append(mementos, cmdtoolkit.NewEnvVarMemento(varName))
+				mementos[index] = cmdtoolkit.NewEnvVarMemento(varName)
+				index++
 				if varValue == "" {
 					_ = os.Unsetenv(varName)
 				} else {

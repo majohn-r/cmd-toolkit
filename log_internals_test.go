@@ -7,7 +7,9 @@ import (
 	"io"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 )
 
 func Test_simpleLogger_Debug(t *testing.T) {
@@ -81,6 +83,9 @@ func Test_simpleLogger_Debug(t *testing.T) {
 			if got := buffer.String(); got != tt.want {
 				if got != "" {
 					if tt.want == "" || !strings.HasSuffix(got, tt.want) {
+						t.Errorf("simpleLogger.Debug() got %q want %q", got, tt.want)
+					}
+					if strings.HasPrefix(got, " ") {
 						t.Errorf("simpleLogger.Debug() got %q want %q", got, tt.want)
 					}
 				} else {
@@ -162,6 +167,9 @@ func Test_simpleLogger_Error(t *testing.T) {
 			if got := buffer.String(); got != tt.want {
 				if got != "" {
 					if tt.want == "" || !strings.HasSuffix(got, tt.want) {
+						t.Errorf("simpleLogger.Error() got %q want %q", got, tt.want)
+					}
+					if strings.HasPrefix(got, " ") {
 						t.Errorf("simpleLogger.Error() got %q want %q", got, tt.want)
 					}
 				} else {
@@ -260,6 +268,9 @@ func Test_simpleLogger_Fatal(t *testing.T) {
 					if tt.want == "" || !strings.HasSuffix(got, tt.want) {
 						t.Errorf("simpleLogger.Fatal() got %q want %q", got, tt.want)
 					}
+					if strings.HasPrefix(got, " ") {
+						t.Errorf("simpleLogger.Fatal() got %q want %q", got, tt.want)
+					}
 				} else {
 					t.Errorf("simpleLogger.Fatal() got %q want %q", got, tt.want)
 				}
@@ -339,6 +350,9 @@ func Test_simpleLogger_Info(t *testing.T) {
 			if got := buffer.String(); got != tt.want {
 				if got != "" {
 					if tt.want == "" || !strings.HasSuffix(got, tt.want) {
+						t.Errorf("simpleLogger.Info() got %q want %q", got, tt.want)
+					}
+					if strings.HasPrefix(got, " ") {
 						t.Errorf("simpleLogger.Info() got %q want %q", got, tt.want)
 					}
 				} else {
@@ -427,6 +441,9 @@ func Test_simpleLogger_Panic(t *testing.T) {
 					if tt.want == "" || !strings.HasSuffix(got, tt.want) {
 						t.Errorf("simpleLogger.Panic() got %q want %q", got, tt.want)
 					}
+					if strings.HasPrefix(got, " ") {
+						t.Errorf("simpleLogger.Panic() got %q want %q", got, tt.want)
+					}
 				} else {
 					t.Errorf("simpleLogger.Panic() got %q want %q", got, tt.want)
 				}
@@ -508,6 +525,9 @@ func Test_simpleLogger_Trace(t *testing.T) {
 					if tt.want == "" || !strings.HasSuffix(got, tt.want) {
 						t.Errorf("simpleLogger.Trace() got %q want %q", got, tt.want)
 					}
+					if strings.HasPrefix(got, " ") {
+						t.Errorf("simpleLogger.Trace() got %q want %q", got, tt.want)
+					}
 				} else {
 					t.Errorf("simpleLogger.Trace() got %q want %q", got, tt.want)
 				}
@@ -587,6 +607,9 @@ func Test_simpleLogger_Warning(t *testing.T) {
 			if got := buffer.String(); got != tt.want {
 				if got != "" {
 					if tt.want == "" || !strings.HasSuffix(got, tt.want) {
+						t.Errorf("simpleLogger.Warn() got %q want %q", got, tt.want)
+					}
+					if strings.HasPrefix(got, " ") {
 						t.Errorf("simpleLogger.Warn() got %q want %q", got, tt.want)
 					}
 				} else {
@@ -901,6 +924,69 @@ func Test_toString(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			if got := toString(tt.v); got != tt.want {
 				t.Errorf("toString() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_simpleLogger_doLog(t *testing.T) {
+	type args struct {
+		msg    string
+		fields map[string]any
+	}
+	tests := map[string]struct {
+		args
+		want string
+	}{
+		"empty message, no fields": {
+			args: args{
+				msg:    "",
+				fields: nil,
+			},
+			want: "" +
+				"time=\"1969-12-31T19:00:00-05:00\"" +
+				" level=info" +
+				" msg=\"\"\n",
+		},
+		"simple message, one field": {
+			args: args{
+				msg:    "hello",
+				fields: map[string]any{"field1": 45},
+			},
+			want: "" +
+				"time=\"1969-12-31T19:00:00-05:00\"" +
+				" level=info" +
+				" msg=hello" +
+				" field1=45\n",
+		},
+		"interesting message, multiple fields": {
+			args: args{
+				msg: "hello fencepost",
+				fields: map[string]any{
+					"field1": 45,
+					"field2": true,
+					"field3": []string{"hello", "fence post"},
+				},
+			},
+			want: "" +
+				"time=\"1969-12-31T19:00:00-05:00\"" +
+				" level=info" +
+				" msg=\"hello fencepost\"" +
+				" field1=45" +
+				" field2=true" +
+				" field3=\"[hello fence post]\"\n",
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			buffer := &bytes.Buffer{}
+			sl := &simpleLogger{
+				writer: buffer,
+				lock:   &sync.RWMutex{},
+			}
+			sl.doLog(output.Info, time.Unix(0, 0), tt.args.msg, tt.args.fields)
+			if got := buffer.String(); got != tt.want {
+				t.Errorf("simpleLogger.doLog() = %q, want %q", got, tt.want)
 			}
 		})
 	}

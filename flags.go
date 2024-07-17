@@ -168,11 +168,7 @@ func AddFlags(o output.Bus, c *Configuration, flags *pflag.FlagSet, sets ...*Fla
 	for _, set := range sets {
 		config := c.SubConfiguration(set.Name)
 		// sort names for deterministic test output
-		sortedNames := make([]string, 0, len(set.Details))
-		for name := range set.Details {
-			sortedNames = append(sortedNames, name)
-		}
-		slices.Sort(sortedNames)
+		sortedNames := sortedDetailNames(set.Details)
 		for _, name := range sortedNames {
 			details := set.Details[name]
 			switch details {
@@ -273,16 +269,23 @@ func ProcessFlagErrors(o output.Bus, eSlice []error) bool {
 	return true
 }
 
+func sortedDetailNames(details map[string]*FlagDetails) []string {
+	sortedNames := make([]string, len(details))
+	index := 0
+	for name := range details {
+		sortedNames[index] = name
+		index++
+	}
+	slices.Sort(sortedNames)
+	return sortedNames
+}
+
 // ReadFlags reads the flags from a producer (typically a cobra commands flag structure)
 func ReadFlags(producer FlagProducer, set *FlagSet) (map[string]*CommandFlag[any], []error) {
 	m := map[string]*CommandFlag[any]{}
 	var e []error
 	// sort names for deterministic output in unit tests
-	sortedNames := make([]string, 0, len(set.Details))
-	for name := range set.Details {
-		sortedNames = append(sortedNames, name)
-	}
-	slices.Sort(sortedNames)
+	sortedNames := sortedDetailNames(set.Details)
 	for _, name := range sortedNames {
 		details := set.Details[name]
 		if details == nil {

@@ -92,14 +92,19 @@ var levelsToString = map[output.Level]string{
 }
 
 func (sl *simpleLogger) log(l output.Level, msg string, fields map[string]any) {
-	if !sl.WillLog(l) {
-		return
+	if sl.WillLog(l) {
+		sl.doLog(l, time.Now(), msg, fields)
 	}
+}
+
+func (sl *simpleLogger) doLog(l output.Level, timestamp time.Time, msg string, fields map[string]any) {
 	var fieldMap = map[string]string{}
-	fieldKeys := make([]string, 0, len(fields))
+	fieldKeys := make([]string, len(fields))
 	if len(fields) > 0 {
+		index := 0
 		for k, v := range fields {
-			fieldKeys = append(fieldKeys, k)
+			fieldKeys[index] = k
+			index++
 			fieldMap[k] = toString(v)
 		}
 		sort.Strings(fieldKeys)
@@ -108,14 +113,13 @@ func (sl *simpleLogger) log(l output.Level, msg string, fields map[string]any) {
 	msgValue := toString(msg)
 	sl.lock.Lock()
 	defer sl.lock.Unlock()
-	tValue := time.Now().Format(time.RFC3339)
+	tValue := timestamp.Format(time.RFC3339)
 	loggedFields := make([]string, 3+len(fieldKeys))
-	loggedFields = append(loggedFields,
-		fmt.Sprintf("time=%q", tValue),
-		fmt.Sprintf("level=%s", levelValue),
-		fmt.Sprintf("msg=%s", msgValue))
-	for _, k := range fieldKeys {
-		loggedFields = append(loggedFields, fmt.Sprintf("%s=%s", k, fieldMap[k]))
+	loggedFields[0] = fmt.Sprintf("time=%q", tValue)
+	loggedFields[1] = fmt.Sprintf("level=%s", levelValue)
+	loggedFields[2] = fmt.Sprintf("msg=%s", msgValue)
+	for index, k := range fieldKeys {
+		loggedFields[index+3] = fmt.Sprintf("%s=%s", k, fieldMap[k])
 	}
 	fmt.Fprintln(sl.writer, strings.Join(loggedFields, " "))
 }
