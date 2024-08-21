@@ -1,11 +1,13 @@
 module github.com/majohn-r/cmd-toolkit/build
 
-go 1.22
+go 1.23
+
+toolchain go1.23.0
 
 require (
 	github.com/goyek/goyek/v2 v2.2.0
 	github.com/goyek/x v0.2.0
-	github.com/majohn-r/tools-build v0.12.1
+	github.com/majohn-r/tools-build v0.13.0
 )
 
 require (
