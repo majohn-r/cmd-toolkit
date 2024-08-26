@@ -16,8 +16,14 @@ func Test_logUnreadableDirectory(t *testing.T) {
 		output.WantedRecording
 	}{
 		"basic": {
-			args:            args{s: "directory name", e: errors.New("directory is missing")},
-			WantedRecording: output.WantedRecording{Log: "level='error' directory='directory name' error='directory is missing' msg='cannot read directory'\n"},
+			args: args{s: "directory name", e: errors.New("directory is missing")},
+			WantedRecording: output.WantedRecording{
+				Log: "" +
+					"level='error' " +
+					"directory='directory name' " +
+					"error='directory is missing' " +
+					"msg='cannot read directory'\n",
+			},
 		},
 	}
 	for name, tt := range tests {
@@ -39,8 +45,10 @@ func Test_writeDirectoryCreationError(t *testing.T) {
 		output.WantedRecording
 	}{
 		"basic": {
-			args:            args{d: "dirName", e: errors.New("parent directory does not exist")},
-			WantedRecording: output.WantedRecording{Error: "The directory \"dirName\" cannot be created: parent directory does not exist.\n"},
+			args: args{d: "dirName", e: errors.New("parent directory does not exist")},
+			WantedRecording: output.WantedRecording{
+				Error: "The directory \"dirName\" cannot be created: parent directory does not exist.\n",
+			},
 		},
 	}
 	for name, tt := range tests {

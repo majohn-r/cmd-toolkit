@@ -5,7 +5,7 @@ go 1.23
 toolchain go1.23.0
 
 require (
-	github.com/majohn-r/output v0.5.4
+	github.com/majohn-r/output v0.8.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/spf13/afero v1.11.0
 	github.com/spf13/pflag v1.0.5

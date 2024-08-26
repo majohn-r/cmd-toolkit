@@ -121,9 +121,7 @@ func (fD *FlagDetails) addFlag(o output.Bus, c configSource, consumer *pflag.Fla
 			consumer.IntP(flag.name, fD.AbbreviatedName, newDefault, usage)
 		}
 	default:
-		o.WriteCanonicalError(
-			"An internal error occurred: unspecified flag type; set %q, flag %q",
-			flag.set, flag.name)
+		o.ErrorPrintf("An internal error occurred: unspecified flag type; set %q, flag %q.\n", flag.set, flag.name)
 		o.Log(output.Error, "internal error", map[string]any{
 			"set":            flag.set,
 			"flag":           flag.name,
@@ -173,8 +171,7 @@ func AddFlags(o output.Bus, c *Configuration, flags *pflag.FlagSet, sets ...*Fla
 			details := set.Details[name]
 			switch details {
 			case nil:
-				o.WriteCanonicalError(
-					"an internal error occurred: there are no details for flag %q", name)
+				o.ErrorPrintf("An internal error occurred: there are no details for flag %q.\n", name)
 				o.Log(output.Error, "internal error", map[string]any{
 					"set":   set.Name,
 					"flag":  name,
@@ -261,7 +258,7 @@ func GetString(o output.Bus, results map[string]*CommandFlag[any], flagName stri
 func ProcessFlagErrors(o output.Bus, eSlice []error) bool {
 	if len(eSlice) != 0 {
 		for _, e := range eSlice {
-			o.WriteCanonicalError("an internal error occurred: %v", e)
+			o.ErrorPrintf("An internal error occurred: %v.\n", e)
 			o.Log(output.Error, "internal error", map[string]any{"error": e})
 		}
 		return false
@@ -337,10 +334,14 @@ func decorateStringFlagUsage(usage, defaultValue string) string {
 	return fmt.Sprintf("%s (default \"\")", usage)
 }
 
-func extractFlagValue(o output.Bus, results map[string]*CommandFlag[any], flagName string) (fv *CommandFlag[any], e error) {
+func extractFlagValue(
+	o output.Bus,
+	results map[string]*CommandFlag[any],
+	flagName string,
+) (fv *CommandFlag[any], e error) {
 	if results == nil {
 		e = fmt.Errorf("nil results")
-		o.WriteCanonicalError("an internal error occurred: no flag values exist")
+		o.ErrorPrintln("An internal error occurred: no flag values exist.")
 		o.Log(output.Error, "internal error", map[string]any{
 			"error": "no results to extract flag values from",
 		})
@@ -349,7 +350,7 @@ func extractFlagValue(o output.Bus, results map[string]*CommandFlag[any], flagNa
 	value, found := results[flagName]
 	if !found {
 		e = fmt.Errorf("flag not found")
-		o.WriteCanonicalError("an internal error occurred: flag %q is not found", flagName)
+		o.ErrorPrintf("An internal error occurred: flag %q is not found.\n", flagName)
 		o.Log(output.Error, "internal error", map[string]any{
 			"flag":  flagName,
 			"error": e,
@@ -361,8 +362,13 @@ func extractFlagValue(o output.Bus, results map[string]*CommandFlag[any], flagNa
 }
 
 func reportDefaultTypeError(o output.Bus, flag, expected string, value any) {
-	o.WriteCanonicalError(
-		"an internal error occurred: the type of flag %q's value, '%v', is '%T', but '%s' was expected", flag, value, value, expected)
+	o.ErrorPrintf(
+		"An internal error occurred: the type of flag %q's value, '%v', is '%T', but '%s' was expected.\n",
+		flag,
+		value,
+		value,
+		expected,
+	)
 	o.Log(output.Error, "internal error", map[string]any{
 		"flag":     flag,
 		"value":    value,
@@ -374,8 +380,7 @@ func reportDefaultTypeError(o output.Bus, flag, expected string, value any) {
 
 func reportIncorrectlyTypedValue(o output.Bus, expected, flagName string, fv *CommandFlag[any]) error {
 	e := fmt.Errorf("flag value is not %s", expected)
-	o.WriteCanonicalError("an internal error occurred: flag %q is not %s (%v)",
-		flagName, expected, fv.Value)
+	o.ErrorPrintf("An internal error occurred: flag %q is not %s (%v).\n", flagName, expected, fv.Value)
 	o.Log(output.Error, "internal error", map[string]any{
 		"flag":  flagName,
 		"value": fv.Value,
@@ -385,7 +390,7 @@ func reportIncorrectlyTypedValue(o output.Bus, expected, flagName string, fv *Co
 
 func reportMissingFlagData(o output.Bus, flagName string) error {
 	e := fmt.Errorf("no data associated with flag")
-	o.WriteCanonicalError("an internal error occurred: flag %q has no data", flagName)
+	o.ErrorPrintf("An internal error occurred: flag %q has no data.\n", flagName)
 	o.Log(output.Error, "internal error", map[string]any{
 		"flag":  flagName,
 		"error": e})

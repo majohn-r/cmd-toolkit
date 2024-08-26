@@ -31,7 +31,7 @@ func InterpretBuildData(buildInfoReader func() (*debug.BuildInfo, bool)) (goVers
 func finalYear(o output.Bus, timestamp string, initialYear int) int {
 	t, parseErr := time.Parse(time.RFC3339, timestamp)
 	if parseErr != nil {
-		o.WriteCanonicalError("The build time %q cannot be parsed: %v", timestamp, parseErr)
+		o.ErrorPrintf("The build time %q cannot be parsed: %v.\n", timestamp, parseErr)
 		o.Log(output.Error, "parse error", map[string]any{
 			"error": parseErr,
 			"value": timestamp,
@@ -166,7 +166,14 @@ func StyledFlowerBox(lines []string, style FlowerBoxStyle) []string {
 	formattedLines := make([]string, 3+len(lines))
 	formattedLines[0] = string(headerRunes)
 	for index, s := range lines {
-		formattedLines[index+1] = fmt.Sprintf("%c %s%*s %c", bc.verticalLine(), s, maxRunesPerLine-len([]rune(s)), "", bc.verticalLine())
+		formattedLines[index+1] = fmt.Sprintf(
+			"%c %s%*s %c",
+			bc.verticalLine(),
+			s,
+			maxRunesPerLine-len([]rune(s)),
+			"",
+			bc.verticalLine(),
+		)
 	}
 	footerRunes := make([]rune, maxRunesPerLine+4)
 	footerRunes[0] = bc.lowerLeftCorner()
@@ -188,13 +195,15 @@ func translateTimestamp(s string) string {
 	return t.Format("Monday, January 2 2006, 15:04:05 -0700")
 }
 
-// DecoratedAppName returns the app name with its version and build timestamp; see https://github.com/majohn-r/cmd-toolkit/issues/17
+// DecoratedAppName returns the app name with its version and build timestamp; see
+// https://github.com/majohn-r/cmd-toolkit/issues/17
 func DecoratedAppName(applicationName, applicationVersion, timestamp string) string {
 	return fmt.Sprintf("%s version %s, built on %s", applicationName, applicationVersion,
 		translateTimestamp(timestamp))
 }
 
-// Copyright returns an appropriately formatted copyright statement; see https://github.com/majohn-r/cmd-toolkit/issues/17
+// Copyright returns an appropriately formatted copyright statement; see
+// https://github.com/majohn-r/cmd-toolkit/issues/17
 func Copyright(o output.Bus, first int, timestamp, owner string) string {
 	return formatCopyright(first, finalYear(o, timestamp, first), owner)
 }

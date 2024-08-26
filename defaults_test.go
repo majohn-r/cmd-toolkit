@@ -120,7 +120,10 @@ func TestReadDefaultsConfigFile(t *testing.T) {
 		"config file is a directory": {
 			preTest: func() {
 				cmdtoolkit.SetApplicationPath("configFileDir")
-				_ = cmdtoolkit.FileSystem().MkdirAll(filepath.Join(cmdtoolkit.ApplicationPath(), "defaults.yaml"), cmdtoolkit.StdDirPermissions)
+				_ = cmdtoolkit.FileSystem().MkdirAll(filepath.Join(
+					cmdtoolkit.ApplicationPath(),
+					"defaults.yaml",
+				), cmdtoolkit.StdDirPermissions)
 			},
 			wantC: cmdtoolkit.EmptyConfiguration(),
 			WantedRecording: output.WantedRecording{
@@ -145,19 +148,29 @@ func TestReadDefaultsConfigFile(t *testing.T) {
 				IntMap:           map[string]int{},
 				StringMap:        map[string]string{},
 			},
-			wantOk:          true,
-			WantedRecording: output.WantedRecording{Log: "level='info' directory='non-existent directory' fileName='defaults.yaml' msg='file does not exist'\n"},
+			wantOk: true,
+			WantedRecording: output.WantedRecording{
+				Log: "" +
+					"level='info' " +
+					"directory='non-existent directory' " +
+					"fileName='defaults.yaml' " +
+					"msg='file does not exist'\n",
+			},
 		},
 		"config file contains bad data": {
 			preTest: func() {
 				cmdtoolkit.SetApplicationPath("garbageDir")
 				_ = cmdtoolkit.FileSystem().Mkdir(cmdtoolkit.ApplicationPath(), cmdtoolkit.StdDirPermissions)
-				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(cmdtoolkit.ApplicationPath(), "defaults.yaml"), []byte{1, 2, 3}, cmdtoolkit.StdFilePermissions)
+				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(
+					cmdtoolkit.ApplicationPath(),
+					"defaults.yaml",
+				), []byte{1, 2, 3}, cmdtoolkit.StdFilePermissions)
 			},
 			wantC: cmdtoolkit.EmptyConfiguration(),
 			WantedRecording: output.WantedRecording{
 				Error: "" +
-					"The configuration file \"garbageDir\\\\defaults.yaml\" is not well-formed YAML: yaml: control characters are not allowed.\n" +
+					"The configuration file \"garbageDir\\\\defaults.yaml\" is not well-formed YAML: " +
+					"yaml: control characters are not allowed.\n" +
 					"What to do:\n" +
 					"Delete the file \"defaults.yaml\" from \"garbageDir\" and restart the application.\n",
 				Log: "" +
@@ -178,7 +191,10 @@ func TestReadDefaultsConfigFile(t *testing.T) {
 					"s: hello\n" +
 					"command:\n" +
 					"  default: about\n"
-				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(cmdtoolkit.ApplicationPath(), "defaults.yaml"), []byte(content), cmdtoolkit.StdFilePermissions)
+				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(
+					cmdtoolkit.ApplicationPath(),
+					"defaults.yaml",
+				), []byte(content), cmdtoolkit.StdFilePermissions)
 			},
 			wantC: &cmdtoolkit.Configuration{
 				BoolMap: map[string]bool{"b": true},
@@ -207,7 +223,10 @@ func TestReadDefaultsConfigFile(t *testing.T) {
 			preTest: func() {
 				cmdtoolkit.SetApplicationPath("happyDir")
 				_ = cmdtoolkit.FileSystem().Mkdir(cmdtoolkit.ApplicationPath(), cmdtoolkit.StdDirPermissions)
-				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(cmdtoolkit.ApplicationPath(), "defaults.yaml"), []byte{}, cmdtoolkit.StdFilePermissions)
+				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(
+					cmdtoolkit.ApplicationPath(),
+					"defaults.yaml",
+				), []byte{}, cmdtoolkit.StdFilePermissions)
 			},
 			wantC:  cmdtoolkit.EmptyConfiguration(),
 			wantOk: true,

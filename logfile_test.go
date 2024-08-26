@@ -40,7 +40,9 @@ func Test_initWriter(t *testing.T) {
 			wantNil:         true,
 			wantLogPath:     "",
 			WantedRecording: output.WantedRecording{
-				Error: "Log initialization is not possible due to a coding error; the application name \"\" is not valid.\n",
+				Error: "" +
+					"Log initialization is not possible due to a coding error; " +
+					"the application name \"\" is not valid.\n",
 			},
 		},
 		"no temp folder defined": {
@@ -54,10 +56,12 @@ func Test_initWriter(t *testing.T) {
 			wantLogPath:     "",
 			WantedRecording: output.WantedRecording{
 				Error: "" +
-					"Log initialization is not possible because neither the TMP nor TEMP environment variables are defined.\n" +
+					"Log initialization is not possible because " +
+					"neither the TMP nor TEMP environment variables are defined.\n" +
 					"What to do:\n" +
 					"Define at least one of TMP and TEMP, setting the value to a directory path, e.g., '/tmp'.\n" +
-					"Either it should contain a subdirectory named \"myApp\", which in turn contains a subdirectory named \"logs\".\n" +
+					"Either it should contain a subdirectory named \"myApp\", " +
+					"which in turn contains a subdirectory named \"logs\".\n" +
 					"Or, if they do not exist, it must be possible to create those subdirectories.\n",
 			},
 		},
@@ -73,10 +77,12 @@ func Test_initWriter(t *testing.T) {
 			wantLogPath:     "",
 			WantedRecording: output.WantedRecording{
 				Error: "" +
-					"The TMP environment variable value \"logs2\" is not a directory, nor can it be created as a directory.\n" +
+					"The TMP environment variable value \"logs2\" is not a directory, " +
+					"nor can it be created as a directory.\n" +
 					"What to do:\n" +
 					"The values of TMP and TEMP should be a directory path, e.g., '/tmp'.\n" +
-					"Either it should contain a subdirectory named \"myApp\", which in turn contains a subdirectory named \"logs\".\n" +
+					"Either it should contain a subdirectory named \"myApp\", " +
+					"which in turn contains a subdirectory named \"logs\".\n" +
 					"Or, if they do not exist, it must be possible to create those subdirectories.\n",
 			},
 		},
@@ -148,7 +154,8 @@ func Test_initWriter(t *testing.T) {
 			wantNil:         false,
 			wantLogPath:     "tmp\\myApp\\logs",
 			WantedRecording: output.WantedRecording{
-				Error: "The TMP environment variable value \"temp\" is not a directory, nor can it be created as a directory.\n",
+				Error: "The TMP environment variable value \"temp\" is not a directory, " +
+					"nor can it be created as a directory.\n",
 			},
 		},
 		"neither TEMP nor TMP ok": {
@@ -163,11 +170,14 @@ func Test_initWriter(t *testing.T) {
 			wantLogPath:     "",
 			WantedRecording: output.WantedRecording{
 				Error: "" +
-					"The TMP environment variable value \"temp\" is not a directory, nor can it be created as a directory.\n" +
-					"The TEMP environment variable value \"temp\" is not a directory, nor can it be created as a directory.\n" +
+					"The TMP environment variable value \"temp\" is not a directory, " +
+					"nor can it be created as a directory.\n" +
+					"The TEMP environment variable value \"temp\" is not a directory, " +
+					"nor can it be created as a directory.\n" +
 					"What to do:\n" +
 					"The values of TMP and TEMP should be a directory path, e.g., '/tmp'.\n" +
-					"Either it should contain a subdirectory named \"myApp\", which in turn contains a subdirectory named \"logs\".\n" +
+					"Either it should contain a subdirectory named \"myApp\", " +
+					"which in turn contains a subdirectory named \"logs\".\n" +
 					"Or, if they do not exist, it must be possible to create those subdirectories.\n",
 			},
 		},
@@ -177,7 +187,12 @@ func Test_initWriter(t *testing.T) {
 				_ = os.Setenv("TMP", ".\\tmp")
 				_ = os.Setenv("TEMP", "temp")
 				_ = fileSystem.MkdirAll(filepath.Join("tmp", "myApp"), StdDirPermissions)
-				_ = afero.WriteFile(fileSystem, filepath.Join("tmp", "myApp", "logs"), []byte("tmp"), StdFilePermissions)
+				_ = afero.WriteFile(
+					fileSystem,
+					filepath.Join("tmp", "myApp", "logs"),
+					[]byte("tmp"),
+					StdFilePermissions,
+				)
 				_ = fileSystem.Mkdir("temp", StdDirPermissions)
 			},
 			postTest: func() {
@@ -199,7 +214,8 @@ func Test_initWriter(t *testing.T) {
 			wantNil:         false,
 			wantLogPath:     "temp\\myApp\\logs",
 			WantedRecording: output.WantedRecording{
-				Error: "The TMP environment variable value \".\\\\tmp\" cannot be used to create a directory for log files.\n",
+				Error: "The TMP environment variable value \".\\\\tmp\" " +
+					"cannot be used to create a directory for log files.\n",
 			},
 		},
 		"success": {
@@ -265,8 +281,10 @@ func Test_cleanup(t *testing.T) {
 			postTest: func(t *testing.T) {},
 			path:     "no such directory",
 			WantedRecording: output.WantedRecording{
-				Error: "The directory \"no such directory\" cannot be read: open no such directory: file does not exist.\n",
-				Log:   "level='error' directory='no such directory' error='open no such directory: file does not exist' msg='cannot read directory'\n",
+				Error: "The directory \"no such directory\" cannot be read: open no such directory: " +
+					"file does not exist.\n",
+				Log: "level='error' directory='no such directory' error='open no such directory: " +
+					"file does not exist' msg='cannot read directory'\n",
 			},
 		},
 		"empty directory": {
@@ -282,7 +300,12 @@ func Test_cleanup(t *testing.T) {
 				prefix := logFilePrefix("")
 				for k := 0; k < maxLogFiles; k++ {
 					fileName := fmt.Sprintf("%s%d%s", prefix, k, logFileExtension)
-					_ = afero.WriteFile(fileSystem, filepath.Join("maxLogFiles", fileName), []byte{0, 1, 2}, StdFilePermissions)
+					_ = afero.WriteFile(
+						fileSystem,
+						filepath.Join("maxLogFiles", fileName),
+						[]byte{0, 1, 2},
+						StdFilePermissions,
+					)
 				}
 			},
 			postTest:  func(_ *testing.T) {},
@@ -295,7 +318,12 @@ func Test_cleanup(t *testing.T) {
 				prefix := logFilePrefix("")
 				for k := 0; k < maxLogFiles+1; k++ {
 					fileName := fmt.Sprintf("%s%d%s", prefix, k, logFileExtension)
-					_ = afero.WriteFile(fileSystem, filepath.Join("manyLogFiles", fileName), []byte{0, 1, 2}, StdFilePermissions)
+					_ = afero.WriteFile(
+						fileSystem,
+						filepath.Join("manyLogFiles", fileName),
+						[]byte{0, 1, 2},
+						StdFilePermissions,
+					)
 					time.Sleep(100 * time.Millisecond)
 				}
 			},

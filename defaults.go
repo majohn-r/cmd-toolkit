@@ -79,8 +79,9 @@ func ReadDefaultsConfigFile(o output.Bus) (*Configuration, bool) {
 			"fileName":  defaultConfigFileName,
 			"error":     fileError,
 		})
-		o.WriteCanonicalError("The configuration file %q is not well-formed YAML: %v", file, fileError)
-		o.WriteCanonicalError("What to do:\nDelete the file %q from %q and restart the application", defaultConfigFileName, path)
+		o.ErrorPrintf("The configuration file %q is not well-formed YAML: %v.\n", file, fileError)
+		o.ErrorPrintln("What to do:")
+		o.ErrorPrintf("Delete the file %q from %q and restart the application.\n", defaultConfigFileName, path)
 		return c, false
 	}
 	c = newConfiguration(o, data)
@@ -93,7 +94,7 @@ func ReadDefaultsConfigFile(o output.Bus) (*Configuration, bool) {
 }
 
 func reportInvalidConfigurationData(o output.Bus, s string, e error) {
-	o.WriteCanonicalError("The configuration file %q contains an invalid value for %q: %v", defaultConfigFileName, s, e)
+	o.ErrorPrintf("The configuration file %q contains an invalid value for %q: %v.\n", defaultConfigFileName, s, e)
 	o.Log(output.Error, "invalid content in configuration file", map[string]any{
 		"section": s,
 		"error":   e,
@@ -110,8 +111,13 @@ func verifyDefaultConfigFileExists(o output.Bus, path string) (exists bool, err 
 				"directory": filepath.Dir(path),
 				"fileName":  filepath.Base(path),
 			})
-			o.WriteCanonicalError("The configuration file %q is a directory", path)
-			o.WriteCanonicalError("What to do:\nDelete the directory %q from %q and restart the application", filepath.Base(path), filepath.Dir(path))
+			o.ErrorPrintf("The configuration file %q is a directory.\n", path)
+			o.ErrorPrintln("What to do:")
+			o.ErrorPrintf(
+				"Delete the directory %q from %q and restart the application.\n",
+				filepath.Base(path),
+				filepath.Dir(path),
+			)
 			err = fmt.Errorf("file exists but is a directory")
 		} else {
 			exists = true

@@ -24,10 +24,13 @@ func TestCopyright(t *testing.T) {
 			args: args{first: 2020, timestamp: "today", owner: "no one"},
 			want: "Copyright © 2020 no one",
 			WantedRecording: output.WantedRecording{
-				Error: "The build time \"today\" cannot be parsed: parsing time \"today\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"today\" as \"2006\".\n",
+				Error: "" +
+					"The build time \"today\" cannot be parsed: " +
+					"parsing time \"today\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"today\" as \"2006\".\n",
 				Log: "" +
 					"level='error'" +
-					" error='parsing time \"today\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"today\" as \"2006\"'" +
+					" error='parsing time \"today\" as \"2006-01-02T15:04:05Z07:00\": " +
+					"cannot parse \"today\" as \"2006\"'" +
 					" value='today'" +
 					" msg='parse error'\n",
 			},
@@ -88,7 +91,11 @@ func TestDecoratedAppName(t *testing.T) {
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			if got := cmdtoolkit.DecoratedAppName(tt.args.applicationName, tt.args.applicationVersion, tt.args.timestamp); got != tt.want {
+			if got := cmdtoolkit.DecoratedAppName(
+				tt.args.applicationName,
+				tt.args.applicationVersion,
+				tt.args.timestamp,
+			); got != tt.want {
 				t.Errorf("DecoratedAppName() = %q, want %q", got, tt.want)
 			}
 		})

@@ -60,7 +60,8 @@ type elevationControl struct {
 	stdoutRedirected bool
 }
 
-// NewElevationControl creates a new instance of elevationControl that does not use an environment variable to determine whether execution with elevated privileges is desired
+// NewElevationControl creates a new instance of elevationControl that does not use an environment variable to
+// determine whether execution with elevated privileges is desired
 func NewElevationControl() ElevationControl {
 	return &elevationControl{
 		adminPermitted:   true,

@@ -28,16 +28,25 @@ var (
 func initWriter(o output.Bus, applicationName string) (w io.Writer, path string) {
 	// pre-check!
 	if !isLegalApplicationName(applicationName) {
-		o.WriteCanonicalError("Log initialization is not possible due to a coding error; the application name %q is not valid", applicationName)
+		o.ErrorPrintf(
+			"Log initialization is not possible due to a coding error; the application name %q is not valid.\n",
+			applicationName,
+		)
 		return
 	}
 	// get the temporary folder values
 	tmpFolderMap := findTemp()
 	if len(tmpFolderMap) == 0 {
-		o.WriteCanonicalError("Log initialization is not possible because neither the TMP nor TEMP environment variables are defined")
-		o.WriteCanonicalError("What to do:\nDefine at least one of TMP and TEMP, setting the value to a directory path, e.g., '/tmp'")
-		o.WriteCanonicalError("Either it should contain a subdirectory named %q, which in turn contains a subdirectory named %q", applicationName, logDirName)
-		o.WriteCanonicalError("Or, if they do not exist, it must be possible to create those subdirectories")
+		o.ErrorPrintln(
+			"Log initialization is not possible because neither the TMP nor TEMP environment variables are defined.")
+		o.ErrorPrintln("What to do:")
+		o.ErrorPrintln("Define at least one of TMP and TEMP, setting the value to a directory path, e.g., '/tmp'.")
+		o.ErrorPrintf(
+			"Either it should contain a subdirectory named %q, which in turn contains a subdirectory named %q.\n",
+			applicationName,
+			logDirName,
+		)
+		o.ErrorPrintln("Or, if they do not exist, it must be possible to create those subdirectories.")
 		return
 	}
 	path = findLogFilePath(o, tmpFolderMap, applicationName)
@@ -56,7 +65,11 @@ func findLogFilePath(o output.Bus, tmpFolderMap map[string]string, applicationNa
 	for _, variableName := range tmpEnvironmentVariableNames {
 		if tmpFolder, found := tmpFolderMap[variableName]; found {
 			if err := Mkdir(tmpFolder); err != nil {
-				o.WriteCanonicalError("The %s environment variable value %q is not a directory, nor can it be created as a directory", variableName, tmpFolder)
+				o.ErrorPrintf(
+					"The %s environment variable value %q is not a directory, nor can it be created as a directory.\n",
+					variableName,
+					tmpFolder,
+				)
 			} else {
 				// this is safe because we know the application name has been validated
 				tmp, _ := createAppSpecificPath(tmpFolder, applicationName)
@@ -65,13 +78,22 @@ func findLogFilePath(o output.Bus, tmpFolderMap map[string]string, applicationNa
 				if DirExists(path) {
 					return path
 				}
-				o.WriteCanonicalError("The %s environment variable value %q cannot be used to create a directory for log files", variableName, tmpFolder)
+				o.ErrorPrintf(
+					"The %s environment variable value %q cannot be used to create a directory for log files.\n",
+					variableName,
+					tmpFolder,
+				)
 			}
 		}
 	}
-	o.WriteCanonicalError("What to do:\nThe values of TMP and TEMP should be a directory path, e.g., '/tmp'")
-	o.WriteCanonicalError("Either it should contain a subdirectory named %q, which in turn contains a subdirectory named %q", applicationName, logDirName)
-	o.WriteCanonicalError("Or, if they do not exist, it must be possible to create those subdirectories")
+	o.ErrorPrintln("What to do:")
+	o.ErrorPrintln("The values of TMP and TEMP should be a directory path, e.g., '/tmp'.")
+	o.ErrorPrintf(
+		"Either it should contain a subdirectory named %q, which in turn contains a subdirectory named %q.\n",
+		applicationName,
+		logDirName,
+	)
+	o.ErrorPrintln("Or, if they do not exist, it must be possible to create those subdirectories.")
 	return ""
 }
 
@@ -108,7 +130,7 @@ func cleanup(o output.Bus, logPath, applicationName string) (found, deleted int)
 
 func deleteLogFile(o output.Bus, logFile string) bool {
 	if fileErr := fileSystem.Remove(logFile); fileErr != nil {
-		o.WriteCanonicalError("The log file %q cannot be deleted: %v", logFile, fileErr)
+		o.ErrorPrintf("The log file %q cannot be deleted: %v.\n", logFile, fileErr)
 		return false
 	}
 	return true
@@ -127,7 +149,13 @@ func findTemp() map[string]string {
 func isLogFile(file fs.FileInfo, applicationName string) (ok bool) {
 	if file.Mode().IsRegular() {
 		fileName := file.Name()
-		ok = strings.HasPrefix(fileName, logFilePrefix(applicationName)) && strings.HasSuffix(fileName, logFileExtension)
+		ok = strings.HasPrefix(
+			fileName,
+			logFilePrefix(applicationName),
+		) && strings.HasSuffix(
+			fileName,
+			logFileExtension,
+		)
 	}
 	return
 }

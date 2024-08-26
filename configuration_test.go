@@ -49,7 +49,13 @@ func TestConfiguration_String(t *testing.T) {
 				IntMap:    map[string]int{"k": 3, "l": 4},
 				StringMap: map[string]string{"m": "ghi", "n": "jkl"},
 			},
-			want: "map[a:false b:true], map[k:3 l:4], map[m:ghi n:jkl], map[c:map[e:false f:true], map[g:1 h:2], map[i:abc j:def]]",
+			want: "" +
+				"map[a:false b:true], " +
+				"map[k:3 l:4], " +
+				"map[m:ghi n:jkl], " +
+				"map[c:map[e:false f:true], " +
+				"map[g:1 h:2], " +
+				"map[i:abc j:def]]",
 		},
 	}
 	for name, tt := range tests {
@@ -104,57 +110,101 @@ func TestConfiguration_BoolDefault(t *testing.T) {
 			wantErr: true,
 		},
 		"string 't' found": {
-			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "t"}},
+			c: &cmdtoolkit.Configuration{
+				BoolMap:   map[string]bool{},
+				IntMap:    map[string]int{},
+				StringMap: map[string]string{"b": "t"},
+			},
 			args:  args{key: "b", defaultValue: false},
 			wantB: true,
 		},
 		"string 'T' found": {
-			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "T"}},
+			c: &cmdtoolkit.Configuration{
+				BoolMap:   map[string]bool{},
+				IntMap:    map[string]int{},
+				StringMap: map[string]string{"b": "T"},
+			},
 			args:  args{key: "b", defaultValue: false},
 			wantB: true,
 		},
 		"string 'true' found": {
-			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "true"}},
+			c: &cmdtoolkit.Configuration{
+				BoolMap:   map[string]bool{},
+				IntMap:    map[string]int{},
+				StringMap: map[string]string{"b": "true"},
+			},
 			args:  args{key: "b", defaultValue: false},
 			wantB: true,
 		},
 		"string 'TRUE' found": {
-			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "TRUE"}},
+			c: &cmdtoolkit.Configuration{
+				BoolMap:   map[string]bool{},
+				IntMap:    map[string]int{},
+				StringMap: map[string]string{"b": "TRUE"},
+			},
 			args:  args{key: "b", defaultValue: false},
 			wantB: true,
 		},
 		"string 'True' found": {
-			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "True"}},
+			c: &cmdtoolkit.Configuration{
+				BoolMap:   map[string]bool{},
+				IntMap:    map[string]int{},
+				StringMap: map[string]string{"b": "True"},
+			},
 			args:  args{key: "b", defaultValue: false},
 			wantB: true,
 		},
 		"string 'f' found": {
-			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "f"}},
+			c: &cmdtoolkit.Configuration{
+				BoolMap:   map[string]bool{},
+				IntMap:    map[string]int{},
+				StringMap: map[string]string{"b": "f"},
+			},
 			args:  args{key: "b", defaultValue: true},
 			wantB: false,
 		},
 		"string 'F' found": {
-			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "F"}},
+			c: &cmdtoolkit.Configuration{
+				BoolMap:   map[string]bool{},
+				IntMap:    map[string]int{},
+				StringMap: map[string]string{"b": "F"},
+			},
 			args:  args{key: "b", defaultValue: true},
 			wantB: false,
 		},
 		"string 'false' found": {
-			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "false"}},
+			c: &cmdtoolkit.Configuration{
+				BoolMap:   map[string]bool{},
+				IntMap:    map[string]int{},
+				StringMap: map[string]string{"b": "false"},
+			},
 			args:  args{key: "b", defaultValue: true},
 			wantB: false,
 		},
 		"string 'FALSE' found": {
-			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "FALSE"}},
+			c: &cmdtoolkit.Configuration{
+				BoolMap:   map[string]bool{},
+				IntMap:    map[string]int{},
+				StringMap: map[string]string{"b": "FALSE"},
+			},
 			args:  args{key: "b", defaultValue: true},
 			wantB: false,
 		},
 		"string 'False' found": {
-			c:     &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "False"}},
+			c: &cmdtoolkit.Configuration{
+				BoolMap:   map[string]bool{},
+				IntMap:    map[string]int{},
+				StringMap: map[string]string{"b": "False"},
+			},
 			args:  args{key: "b", defaultValue: true},
 			wantB: false,
 		},
 		"bad string found": {
-			c:       &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "nope"}},
+			c: &cmdtoolkit.Configuration{
+				BoolMap:   map[string]bool{},
+				IntMap:    map[string]int{},
+				StringMap: map[string]string{"b": "nope"},
+			},
 			args:    args{key: "b", defaultValue: true},
 			wantB:   true,
 			wantErr: true,
@@ -162,12 +212,20 @@ func TestConfiguration_BoolDefault(t *testing.T) {
 		"use dereferenced value": {
 			envValue: "false",
 			envSet:   true,
-			c:        &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "$" + envVar}},
-			args:     args{key: "b", defaultValue: true},
-			wantB:    false,
+			c: &cmdtoolkit.Configuration{
+				BoolMap:   map[string]bool{},
+				IntMap:    map[string]int{},
+				StringMap: map[string]string{"b": "$" + envVar},
+			},
+			args:  args{key: "b", defaultValue: true},
+			wantB: false,
 		},
 		"use bad dereferenced value": {
-			c:       &cmdtoolkit.Configuration{BoolMap: map[string]bool{}, IntMap: map[string]int{}, StringMap: map[string]string{"b": "$" + envVar}},
+			c: &cmdtoolkit.Configuration{
+				BoolMap:   map[string]bool{},
+				IntMap:    map[string]int{},
+				StringMap: map[string]string{"b": "$" + envVar},
+			},
 			args:    args{key: "b", defaultValue: true},
 			wantB:   true,
 			wantErr: true,

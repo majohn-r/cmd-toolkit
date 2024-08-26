@@ -120,8 +120,16 @@ func Test_byLength_Swap(t *testing.T) {
 		args
 		wantBl byLength
 	}{
-		"same":      {bl: byLength([]string{"$VAR1", "$VAR1"}), args: args{i: 0, j: 1}, wantBl: byLength([]string{"$VAR1", "$VAR1"})},
-		"different": {bl: byLength([]string{"$VAR1", "$VAR11"}), args: args{i: 0, j: 1}, wantBl: byLength([]string{"$VAR11", "$VAR1"})},
+		"same": {
+			bl:     byLength([]string{"$VAR1", "$VAR1"}),
+			args:   args{i: 0, j: 1},
+			wantBl: byLength([]string{"$VAR1", "$VAR1"}),
+		},
+		"different": {
+			bl:     byLength([]string{"$VAR1", "$VAR11"}),
+			args:   args{i: 0, j: 1},
+			wantBl: byLength([]string{"$VAR11", "$VAR1"}),
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
@@ -144,10 +152,27 @@ func Test_envVarMemento_restore(t *testing.T) {
 		wantValue string
 		wantSet   bool
 	}{
-		"set":             {mem: &EnvVarMemento{name: varName, value: "the value", set: true}, wantValue: "the value", wantSet: true},
-		"unset":           {preValue: "the value", preSet: true, mem: &EnvVarMemento{name: varName}},
-		"overwrite":       {preValue: "old value", preSet: true, mem: &EnvVarMemento{name: varName, value: "the value", set: true}, wantValue: "the value", wantSet: true},
-		"redundant clear": {mem: &EnvVarMemento{name: varName}},
+		"set": {
+			mem:       &EnvVarMemento{name: varName, value: "the value", set: true},
+			wantValue: "the value",
+			wantSet:   true,
+		},
+		"unset": {
+			preValue: "the value",
+			preSet:   true,
+			mem:      &EnvVarMemento{name: varName},
+		},
+		"overwrite": {
+			preValue:  "old value",
+			preSet:    true,
+			mem:       &EnvVarMemento{name: varName, value: "the value", set: true},
+			wantValue: "the value",
+			wantSet:   true,
+		},
+		"redundant clear": {
+			preValue: "",
+			mem:      &EnvVarMemento{name: varName},
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {

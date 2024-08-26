@@ -51,9 +51,11 @@ func TestInitApplicationPath(t *testing.T) {
 			preTest:         func() {},
 			WantedRecording: output.WantedRecording{
 				Error: "" +
-					"Files used by beautifulApp cannot be read or written because the environment variable APPDATA has not been set.\n" +
+					"Files used by beautifulApp cannot be read or written because the environment variable APPDATA " +
+					"has not been set.\n" +
 					"What to do:\n" +
-					"Define APPDATA, giving it a value that is a directory path, typically %HOMEPATH%\\AppData\\Roaming.\n",
+					"Define APPDATA, giving it a value that is a directory path, " +
+					"typically %HOMEPATH%\\AppData\\Roaming.\n",
 				Log: "level='error' environmentVariable='APPDATA' msg='not set'\n",
 			},
 		},
@@ -77,7 +79,8 @@ func TestInitApplicationPath(t *testing.T) {
 			},
 			WantedRecording: output.WantedRecording{
 				Error: "" +
-					"The APPDATA environment variable value \"foo.bar\" is not a directory, nor can it be created as a directory.\n" +
+					"The APPDATA environment variable value \"foo.bar\" is not a directory, " +
+					"nor can it be created as a directory.\n" +
 					"What to do:\n" +
 					"The value of APPDATA should be a directory path, typically %HOMEPATH%\\AppData\\Roaming.\n" +
 					"Either it should contain a subdirectory named \"myApp\".\n" +
@@ -133,8 +136,8 @@ func TestInitApplicationPath(t *testing.T) {
 			}
 			tt.preTest()
 			o := output.NewRecorder()
-			if gotInitialized := cmdtoolkit.InitApplicationPath(o, tt.applicationName); gotInitialized != tt.wantInitialized {
-				t.Errorf("InitApplicationPath() = %v, want %v", gotInitialized, tt.wantInitialized)
+			if got := cmdtoolkit.InitApplicationPath(o, tt.applicationName); got != tt.wantInitialized {
+				t.Errorf("InitApplicationPath() = %v, want %v", got, tt.wantInitialized)
 			}
 			o.Report(t, "InitApplicationPath()", tt.WantedRecording)
 		})

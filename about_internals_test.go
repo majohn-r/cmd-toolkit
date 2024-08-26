@@ -18,8 +18,15 @@ func Test_finalYear(t *testing.T) {
 			timestamp: "today",
 			want:      1900,
 			WantedRecording: output.WantedRecording{
-				Error: "The build time \"today\" cannot be parsed: parsing time \"today\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"today\" as \"2006\".\n",
-				Log:   "level='error' error='parsing time \"today\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"today\" as \"2006\"' value='today' msg='parse error'\n",
+				Error: "" +
+					"The build time \"today\" cannot be parsed: " +
+					"parsing time \"today\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"today\" as \"2006\".\n",
+				Log: "" +
+					"level='error' " +
+					"error='parsing time \"today\" as \"2006-01-02T15:04:05Z07:00\": " +
+					"cannot parse \"today\" as \"2006\"' " +
+					"value='today' " +
+					"msg='parse error'\n",
 			},
 		},
 		"good timestamp": {
@@ -49,9 +56,18 @@ func Test_formatCopyright(t *testing.T) {
 		args
 		want string
 	}{
-		"bad last year": {args: args{author: "me", firstYear: 2022, lastYear: 2020}, want: "Copyright © 2022 me"},
-		"same year":     {args: args{author: "myself", firstYear: 2022, lastYear: 2022}, want: "Copyright © 2022 myself"},
-		"later year":    {args: args{author: "I", firstYear: 2022, lastYear: 2023}, want: "Copyright © 2022-2023 I"},
+		"bad last year": {
+			args: args{author: "me", firstYear: 2022, lastYear: 2020},
+			want: "Copyright © 2022 me",
+		},
+		"same year": {
+			args: args{author: "myself", firstYear: 2022, lastYear: 2022},
+			want: "Copyright © 2022 myself",
+		},
+		"later year": {
+			args: args{author: "I", firstYear: 2022, lastYear: 2023},
+			want: "Copyright © 2022-2023 I",
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {

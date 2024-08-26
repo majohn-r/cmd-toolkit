@@ -81,7 +81,10 @@ func TestFlagDetails_addFlag(t *testing.T) {
 				flag:     flagParam{set: "mySet", name: "myFlag"},
 			},
 			WantedRecording: output.WantedRecording{
-				Error: "An internal error occurred: the type of flag \"myFlag\"'s value, '12', is 'int', but 'bool' was expected.\n",
+				Error: "" +
+					"An internal error occurred: " +
+					"the type of flag \"myFlag\"'s value, '12', is 'int', " +
+					"but 'bool' was expected.\n",
 				Log: "" +
 					"level='error'" +
 					" actual='int'" +
@@ -105,7 +108,9 @@ func TestFlagDetails_addFlag(t *testing.T) {
 				flag:     flagParam{set: "mySet", name: "myFlag"},
 			},
 			WantedRecording: output.WantedRecording{
-				Error: "The configuration file \"defaults.yaml\" contains an invalid value for \"mySet\": boolean error.\n",
+				Error: "" +
+					"The configuration file \"defaults.yaml\" contains an invalid value for \"mySet\": " +
+					"boolean error.\n",
 				Log: "" +
 					"level='error'" +
 					" error='boolean error'" +
@@ -154,7 +159,10 @@ func TestFlagDetails_addFlag(t *testing.T) {
 				flag:     flagParam{set: "mySet", name: "myFlag"},
 			},
 			WantedRecording: output.WantedRecording{
-				Error: "An internal error occurred: the type of flag \"myFlag\"'s value, 'false', is 'bool', but '*cmd_toolkit.IntBounds' was expected.\n",
+				Error: "" +
+					"An internal error occurred: " +
+					"the type of flag \"myFlag\"'s value, 'false', is 'bool', " +
+					"but '*cmd_toolkit.IntBounds' was expected.\n",
 				Log: "" +
 					"level='error'" +
 					" actual='bool'" +
@@ -227,7 +235,10 @@ func TestFlagDetails_addFlag(t *testing.T) {
 				flag:     flagParam{set: "mySet", name: "myFlag"},
 			},
 			WantedRecording: output.WantedRecording{
-				Error: "An internal error occurred: the type of flag \"myFlag\"'s value, '12', is 'int', but 'string' was expected.\n",
+				Error: "" +
+					"An internal error occurred: " +
+					"the type of flag \"myFlag\"'s value, '12', is 'int', " +
+					"but 'string' was expected.\n",
 				Log: "" +
 					"level='error'" +
 					" actual='int'" +
@@ -251,7 +262,9 @@ func TestFlagDetails_addFlag(t *testing.T) {
 				flag:     flagParam{set: "mySet", name: "myFlag"},
 			},
 			WantedRecording: output.WantedRecording{
-				Error: "The configuration file \"defaults.yaml\" contains an invalid value for \"mySet\": string error.\n",
+				Error: "" +
+					"The configuration file \"defaults.yaml\" contains an invalid value for \"mySet\": " +
+					"string error.\n",
 				Log: "" +
 					"level='error'" +
 					" error='string error'" +

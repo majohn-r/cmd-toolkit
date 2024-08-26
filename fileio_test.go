@@ -21,9 +21,18 @@ func TestCopyFile(t *testing.T) {
 	_ = cmdtoolkit.FileSystem().Mkdir("destinationDir1", cmdtoolkit.StdDirPermissions)
 	_ = cmdtoolkit.FileSystem().MkdirAll(filepath.Join("destinationDir2", "file1"), cmdtoolkit.StdDirPermissions)
 	_ = cmdtoolkit.FileSystem().Mkdir("destinationDir3", cmdtoolkit.StdDirPermissions)
-	_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join("sourceDir2", "file1"), []byte{1, 2, 3}, cmdtoolkit.StdFilePermissions)
-	_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join("sourceDir3", "file1"), []byte{1, 2, 3}, cmdtoolkit.StdFilePermissions)
-	_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join("sourceDir4", "file1"), []byte{1, 2, 3}, cmdtoolkit.StdFilePermissions)
+	_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(
+		"sourceDir2",
+		"file1",
+	), []byte{1, 2, 3}, cmdtoolkit.StdFilePermissions)
+	_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(
+		"sourceDir3",
+		"file1",
+	), []byte{1, 2, 3}, cmdtoolkit.StdFilePermissions)
+	_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(
+		"sourceDir4",
+		"file1",
+	), []byte{1, 2, 3}, cmdtoolkit.StdFilePermissions)
 	defer func() {
 		_ = cmdtoolkit.FileSystem().RemoveAll("sourceDir1")
 		_ = cmdtoolkit.FileSystem().RemoveAll("sourceDir2")
@@ -110,8 +119,10 @@ func TestLogFileDeletionFailure(t *testing.T) {
 		output.WantedRecording
 	}{
 		"basic": {
-			args:            args{s: "filename", e: errors.New("file is locked")},
-			WantedRecording: output.WantedRecording{Log: "level='error' error='file is locked' fileName='filename' msg='cannot delete file'\n"},
+			args: args{s: "filename", e: errors.New("file is locked")},
+			WantedRecording: output.WantedRecording{
+				Log: "level='error' error='file is locked' fileName='filename' msg='cannot delete file'\n",
+			},
 		},
 	}
 	for name, tt := range tests {
@@ -140,7 +151,10 @@ func TestMkdir(t *testing.T) {
 		"dir is a plain file": {
 			preTest: func() {
 				_ = cmdtoolkit.FileSystem().Mkdir("plainFile", cmdtoolkit.StdDirPermissions)
-				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join("plainFile", "subDir"), []byte{0, 1, 2}, cmdtoolkit.StdFilePermissions)
+				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join(
+					"plainFile",
+					"subDir",
+				), []byte{0, 1, 2}, cmdtoolkit.StdFilePermissions)
 			},
 			dir:     filepath.Join("plainFile", "subDir"),
 			wantErr: true,
@@ -194,7 +208,12 @@ func TestPlainFileExists(t *testing.T) {
 		"real file": {
 			preTest: func() {
 				_ = cmdtoolkit.FileSystem().Mkdir("dir", cmdtoolkit.StdDirPermissions)
-				_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join("dir", "file"), []byte{0, 1, 2}, cmdtoolkit.StdFilePermissions)
+				_ = afero.WriteFile(
+					cmdtoolkit.FileSystem(),
+					filepath.Join("dir", "file"),
+					[]byte{0, 1, 2},
+					cmdtoolkit.StdFilePermissions,
+				)
 			},
 			path: filepath.Join("dir", "file"),
 			want: true,
@@ -227,7 +246,11 @@ func TestReadDirectory(t *testing.T) {
 			wantOk:  false,
 			WantedRecording: output.WantedRecording{
 				Error: "The directory \"no such dir\" cannot be read: open no such dir: file does not exist.\n",
-				Log:   "level='error' directory='no such dir' error='open no such dir: file does not exist' msg='cannot read directory'\n",
+				Log: "" +
+					"level='error' " +
+					"directory='no such dir' " +
+					"error='open no such dir: file does not exist' " +
+					"msg='cannot read directory'\n",
 			},
 		},
 		"empty directory": {
@@ -243,11 +266,19 @@ func TestReadDirectory(t *testing.T) {
 				_ = cmdtoolkit.FileSystem().Mkdir("full", cmdtoolkit.StdDirPermissions)
 				// make a few files
 				for _, filename := range []string{"file1", "file2", "file3"} {
-					_ = afero.WriteFile(cmdtoolkit.FileSystem(), filepath.Join("full", filename), []byte{}, cmdtoolkit.StdFilePermissions)
+					_ = afero.WriteFile(
+						cmdtoolkit.FileSystem(),
+						filepath.Join("full", filename),
+						[]byte{},
+						cmdtoolkit.StdFilePermissions,
+					)
 				}
 				// and a few directories
 				for _, subDirectory := range []string{"sub1", "sub2", "sub3"} {
-					_ = cmdtoolkit.FileSystem().Mkdir(filepath.Join("full", subDirectory), cmdtoolkit.StdDirPermissions)
+					_ = cmdtoolkit.FileSystem().Mkdir(filepath.Join(
+						"full",
+						subDirectory,
+					), cmdtoolkit.StdDirPermissions)
 				}
 			},
 			dir:             "full",
@@ -285,7 +316,12 @@ func TestReportFileCreationFailure(t *testing.T) {
 			args: args{cmd: "myCommand", file: "myPoorFile", e: errors.New("no disk space")},
 			WantedRecording: output.WantedRecording{
 				Error: "The file \"myPoorFile\" cannot be created: no disk space.\n",
-				Log:   "level='error' command='myCommand' error='no disk space' fileName='myPoorFile' msg='cannot create file'\n",
+				Log: "" +
+					"level='error' " +
+					"command='myCommand' " +
+					"error='no disk space' " +
+					"fileName='myPoorFile' " +
+					"msg='cannot create file'\n",
 			},
 		},
 	}

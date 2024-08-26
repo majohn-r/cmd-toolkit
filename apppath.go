@@ -32,8 +32,16 @@ func InitApplicationPath(o output.Bus, applicationName string) bool {
 		o.Log(output.Error, "not set", map[string]any{
 			"environmentVariable": applicationDataEnvVarName,
 		})
-		o.WriteCanonicalError("Files used by %s cannot be read or written because the environment variable %s has not been set", applicationName, applicationDataEnvVarName)
-		o.WriteCanonicalError("What to do:\nDefine %s, giving it a value that is a directory path, typically %%HOMEPATH%%\\AppData\\Roaming", applicationDataEnvVarName)
+		o.ErrorPrintf(
+			"Files used by %s cannot be read or written because the environment variable %s has not been set.\n",
+			applicationName,
+			applicationDataEnvVarName,
+		)
+		o.ErrorPrintln("What to do:")
+		o.ErrorPrintf(
+			"Define %s, giving it a value that is a directory path, typically %%HOMEPATH%%\\AppData\\Roaming.\n",
+			applicationDataEnvVarName,
+		)
 		return false
 	}
 	if err := Mkdir(value); err != nil {
@@ -41,10 +49,18 @@ func InitApplicationPath(o output.Bus, applicationName string) bool {
 			"error":    err,
 			"fileName": value,
 		})
-		o.WriteCanonicalError("The %s environment variable value %q is not a directory, nor can it be created as a directory", applicationDataEnvVarName, value)
-		o.WriteCanonicalError("What to do:\nThe value of %s should be a directory path, typically %%HOMEPATH%%\\AppData\\Roaming", applicationDataEnvVarName)
-		o.WriteCanonicalError("Either it should contain a subdirectory named %q", applicationName)
-		o.WriteCanonicalError("Or, if it does not exist, it must be possible to create that subdirectory")
+		o.ErrorPrintf(
+			"The %s environment variable value %q is not a directory, nor can it be created as a directory.\n",
+			applicationDataEnvVarName,
+			value,
+		)
+		o.ErrorPrintln("What to do:")
+		o.ErrorPrintf(
+			"The value of %s should be a directory path, typically %%HOMEPATH%%\\AppData\\Roaming.\n",
+			applicationDataEnvVarName,
+		)
+		o.ErrorPrintf("Either it should contain a subdirectory named %q.\n", applicationName)
+		o.ErrorPrintln("Or, if it does not exist, it must be possible to create that subdirectory.")
 		return false
 	}
 	dir, pathErr := createAppSpecificPath(value, applicationName)

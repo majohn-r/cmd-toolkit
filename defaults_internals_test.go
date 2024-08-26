@@ -20,8 +20,14 @@ func Test_reportInvalidConfigurationData(t *testing.T) {
 		"simple": {
 			args: args{s: "defaults", e: fmt.Errorf("illegal value")},
 			WantedRecording: output.WantedRecording{
-				Error: "The configuration file \"defaults.yaml\" contains an invalid value for \"defaults\": illegal value.\n",
-				Log:   "level='error' error='illegal value' section='defaults' msg='invalid content in configuration file'\n",
+				Error: "" +
+					"The configuration file \"defaults.yaml\" contains an invalid value for \"defaults\": " +
+					"illegal value.\n",
+				Log: "" +
+					"level='error' " +
+					"error='illegal value' " +
+					"section='defaults' " +
+					"msg='invalid content in configuration file'\n",
 			},
 		},
 	}
@@ -62,9 +68,11 @@ func Test_verifyDefaultConfigFileExists(t *testing.T) {
 			},
 		},
 		"path does not exist": {
-			preTest:         func() {},
-			path:            filepath.Join(".", "non-existent-file.yaml"),
-			WantedRecording: output.WantedRecording{Log: "level='info' directory='.' fileName='non-existent-file.yaml' msg='file does not exist'\n"},
+			preTest: func() {},
+			path:    filepath.Join(".", "non-existent-file.yaml"),
+			WantedRecording: output.WantedRecording{
+				Log: "level='info' directory='.' fileName='non-existent-file.yaml' msg='file does not exist'\n",
+			},
 		},
 		"path is a valid file": {
 			preTest: func() {

@@ -64,7 +64,18 @@ func Test_simpleLogger_Debug(t *testing.T) {
 				"field8":  "a b c",
 				"field 9": false,
 			}},
-			want: "level=debug msg=\"debug message\" field 9=false field1=value1 field2=2 field3=true field4=\"[val1 val2]\" field5=\"this is a mistake\" field6=\"map[a:1 b b:2]\" field7=\".*\" field8=\"a b c\"\n",
+			want: "" +
+				"level=debug " +
+				"msg=\"debug message\" " +
+				"field 9=false " +
+				"field1=value1 " +
+				"field2=2 " +
+				"field3=true " +
+				"field4=\"[val1 val2]\" " +
+				"field5=\"this is a mistake\" " +
+				"field6=\"map[a:1 b b:2]\" " +
+				"field7=\".*\" " +
+				"field8=\"a b c\"\n",
 		},
 		"trace": {
 			l:    output.Trace,
@@ -148,7 +159,18 @@ func Test_simpleLogger_Error(t *testing.T) {
 				"field8":  "a b c",
 				"field 9": false,
 			}},
-			want: "level=error msg=error field 9=false field1=value1 field2=2 field3=true field4=\"[val1 val2]\" field5=\"this is a mistake\" field6=\"map[a:1 b b:2]\" field7=\".*\" field8=\"a b c\"\n",
+			want: "" +
+				"level=error " +
+				"msg=error " +
+				"field 9=false " +
+				"field1=value1 " +
+				"field2=2 " +
+				"field3=true " +
+				"field4=\"[val1 val2]\" " +
+				"field5=\"this is a mistake\" " +
+				"field6=\"map[a:1 b b:2]\" " +
+				"field7=\".*\" " +
+				"field8=\"a b c\"\n",
 		},
 		"trace": {
 			l:    output.Trace,
@@ -239,7 +261,18 @@ func Test_simpleLogger_Fatal(t *testing.T) {
 				"field8":  "a b c",
 				"field 9": false,
 			}},
-			want: "level=fatal msg=\"fatal message\" field 9=false field1=value1 field2=2 field3=true field4=\"[val1 val2]\" field5=\"this is a mistake\" field6=\"map[a:1 b b:2]\" field7=\".*\" field8=\"a b c\"\n",
+			want: "" +
+				"level=fatal " +
+				"msg=\"fatal message\" " +
+				"field 9=false " +
+				"field1=value1 " +
+				"field2=2 " +
+				"field3=true " +
+				"field4=\"[val1 val2]\" " +
+				"field5=\"this is a mistake\" " +
+				"field6=\"map[a:1 b b:2]\" " +
+				"field7=\".*\" " +
+				"field8=\"a b c\"\n",
 		},
 		"trace": {
 			l:    output.Trace,
@@ -331,7 +364,18 @@ func Test_simpleLogger_Info(t *testing.T) {
 				"field8":  "a b c",
 				"field 9": false,
 			}},
-			want: "level=info msg=\"info message\" field 9=false field1=value1 field2=2 field3=true field4=\"[val1 val2]\" field5=\"this is a mistake\" field6=\"map[a:1 b b:2]\" field7=\".*\" field8=\"a b c\"\n",
+			want: "" +
+				"level=info " +
+				"msg=\"info message\" " +
+				"field 9=false " +
+				"field1=value1 " +
+				"field2=2 " +
+				"field3=true " +
+				"field4=\"[val1 val2]\" " +
+				"field5=\"this is a mistake\" " +
+				"field6=\"map[a:1 b b:2]\" " +
+				"field7=\".*\" " +
+				"field8=\"a b c\"\n",
 		},
 		"trace": {
 			l:    output.Trace,
@@ -415,7 +459,18 @@ func Test_simpleLogger_Panic(t *testing.T) {
 				"field8":  "a b c",
 				"field 9": false,
 			}},
-			want: "level=panic msg=\"panic message\" field 9=false field1=value1 field2=2 field3=true field4=\"[val1 val2]\" field5=\"this is a mistake\" field6=\"map[a:1 b b:2]\" field7=\".*\" field8=\"a b c\"\n",
+			want: "" +
+				"level=panic " +
+				"msg=\"panic message\" " +
+				"field 9=false " +
+				"field1=value1 " +
+				"field2=2 " +
+				"field3=true " +
+				"field4=\"[val1 val2]\" " +
+				"field5=\"this is a mistake\" " +
+				"field6=\"map[a:1 b b:2]\" " +
+				"field7=\".*\" " +
+				"field8=\"a b c\"\n",
 		},
 		"trace": {
 			l:    output.Trace,
@@ -588,7 +643,18 @@ func Test_simpleLogger_Warning(t *testing.T) {
 				"field8":  "a b c",
 				"field 9": false,
 			}},
-			want: "level=warning msg=\"warn message\" field 9=false field1=value1 field2=2 field3=true field4=\"[val1 val2]\" field5=\"this is a mistake\" field6=\"map[a:1 b b:2]\" field7=\".*\" field8=\"a b c\"\n",
+			want: "" +
+				"level=warning " +
+				"msg=\"warn message\" " +
+				"field 9=false " +
+				"field1=value1 " +
+				"field2=2 " +
+				"field3=true " +
+				"field4=\"[val1 val2]\" " +
+				"field5=\"this is a mistake\" " +
+				"field6=\"map[a:1 b b:2]\" " +
+				"field7=\".*\" " +
+				"field8=\"a b c\"\n",
 		},
 		"trace": {
 			l:    output.Trace,

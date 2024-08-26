@@ -44,7 +44,7 @@ func newConfiguration(o output.Bus, data map[string]any) *Configuration {
 				"value": v,
 				"type":  fmt.Sprintf("%T", v),
 			})
-			o.WriteCanonicalError("The key %q, with value '%v', has an unexpected type %T", key, v, v)
+			o.ErrorPrintf("The key %q, with value '%v', has an unexpected type %T.\n", key, v, v)
 			c.StringMap[key] = fmt.Sprintf("%v", v)
 		}
 	}
