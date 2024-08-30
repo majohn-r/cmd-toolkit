@@ -2,9 +2,11 @@ package cmd_toolkit_test
 
 import (
 	"bytes"
+	"fmt"
 	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
 	"github.com/majohn-r/output"
 	"io"
+	"io/fs"
 	"testing"
 )
 
@@ -113,6 +115,27 @@ func TestInitLoggingWithLevel(t *testing.T) {
 			}
 			if got := cmdtoolkit.LogPath(); got != "testingLogPath" {
 				t.Errorf("LogPath() = %v, want %v", got, "testingLogPath")
+			}
+		})
+	}
+}
+
+func TestErrorToString(t *testing.T) {
+	tests := map[string]struct {
+		e    error
+		want string
+	}{
+		"nil":     {e: nil, want: "'nil error'"},
+		"typical": {e: fmt.Errorf("test error"), want: "'test error'"},
+		"special": {e: &fs.PathError{
+			Op:   "read",
+			Path: "bad path",
+			Err:  fmt.Errorf("nil ptr")}, want: "'*fs.PathError: read bad path: nil ptr'"},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := cmdtoolkit.ErrorToString(tt.e); got != tt.want {
+				t.Errorf("ErrorToString() = %v, want %v", got, tt.want)
 			}
 		})
 	}

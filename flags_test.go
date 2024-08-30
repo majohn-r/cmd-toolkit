@@ -451,7 +451,7 @@ func TestProcessFlagErrors(t *testing.T) {
 			eSlice: []error{errors.New("some error")},
 			want:   false,
 			WantedRecording: output.WantedRecording{
-				Error: "An internal error occurred: some error.\n",
+				Error: "An internal error occurred: 'some error'.\n",
 				Log:   "level='error' error='some error' msg='internal error'\n",
 			},
 		},

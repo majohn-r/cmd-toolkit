@@ -31,7 +31,7 @@ func InterpretBuildData(buildInfoReader func() (*debug.BuildInfo, bool)) (goVers
 func finalYear(o output.Bus, timestamp string, initialYear int) int {
 	t, parseErr := time.Parse(time.RFC3339, timestamp)
 	if parseErr != nil {
-		o.ErrorPrintf("The build time %q cannot be parsed: %v.\n", timestamp, parseErr)
+		o.ErrorPrintf("The build time %q cannot be parsed: %s.\n", timestamp, ErrorToString(parseErr))
 		o.Log(output.Error, "parse error", map[string]any{
 			"error": parseErr,
 			"value": timestamp,

@@ -245,7 +245,9 @@ func TestReadDirectory(t *testing.T) {
 			dir:     "no such dir",
 			wantOk:  false,
 			WantedRecording: output.WantedRecording{
-				Error: "The directory \"no such dir\" cannot be read: open no such dir: file does not exist.\n",
+				Error: "" +
+					"The directory \"no such dir\" cannot be read: " +
+					"'*fs.PathError: open no such dir: file does not exist'.\n",
 				Log: "" +
 					"level='error' " +
 					"directory='no such dir' " +
@@ -315,7 +317,7 @@ func TestReportFileCreationFailure(t *testing.T) {
 		"basic": {
 			args: args{cmd: "myCommand", file: "myPoorFile", e: errors.New("no disk space")},
 			WantedRecording: output.WantedRecording{
-				Error: "The file \"myPoorFile\" cannot be created: no disk space.\n",
+				Error: "The file \"myPoorFile\" cannot be created: 'no disk space'.\n",
 				Log: "" +
 					"level='error' " +
 					"command='myCommand' " +

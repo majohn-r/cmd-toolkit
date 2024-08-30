@@ -101,7 +101,7 @@ func TestInitApplicationPath(t *testing.T) {
 				_ = afero.WriteFile(cmdtoolkit.FileSystem(), "myApp1", []byte{1, 2, 3}, cmdtoolkit.StdFilePermissions)
 			},
 			WantedRecording: output.WantedRecording{
-				Error: "The directory \"myApp1\" cannot be created: file exists and is not a directory.\n",
+				Error: "The directory \"myApp1\" cannot be created: 'file exists and is not a directory'.\n",
 				Log: "" +
 					"level='error'" +
 					" directory='myApp1'" +

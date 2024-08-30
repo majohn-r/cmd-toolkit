@@ -281,8 +281,9 @@ func Test_cleanup(t *testing.T) {
 			postTest: func(t *testing.T) {},
 			path:     "no such directory",
 			WantedRecording: output.WantedRecording{
-				Error: "The directory \"no such directory\" cannot be read: open no such directory: " +
-					"file does not exist.\n",
+				Error: "" +
+					"The directory \"no such directory\" cannot be read: " +
+					"'*fs.PathError: open no such directory: file does not exist'.\n",
 				Log: "level='error' directory='no such directory' error='open no such directory: " +
 					"file does not exist' msg='cannot read directory'\n",
 			},
@@ -375,7 +376,9 @@ func Test_deleteLogFile(t *testing.T) {
 			preTest: func() {},
 			logFile: "no such file",
 			WantedRecording: output.WantedRecording{
-				Error: "The log file \"no such file\" cannot be deleted: remove no such file: file does not exist.\n",
+				Error: "" +
+					"The log file \"no such file\" cannot be deleted: " +
+					"'*fs.PathError: remove no such file: file does not exist'.\n",
 			},
 		},
 		"success": {

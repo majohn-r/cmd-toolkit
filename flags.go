@@ -258,7 +258,7 @@ func GetString(o output.Bus, results map[string]*CommandFlag[any], flagName stri
 func ProcessFlagErrors(o output.Bus, eSlice []error) bool {
 	if len(eSlice) != 0 {
 		for _, e := range eSlice {
-			o.ErrorPrintf("An internal error occurred: %v.\n", e)
+			o.ErrorPrintf("An internal error occurred: %s.\n", ErrorToString(e))
 			o.Log(output.Error, "internal error", map[string]any{"error": e})
 		}
 		return false

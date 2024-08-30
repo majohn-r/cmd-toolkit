@@ -22,7 +22,7 @@ func Test_reportInvalidConfigurationData(t *testing.T) {
 			WantedRecording: output.WantedRecording{
 				Error: "" +
 					"The configuration file \"defaults.yaml\" contains an invalid value for \"defaults\": " +
-					"illegal value.\n",
+					"'illegal value'.\n",
 				Log: "" +
 					"level='error' " +
 					"error='illegal value' " +

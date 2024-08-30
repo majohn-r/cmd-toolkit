@@ -160,3 +160,15 @@ func (sl *simpleLogger) Trace(msg string, fields map[string]any) {
 func (sl *simpleLogger) Warning(msg string, fields map[string]any) {
 	sl.log(output.Warning, msg, fields)
 }
+
+// ErrorToString converts an error into an easy-to-read string
+func ErrorToString(e error) string {
+	if e == nil {
+		return "'nil error'"
+	}
+	eType := fmt.Sprintf("%T", e)
+	if eType == "*errors.errorString" {
+		return fmt.Sprintf("'%v'", e)
+	}
+	return fmt.Sprintf("'%s: %v'", eType, e)
+}

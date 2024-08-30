@@ -110,7 +110,7 @@ func TestFlagDetails_addFlag(t *testing.T) {
 			WantedRecording: output.WantedRecording{
 				Error: "" +
 					"The configuration file \"defaults.yaml\" contains an invalid value for \"mySet\": " +
-					"boolean error.\n",
+					"'boolean error'.\n",
 				Log: "" +
 					"level='error'" +
 					" error='boolean error'" +
@@ -186,7 +186,8 @@ func TestFlagDetails_addFlag(t *testing.T) {
 				flag:     flagParam{set: "mySet", name: "myFlag"},
 			},
 			WantedRecording: output.WantedRecording{
-				Error: "The configuration file \"defaults.yaml\" contains an invalid value for \"mySet\": int error.\n",
+				Error: "" +
+					"The configuration file \"defaults.yaml\" contains an invalid value for \"mySet\": 'int error'.\n",
 				Log: "" +
 					"level='error'" +
 					" error='int error'" +
@@ -264,7 +265,7 @@ func TestFlagDetails_addFlag(t *testing.T) {
 			WantedRecording: output.WantedRecording{
 				Error: "" +
 					"The configuration file \"defaults.yaml\" contains an invalid value for \"mySet\": " +
-					"string error.\n",
+					"'string error'.\n",
 				Log: "" +
 					"level='error'" +
 					" error='string error'" +

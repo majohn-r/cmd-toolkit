@@ -130,7 +130,7 @@ func cleanup(o output.Bus, logPath, applicationName string) (found, deleted int)
 
 func deleteLogFile(o output.Bus, logFile string) bool {
 	if fileErr := fileSystem.Remove(logFile); fileErr != nil {
-		o.ErrorPrintf("The log file %q cannot be deleted: %v.\n", logFile, fileErr)
+		o.ErrorPrintf("The log file %q cannot be deleted: %s.\n", logFile, ErrorToString(fileErr))
 		return false
 	}
 	return true

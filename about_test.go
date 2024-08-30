@@ -26,7 +26,8 @@ func TestCopyright(t *testing.T) {
 			WantedRecording: output.WantedRecording{
 				Error: "" +
 					"The build time \"today\" cannot be parsed: " +
-					"parsing time \"today\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"today\" as \"2006\".\n",
+					"'*time.ParseError: parsing time \"today\" as \"2006-01-02T15:04:05Z07:00\": " +
+					"cannot parse \"today\" as \"2006\"'.\n",
 				Log: "" +
 					"level='error'" +
 					" error='parsing time \"today\" as \"2006-01-02T15:04:05Z07:00\": " +

@@ -79,7 +79,7 @@ func ReadDefaultsConfigFile(o output.Bus) (*Configuration, bool) {
 			"fileName":  defaultConfigFileName,
 			"error":     fileError,
 		})
-		o.ErrorPrintf("The configuration file %q is not well-formed YAML: %v.\n", file, fileError)
+		o.ErrorPrintf("The configuration file %q is not well-formed YAML: %s.\n", file, ErrorToString(fileError))
 		o.ErrorPrintln("What to do:")
 		o.ErrorPrintf("Delete the file %q from %q and restart the application.\n", defaultConfigFileName, path)
 		return c, false
@@ -94,7 +94,12 @@ func ReadDefaultsConfigFile(o output.Bus) (*Configuration, bool) {
 }
 
 func reportInvalidConfigurationData(o output.Bus, s string, e error) {
-	o.ErrorPrintf("The configuration file %q contains an invalid value for %q: %v.\n", defaultConfigFileName, s, e)
+	o.ErrorPrintf(
+		"The configuration file %q contains an invalid value for %q: %s.\n",
+		defaultConfigFileName,
+		s,
+		ErrorToString(e),
+	)
 	o.Log(output.Error, "invalid content in configuration file", map[string]any{
 		"section": s,
 		"error":   e,

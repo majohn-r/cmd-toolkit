@@ -47,7 +47,7 @@ func Test_writeDirectoryCreationError(t *testing.T) {
 		"basic": {
 			args: args{d: "dirName", e: errors.New("parent directory does not exist")},
 			WantedRecording: output.WantedRecording{
-				Error: "The directory \"dirName\" cannot be created: parent directory does not exist.\n",
+				Error: "The directory \"dirName\" cannot be created: 'parent directory does not exist'.\n",
 			},
 		},
 	}

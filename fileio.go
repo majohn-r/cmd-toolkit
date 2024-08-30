@@ -126,14 +126,14 @@ func ReadDirectory(o output.Bus, dir string) ([]fs.FileInfo, bool) {
 		return files, true
 	}
 	logUnreadableDirectory(o, dir, fileErr)
-	o.ErrorPrintf("The directory %q cannot be read: %v.\n", dir, fileErr)
+	o.ErrorPrintf("The directory %q cannot be read: %s.\n", dir, ErrorToString(fileErr))
 	return nil, false
 }
 
 // ReportFileCreationFailure reports an error creating a file to error output
 // and to the log
 func ReportFileCreationFailure(o output.Bus, cmd, file string, e error) {
-	o.ErrorPrintf("The file %q cannot be created: %v.\n", file, e)
+	o.ErrorPrintf("The file %q cannot be created: %s.\n", file, ErrorToString(e))
 	o.Log(output.Error, "cannot create file", map[string]any{
 		"command":  cmd,
 		"fileName": file,
@@ -142,5 +142,5 @@ func ReportFileCreationFailure(o output.Bus, cmd, file string, e error) {
 }
 
 func writeDirectoryCreationError(o output.Bus, d string, e error) {
-	o.ErrorPrintf("The directory %q cannot be created: %v.\n", d, e)
+	o.ErrorPrintf("The directory %q cannot be created: %s.\n", d, ErrorToString(e))
 }

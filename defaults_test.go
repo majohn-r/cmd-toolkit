@@ -170,7 +170,7 @@ func TestReadDefaultsConfigFile(t *testing.T) {
 			WantedRecording: output.WantedRecording{
 				Error: "" +
 					"The configuration file \"garbageDir\\\\defaults.yaml\" is not well-formed YAML: " +
-					"yaml: control characters are not allowed.\n" +
+					"'yaml: control characters are not allowed'.\n" +
 					"What to do:\n" +
 					"Delete the file \"defaults.yaml\" from \"garbageDir\" and restart the application.\n",
 				Log: "" +
