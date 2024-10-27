@@ -15,6 +15,19 @@ Key to symbols
 - 😒 change is invisible to the user
 - 🆕 new feature
 
+## v0.24.0
+
+_release `2024.10.27`_
+
+- 🆕add `GetBuildData(reader func() (*debug.BuildInfo, bool)) *BuildInformation`; this also adds the `BuildInformation`
+struct and four methods on `*BuildInformation`:
+ 1. `GoVersion() string`
+ 2. `Dependencies() []string`
+ 3. `MainVersion() string`
+ 4. `Settings() []string`
+- ⚠️deprecate `func InterpretBuildData(buildInfoReader func() (*debug.BuildInfo, bool)) (goVersion string, dependencies
+[]string)`
+
 ## v0.23.0
 
 _release `2024.08.30`_

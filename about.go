@@ -3,28 +3,81 @@ package cmd_toolkit
 import (
 	"fmt"
 	"runtime/debug"
+	"sort"
 	"time"
 
 	"github.com/majohn-r/output"
 )
 
+// BuildInformation holds data about the build
+type BuildInformation struct {
+	goVersion    string
+	dependencies []string
+	mainVersion  string
+	settings     []string
+}
+
+// GoVersion returns the version of Go used to build the code
+func (bi *BuildInformation) GoVersion() string {
+	return bi.goVersion
+}
+
+// Dependencies returns an alphabetically sorted slice of dependency data (path and version for each dependency)
+func (bi *BuildInformation) Dependencies() []string {
+	return bi.dependencies
+}
+
+// MainVersion returns the git version of the main module
+func (bi *BuildInformation) MainVersion() string {
+	return bi.mainVersion
+}
+
+// Settings returns an alphabetically sorted slice of build settings used to build the code
+func (bi *BuildInformation) Settings() []string {
+	return bi.settings
+}
+
+// GetBuildData returns the build data, if any, obtained from the provided reader function
+func GetBuildData(reader func() (*debug.BuildInfo, bool)) *BuildInformation {
+	bi := &BuildInformation{
+		goVersion:    "unknown",
+		dependencies: []string{},
+		mainVersion:  "unknown",
+		settings:     []string{},
+	}
+	if reader == nil {
+		return bi
+	}
+	buildInfo, infoObtained := reader()
+	if !infoObtained || buildInfo == nil {
+		return bi
+	}
+	bi.goVersion = buildInfo.GoVersion
+	bi.dependencies = make([]string, len(buildInfo.Deps))
+	for k, d := range buildInfo.Deps {
+		bi.dependencies[k] = fmt.Sprintf("%s %s", d.Path, d.Version)
+	}
+	sort.Strings(bi.dependencies)
+	bi.mainVersion = buildInfo.Main.Version
+	bi.settings = make([]string, len(buildInfo.Settings))
+	for k, s := range buildInfo.Settings {
+		bi.settings[k] = fmt.Sprintf("%s: %s", s.Key, s.Value)
+	}
+	sort.Strings(bi.settings)
+	return bi
+}
+
 // the code in this file is for the "about" command, which is a common need for
 // applications.
 
+// Deprecated: use GetBuildData instead and call GoVersion() and Dependencies() on the result.
 // InterpretBuildData interprets the output of calling buildInfoReader() into easily
 // consumed forms; see https://github.com/majohn-r/cmd-toolkit/issues/17. for production
 // callers, pass in debug.ReadBuildInfo
 func InterpretBuildData(buildInfoReader func() (*debug.BuildInfo, bool)) (goVersion string, dependencies []string) {
-	buildInfo, infoObtained := buildInfoReader()
-	if !infoObtained || buildInfo == nil {
-		goVersion = "unknown"
-		return
-	}
-	goVersion = buildInfo.GoVersion
-	dependencies = make([]string, len(buildInfo.Deps))
-	for k, d := range buildInfo.Deps {
-		dependencies[k] = fmt.Sprintf("%s %s", d.Path, d.Version)
-	}
+	bi := GetBuildData(buildInfoReader)
+	goVersion = bi.goVersion
+	dependencies = bi.dependencies
 	return
 }
 

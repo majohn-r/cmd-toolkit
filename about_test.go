@@ -130,7 +130,7 @@ func TestInterpretBuildData(t *testing.T) {
 		"unhappy": {
 			buildInfoReader:  func() (*debug.BuildInfo, bool) { return nil, false },
 			wantGoVersion:    "unknown",
-			wantDependencies: nil,
+			wantDependencies: []string{},
 		},
 	}
 	for name, tt := range tests {
@@ -272,6 +272,72 @@ func TestStyledFlowerBox(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			if got := cmdtoolkit.StyledFlowerBox(tt.args.lines, tt.args.style); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("StyledFlowerBox() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetBuildData(t *testing.T) {
+	tests := map[string]struct {
+		reader           func() (*debug.BuildInfo, bool)
+		wantGoVersion    string
+		wantMainVersion  string
+		wantDependencies []string
+		wantSettings     []string
+	}{
+		"nil func": {
+			reader:           nil,
+			wantGoVersion:    "unknown",
+			wantMainVersion:  "unknown",
+			wantDependencies: []string{},
+			wantSettings:     []string{},
+		},
+		"func returns no data": {
+			reader: func() (*debug.BuildInfo, bool) {
+				return nil, false
+			},
+			wantGoVersion:    "unknown",
+			wantMainVersion:  "unknown",
+			wantDependencies: []string{},
+			wantSettings:     []string{},
+		},
+		"func returns data": {
+			reader: func() (*debug.BuildInfo, bool) {
+				return &debug.BuildInfo{
+					GoVersion: "1.2.3",
+					Main:      debug.Module{Version: "v0.1.2"},
+					Deps: []*debug.Module{
+						{Path: "mod3", Version: "1.2"},
+						{Path: "mod2", Version: "1.3"},
+						{Path: "mod1", Version: "1.4"},
+					},
+					Settings: []debug.BuildSetting{
+						{Key: "git", Value: "2.3.4"},
+						{Key: "-ldflags", Value: "-X main.version=2.3.4"},
+						{Key: "cmd", Value: "gcc"},
+					},
+				}, true
+			},
+			wantGoVersion:    "1.2.3",
+			wantMainVersion:  "v0.1.2",
+			wantDependencies: []string{"mod1 1.4", "mod2 1.3", "mod3 1.2"},
+			wantSettings:     []string{"-ldflags: -X main.version=2.3.4", "cmd: gcc", "git: 2.3.4"},
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			gotBuildData := cmdtoolkit.GetBuildData(tt.reader)
+			if got := gotBuildData.GoVersion(); got != tt.wantGoVersion {
+				t.Errorf("GetBuildData() gotGoVersion = %v, want %v", got, tt.wantGoVersion)
+			}
+			if got := gotBuildData.MainVersion(); got != tt.wantMainVersion {
+				t.Errorf("GetBuildData() gotMainVersion = %v, want %v", got, tt.wantMainVersion)
+			}
+			if got := gotBuildData.Dependencies(); !reflect.DeepEqual(got, tt.wantDependencies) {
+				t.Errorf("GetBuildData() gotDependencies = %v, want %v", got, tt.wantDependencies)
+			}
+			if got := gotBuildData.Settings(); !reflect.DeepEqual(got, tt.wantSettings) {
+				t.Errorf("GetBuildData() gotSettings = %v, want %v", got, tt.wantSettings)
 			}
 		})
 	}
