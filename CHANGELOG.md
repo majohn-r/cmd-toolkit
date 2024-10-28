@@ -15,9 +15,17 @@ Key to symbols
 - 😒 change is invisible to the user
 - 🆕 new feature
 
+## v0.24.1
+
+_release `2024.10.28`_
+
+- 🐛⚠️ change `BuildInformation` from a `struct` to an `interface` for easier mocking by consumers. Consequently,
+`GetBuildInfo` returns an _implementation_ of `BuildInformation` instead of a pointer to an instance of
+`BuildInformation`.
+
 ## v0.24.0
 
-_release `2024.10.27`_
+_release `2024.10.28`_
 
 - 🆕add `GetBuildData(reader func() (*debug.BuildInfo, bool)) *BuildInformation`; this also adds the `BuildInformation`
 struct and four methods on `*BuildInformation`:

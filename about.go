@@ -9,8 +9,15 @@ import (
 	"github.com/majohn-r/output"
 )
 
-// BuildInformation holds data about the build
-type BuildInformation struct {
+// BuildInformation provides data about the build
+type BuildInformation interface {
+	GoVersion() string
+	Dependencies() []string
+	MainVersion() string
+	Settings() []string
+}
+
+type buildInformation struct {
 	goVersion    string
 	dependencies []string
 	mainVersion  string
@@ -18,28 +25,28 @@ type BuildInformation struct {
 }
 
 // GoVersion returns the version of Go used to build the code
-func (bi *BuildInformation) GoVersion() string {
+func (bi *buildInformation) GoVersion() string {
 	return bi.goVersion
 }
 
 // Dependencies returns an alphabetically sorted slice of dependency data (path and version for each dependency)
-func (bi *BuildInformation) Dependencies() []string {
+func (bi *buildInformation) Dependencies() []string {
 	return bi.dependencies
 }
 
 // MainVersion returns the git version of the main module
-func (bi *BuildInformation) MainVersion() string {
+func (bi *buildInformation) MainVersion() string {
 	return bi.mainVersion
 }
 
 // Settings returns an alphabetically sorted slice of build settings used to build the code
-func (bi *BuildInformation) Settings() []string {
+func (bi *buildInformation) Settings() []string {
 	return bi.settings
 }
 
 // GetBuildData returns the build data, if any, obtained from the provided reader function
-func GetBuildData(reader func() (*debug.BuildInfo, bool)) *BuildInformation {
-	bi := &BuildInformation{
+func GetBuildData(reader func() (*debug.BuildInfo, bool)) BuildInformation {
+	bi := &buildInformation{
 		goVersion:    "unknown",
 		dependencies: []string{},
 		mainVersion:  "unknown",
@@ -76,8 +83,8 @@ func GetBuildData(reader func() (*debug.BuildInfo, bool)) *BuildInformation {
 // callers, pass in debug.ReadBuildInfo
 func InterpretBuildData(buildInfoReader func() (*debug.BuildInfo, bool)) (goVersion string, dependencies []string) {
 	bi := GetBuildData(buildInfoReader)
-	goVersion = bi.goVersion
-	dependencies = bi.dependencies
+	goVersion = bi.GoVersion()
+	dependencies = bi.Dependencies()
 	return
 }
 
