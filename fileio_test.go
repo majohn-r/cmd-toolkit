@@ -2,10 +2,13 @@ package cmd_toolkit_test
 
 import (
 	"errors"
+	"fmt"
 	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
+	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/majohn-r/output"
 	"github.com/spf13/afero"
@@ -349,6 +352,58 @@ func TestAssignFileSystem(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			if got := cmdtoolkit.AssignFileSystem(tt.fs); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("AssignFileSystem() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestModificationTime(t *testing.T) {
+	const testDir = "modificationTimeTest"
+	setupErr := os.Mkdir(testDir, cmdtoolkit.StdDirPermissions)
+	if setupErr != nil {
+		t.Fail()
+	}
+	defer func() {
+		if deferredErr := os.RemoveAll(testDir); deferredErr != nil {
+			fmt.Printf("Error removing testDir: %v\n", deferredErr)
+			t.Fail()
+		}
+	}()
+	testFile := filepath.Join(testDir, "realFile")
+	fileTime := time.Now().Add(10 * time.Second)
+	var f *os.File
+	if f, setupErr = os.Create(testFile); setupErr != nil {
+		t.Fail()
+	} else {
+		if setupErr = os.Chtimes(testFile, fileTime, fileTime); setupErr != nil {
+			t.Fail()
+		}
+		f.Close()
+	}
+	tests := map[string]struct {
+		fileName string
+		want     time.Time
+		wantErr  bool
+	}{
+		"good": {
+			fileName: testFile,
+			want:     fileTime,
+			wantErr:  false,
+		},
+		"bad": {
+			fileName: filepath.Join(testDir, "badFile"),
+			wantErr:  true,
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, err := cmdtoolkit.ModificationTime(tt.fileName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ModificationTime() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err == nil && got.Nanosecond() != tt.want.Nanosecond() {
+				t.Errorf("ModificationTime() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

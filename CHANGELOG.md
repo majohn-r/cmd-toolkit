@@ -15,6 +15,12 @@ Key to symbols
 - 😒 change is invisible to the user
 - 🆕 new feature
 
+## v0.25.0
+
+_release `2025.02.19`_
+
+- 🆕 add `ModificationTime` function to return a specified file's modification time.
+
 ## v0.24.1
 
 _release `2024.10.28`_

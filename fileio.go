@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/majohn-r/output"
 	"github.com/spf13/afero"
@@ -107,6 +109,19 @@ func Mkdir(path string) error {
 		return fmt.Errorf("parent directory is not a directory")
 	}
 	return fileSystem.Mkdir(path, StdDirPermissions)
+}
+
+// ModificationTime returns a file's modification time. An error return indicates that
+// there was a problem reading the file and a modification time is not available.
+// This function addresses https://github.com/majohn-r/cmd-toolkit/issues/47
+func ModificationTime(fileName string) (time.Time, error) {
+	var modifiedTime time.Time
+	file, err := os.Stat(fileName)
+	if err != nil {
+		return modifiedTime, err
+	}
+	modifiedTime = file.ModTime()
+	return modifiedTime, nil
 }
 
 // PlainFileExists returns whether the specified file exists as a plain file
