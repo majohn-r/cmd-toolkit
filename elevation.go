@@ -38,10 +38,6 @@ var (
 // ElevationControl defines behavior for code pertaining to running a process with elevated
 // privileges
 type ElevationControl interface {
-	// ConfigureExit sets up a new exit function that calls the original exit function, if
-	// the process is running with elevated privileges; otherwise, it returns the original
-	// exit function
-	ConfigureExit(func(int)) func(int)
 	// Log logs the elevationControl state
 	Log(output.Bus, output.Level)
 	// Status returns a slice of status data suitable to display to the user
@@ -87,6 +83,11 @@ func NewElevationControlWithEnvVar(envVarName string, defaultEnvVarValue bool) E
 }
 
 // ConfigureExit is the reference implementation of the ElevationControl function
+//
+// Deprecated: this function will go away soon; old callers need to create their
+// own code. This remains as an example.
+//
+// TODO: #48 Next time around, delete this function
 func (ec *elevationControl) ConfigureExit(oldExitFn func(int)) func(int) {
 	returnFunc := oldExitFn
 	if ec.elevated {

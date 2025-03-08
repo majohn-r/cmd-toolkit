@@ -15,6 +15,12 @@ Key to symbols
 - 😒 change is invisible to the user
 - 🆕 new feature
 
+## v0.26.0
+
+_release `2025.03.08`_
+
+- ❗remove `ConfigureExit` from `ElevationControl` interface.
+
 ## v0.25.0
 
 _release `2025.02.19`_

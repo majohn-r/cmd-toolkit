@@ -318,52 +318,6 @@ func TestNewElevationControlWithEnvVar(t *testing.T) {
 	}
 }
 
-func TestElevationControl_ConfigureExit(t *testing.T) {
-	originalScanf := cmdtoolkit.Scanf
-	originalGetCurrentProcessToken := cmdtoolkit.GetCurrentProcessToken
-	originalIsElevated := cmdtoolkit.IsElevated
-	defer func() {
-		cmdtoolkit.Scanf = originalScanf
-		cmdtoolkit.GetCurrentProcessToken = originalGetCurrentProcessToken
-		cmdtoolkit.IsElevated = originalIsElevated
-	}()
-	var scanfInvoked bool
-	cmdtoolkit.Scanf = func(string, ...any) (int, error) {
-		scanfInvoked = true
-		return 0, nil
-	}
-	var exitInvoked bool
-	exitFunction := func(int) {
-		exitInvoked = true
-	}
-	cmdtoolkit.GetCurrentProcessToken = func() (t windows.Token) {
-		return
-	}
-	tests := map[string]struct {
-		assertElevated bool
-	}{
-		"elevated":     {assertElevated: true},
-		"not elevated": {assertElevated: false},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			cmdtoolkit.IsElevated = func(_ windows.Token) bool { return tt.assertElevated }
-			scanfInvoked = false
-			ec := cmdtoolkit.NewElevationControl()
-			got := ec.ConfigureExit(exitFunction)
-			got(0)
-			if !exitInvoked {
-				t.Errorf("ConfigureExit() exit not invoked")
-			}
-			if tt.assertElevated {
-				if !scanfInvoked {
-					t.Errorf("ConfigureExit() scanf not invoked")
-				}
-			}
-		})
-	}
-}
-
 func TestElevationControl_WillRunElevated(t *testing.T) {
 	originalGetCurrentProcessToken := cmdtoolkit.GetCurrentProcessToken
 	originalIsElevated := cmdtoolkit.IsElevated
