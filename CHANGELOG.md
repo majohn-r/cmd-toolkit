@@ -15,6 +15,12 @@ Key to symbols
 - 😒 change is invisible to the user
 - 🆕 new feature
 
+## v0.26.1
+
+_release `2025.03.10`_
+
+- 🐛 remove unreachable `ConfigureExit` function and associated test.
+
 ## v0.26.0
 
 _release `2025.03.08`_

@@ -15,10 +15,6 @@ import (
 // functionality in this file
 
 var (
-	// Scanf is the standard function for reading and scanning a line from stdin; it is used by
-	// the configured exit function to allow the user control over when to close the terminal
-	// window
-	Scanf = fmt.Scanf
 	// IsCygwinTerminal determines whether a particular file descriptor (e.g., os.Stdin.Fd()) is a
 	// Cygwin terminal
 	IsCygwinTerminal = isatty.IsCygwinTerminal
@@ -80,27 +76,6 @@ func NewElevationControlWithEnvVar(envVarName string, defaultEnvVarValue bool) E
 		stdinRedirected:  stdinState(),
 		stdoutRedirected: stdoutState(),
 	}
-}
-
-// ConfigureExit is the reference implementation of the ElevationControl function
-//
-// Deprecated: this function will go away soon; old callers need to create their
-// own code. This remains as an example.
-//
-// TODO: #48 Next time around, delete this function
-func (ec *elevationControl) ConfigureExit(oldExitFn func(int)) func(int) {
-	returnFunc := oldExitFn
-	if ec.elevated {
-		originalExit := oldExitFn
-		returnFunc = func(code int) {
-			fmt.Printf("Exiting with exit code %d\n", code)
-			var name string
-			fmt.Printf("Press enter to close the window...\n")
-			_, _ = Scanf("%s", &name)
-			originalExit(code)
-		}
-	}
-	return returnFunc
 }
 
 // Log is the reference implementation of the ElevationControl function
