@@ -108,7 +108,7 @@ func (c *Configuration) BoolDefault(key string, defaultValue bool) (bool, error)
 // be defined in the Configuration instance
 func (c *Configuration) IntDefault(key string, b *IntBounds) (int, error) {
 	if value, foundKey := c.IntMap[key]; foundKey {
-		return b.constrainedValue(value), nil
+		return b.ConstrainedValue(value), nil
 	}
 	value, foundKey := c.StringMap[key]
 	if !foundKey {
@@ -124,7 +124,7 @@ func (c *Configuration) IntDefault(key string, b *IntBounds) (int, error) {
 		// invalid int
 		return b.DefaultValue, fmt.Errorf("invalid value %q for flag --%s: parse error", rawValue, key)
 	}
-	return b.constrainedValue(cookedValue), nil
+	return b.ConstrainedValue(cookedValue), nil
 }
 
 // StringDefault returns a string value for a specified key

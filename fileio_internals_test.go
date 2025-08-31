@@ -2,8 +2,9 @@ package cmd_toolkit
 
 import (
 	"errors"
-	"github.com/majohn-r/output"
 	"testing"
+
+	"github.com/majohn-r/output"
 )
 
 func Test_logUnreadableDirectory(t *testing.T) {

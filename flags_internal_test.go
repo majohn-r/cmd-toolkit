@@ -2,9 +2,10 @@ package cmd_toolkit
 
 import (
 	"errors"
+	"testing"
+
 	"github.com/majohn-r/output"
 	"github.com/spf13/pflag"
-	"testing"
 )
 
 type testConfigSource struct {

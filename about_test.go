@@ -1,10 +1,11 @@
 package cmd_toolkit_test
 
 import (
-	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
 	"reflect"
 	"runtime/debug"
 	"testing"
+
+	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
 
 	"github.com/majohn-r/output"
 )

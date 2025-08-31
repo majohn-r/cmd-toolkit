@@ -1,12 +1,13 @@
 package cmd_toolkit_test
 
 import (
-	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
-	"github.com/majohn-r/output"
-	"github.com/spf13/afero"
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
+	"github.com/majohn-r/output"
+	"github.com/spf13/afero"
 )
 
 func TestWritableDefaults(t *testing.T) {

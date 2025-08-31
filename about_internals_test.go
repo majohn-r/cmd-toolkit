@@ -1,9 +1,10 @@
 package cmd_toolkit
 
 import (
-	"github.com/majohn-r/output"
 	"strings"
 	"testing"
+
+	"github.com/majohn-r/output"
 )
 
 func Test_finalYear(t *testing.T) {

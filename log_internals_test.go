@@ -3,13 +3,14 @@ package cmd_toolkit
 import (
 	"bytes"
 	"fmt"
-	"github.com/majohn-r/output"
 	"io"
 	"regexp"
 	"strings"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/majohn-r/output"
 )
 
 func Test_simpleLogger_Debug(t *testing.T) {

@@ -2,11 +2,12 @@ package cmd_toolkit_test
 
 import (
 	"errors"
+	"reflect"
+	"testing"
+
 	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
 	"github.com/majohn-r/output"
 	"github.com/spf13/pflag"
-	"reflect"
-	"testing"
 )
 
 func TestFlagDetails_Copy(t *testing.T) {

@@ -1,9 +1,10 @@
 package cmd_toolkit
 
 import (
-	"github.com/majohn-r/output"
 	"reflect"
 	"testing"
+
+	"github.com/majohn-r/output"
 )
 
 func Test_newConfiguration(t *testing.T) {

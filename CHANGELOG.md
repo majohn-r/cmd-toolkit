@@ -15,6 +15,14 @@ Key to symbols
 - 😒 change is invisible to the user
 - 🆕 new feature
 
+## v0.27.0
+
+_release `2025.08.31`_
+
+- 🐛 [issue 49](https://github.com/majohn-r/cmd-toolkit/issues/49) fixed: published **(*IntBounds).ConstrainedValue()**.
+- 😒 updated dependency: **github.com/spf13/pflag** v1.0.7 -> v1.0.8.
+- 😒 fixed IDE complaints (unsorted imports).
+
 ## v0.26.3
 
 _release `2025.08.29`_

@@ -1,10 +1,11 @@
 package cmd_toolkit_test
 
 import (
-	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
 	"os"
 	"reflect"
 	"testing"
+
+	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
 )
 
 func TestEmptyConfiguration(t *testing.T) {

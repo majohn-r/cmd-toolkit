@@ -3,11 +3,12 @@ package cmd_toolkit_test
 import (
 	"bytes"
 	"fmt"
-	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
-	"github.com/majohn-r/output"
 	"io"
 	"io/fs"
 	"testing"
+
+	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
+	"github.com/majohn-r/output"
 )
 
 func TestInitLogging(t *testing.T) {

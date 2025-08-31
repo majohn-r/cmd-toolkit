@@ -2,9 +2,10 @@ package cmd_toolkit
 
 import (
 	"fmt"
-	"golang.org/x/sys/windows"
 	"os"
 	"testing"
+
+	"golang.org/x/sys/windows"
 )
 
 func TestElevationControl_canElevate(t *testing.T) {

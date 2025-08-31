@@ -3,12 +3,13 @@ package cmd_toolkit_test
 import (
 	"errors"
 	"fmt"
-	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
+
+	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
 
 	"github.com/majohn-r/output"
 	"github.com/spf13/afero"
@@ -378,7 +379,7 @@ func TestModificationTime(t *testing.T) {
 		if setupErr = os.Chtimes(testFile, fileTime, fileTime); setupErr != nil {
 			t.Fail()
 		}
-		f.Close()
+		_ = f.Close()
 	}
 	tests := map[string]struct {
 		fileName string

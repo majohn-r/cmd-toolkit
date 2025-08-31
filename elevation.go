@@ -2,13 +2,14 @@ package cmd_toolkit
 
 import (
 	"fmt"
-	"github.com/majohn-r/output"
-	"github.com/mattn/go-isatty"
-	"golang.org/x/sys/windows"
 	"os"
 	"strconv"
 	"strings"
 	"syscall"
+
+	"github.com/majohn-r/output"
+	"github.com/mattn/go-isatty"
+	"golang.org/x/sys/windows"
 )
 
 // the vars declared below exist to make it possible for unit tests to thoroughly exercise the

@@ -2,10 +2,11 @@ package cmd_toolkit
 
 import (
 	"fmt"
-	"github.com/majohn-r/output"
-	"github.com/spf13/afero"
 	"path/filepath"
 	"testing"
+
+	"github.com/majohn-r/output"
+	"github.com/spf13/afero"
 )
 
 func Test_reportInvalidConfigurationData(t *testing.T) {

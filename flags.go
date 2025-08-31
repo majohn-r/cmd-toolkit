@@ -2,10 +2,11 @@ package cmd_toolkit
 
 import (
 	"fmt"
-	"github.com/majohn-r/output"
-	"github.com/spf13/pflag"
 	"reflect"
 	"slices"
+
+	"github.com/majohn-r/output"
+	"github.com/spf13/pflag"
 )
 
 type valueType int32

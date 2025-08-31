@@ -3,11 +3,12 @@ package cmd_toolkit
 import (
 	"errors"
 	"fmt"
+	"io/fs"
+	"path/filepath"
+
 	"github.com/majohn-r/output"
 	"github.com/spf13/afero"
 	"gopkg.in/yaml.v3"
-	"io/fs"
-	"path/filepath"
 )
 
 const (

@@ -22,7 +22,8 @@ func NewIntBounds(v1, v2, v3 int) *IntBounds {
 	}
 }
 
-func (b *IntBounds) constrainedValue(value int) (i int) {
+// ConstrainedValue returns a value that honors min/max constraints
+func (b *IntBounds) ConstrainedValue(value int) (i int) {
 	switch {
 	case value < b.MinValue:
 		i = b.MinValue

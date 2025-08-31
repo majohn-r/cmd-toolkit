@@ -1,9 +1,10 @@
 package cmd_toolkit_test
 
 import (
-	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
 	"reflect"
 	"testing"
+
+	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
 )
 
 func TestNewIntBounds(t *testing.T) {
@@ -93,6 +94,59 @@ func TestNewIntBounds(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			if got := cmdtoolkit.NewIntBounds(tt.args.v1, tt.args.v2, tt.args.v3); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewIntBounds() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIntBoundsConstrainedValue(t *testing.T) {
+	type fields struct {
+		MinValue     int
+		DefaultValue int
+		MaxValue     int
+	}
+	tests := map[string]struct {
+		fields fields
+		value  int
+		wantI  int
+	}{
+		"low": {
+			fields: fields{
+				MinValue:     -2,
+				DefaultValue: 10,
+				MaxValue:     45,
+			},
+			value: -3,
+			wantI: -2,
+		},
+		"middle": {
+			fields: fields{
+				MinValue:     -2,
+				DefaultValue: 10,
+				MaxValue:     45,
+			},
+			value: -1,
+			wantI: -1,
+		},
+		"high": {
+			fields: fields{
+				MinValue:     -2,
+				DefaultValue: 10,
+				MaxValue:     45,
+			},
+			value: 46,
+			wantI: 45,
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			b := &cmdtoolkit.IntBounds{
+				MinValue:     tt.fields.MinValue,
+				DefaultValue: tt.fields.DefaultValue,
+				MaxValue:     tt.fields.MaxValue,
+			}
+			if gotI := b.ConstrainedValue(tt.value); gotI != tt.wantI {
+				t.Errorf("ConstrainedValue() = %v, want %v", gotI, tt.wantI)
 			}
 		})
 	}
