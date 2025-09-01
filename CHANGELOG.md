@@ -15,6 +15,12 @@ Key to symbols
 - 😒 change is invisible to the user
 - 🆕 new feature
 
+## v0.27.1
+
+_release `2025.09.01`_
+
+- 😒 updated dependency: **github.com/spf13/pflag** v1.0.8 -> v1.0.9. v1.0.8 badly broke a lot of consumers.
+
 ## v0.27.0
 
 _release `2025.08.31`_
