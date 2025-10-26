@@ -3,6 +3,7 @@ module github.com/majohn-r/cmd-toolkit
 go 1.25
 
 require (
+	github.com/adrg/xdg v0.5.3
 	github.com/majohn-r/output v0.9.4
 	github.com/mattn/go-isatty v0.0.20
 	github.com/spf13/afero v1.15.0

@@ -15,6 +15,13 @@ Key to symbols
 - 😒 change is invisible to the user
 - 🆕 new feature
 
+## v0.28.0
+
+_release `2025.10.26`_
+
+- 🆕🐛 first step in fixing [issue 51](https://github.com/majohn-r/cmd-toolkit/issues/51): introducing the `StateFile`
+interface.
+
 ## v0.27.2
 
 _release `2025.10.09`_
