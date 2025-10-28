@@ -2,6 +2,7 @@ package cmd_toolkit_test
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
@@ -161,6 +162,73 @@ func TestSetApplicationPath(t *testing.T) {
 			}
 			if gotNew := cmdtoolkit.ApplicationPath(); gotNew != tt.s {
 				t.Errorf("SetApplicationPath() gotNew = %v, want %v", gotNew, tt.s)
+			}
+		})
+	}
+}
+
+func TestAppName(t *testing.T) {
+	savedArgs := os.Args
+	defer func() { os.Args = savedArgs }()
+	ps := string(os.PathSeparator)
+	tests := map[string]struct {
+		args []string
+		want string
+	}{
+		"nil": {
+			args: nil,
+			want: "",
+		},
+		"empty": {
+			args: []string{},
+			want: "",
+		},
+		"simple": {
+			args: []string{"foo"},
+			want: "foo",
+		},
+		"with extension": {
+			args: []string{"foo.bar"},
+			want: "foo",
+		},
+		"silly extension": {
+			args: []string{"foo."},
+			want: "foo",
+		},
+		"with path": {
+			args: []string{filepath.Join("bar", "foo")},
+			want: "foo",
+		},
+		"with path and extension": {
+			args: []string{filepath.Join("bar", "foo.baz")},
+			want: "foo",
+		},
+		"app name starts with '.' and has no extension": {
+			args: []string{".bash"},
+			want: ".bash",
+		},
+		"app name starts with lots of '.' and has no extension": {
+			args: []string{"....bash"},
+			want: "....bash",
+		},
+		"app name starts with lots of '.' and has an extension": {
+			args: []string{"....bash.foo"},
+			want: "....bash",
+		},
+		"path ends in '.'": {
+			args: []string{"foo" + ps + "."},
+			want: "",
+		},
+		"path ends in '..'": {
+			args: []string{"foo" + ps + ".."},
+			want: "",
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			os.Args = tt.args
+			if got := cmdtoolkit.AppName(); got != tt.want {
+				t.Errorf("AppName() = %v, want %v", got, tt.want)
 			}
 		})
 	}

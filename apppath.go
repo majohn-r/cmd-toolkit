@@ -2,7 +2,9 @@ package cmd_toolkit
 
 import (
 	"os"
+	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/majohn-r/output"
 )
@@ -92,4 +94,29 @@ func SetApplicationPath(s string) (previous string) {
 
 func isLegalApplicationName(applicationName string) bool {
 	return applicationNameRegex.MatchString(applicationName)
+}
+
+// AppName returns the name of the application as specified on the application's command line
+func AppName() string {
+	if len(os.Args) < 1 {
+		return "" // this sucks, but we just don't know!
+	}
+	// get just the name of the app, don't care about the rest of the path
+	path := os.Args[0]
+	filename := filepath.Base(path)
+	// special handling for file names beginning with "."
+	switch {
+	case filename == "." || filename == "..":
+		return ""
+	case strings.HasPrefix(filename, "."):
+		prefix := ""
+		base := filename
+		for strings.HasPrefix(base, ".") {
+			prefix += "."
+			base = base[1:]
+		}
+		return prefix + base[:len(base)-len(filepath.Ext(base))]
+	default:
+		return filename[:len(filename)-len(filepath.Ext(filename))]
+	}
 }
