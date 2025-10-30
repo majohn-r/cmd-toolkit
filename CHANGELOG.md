@@ -15,6 +15,13 @@ Key to symbols
 - 😒 change is invisible to the user
 - 🆕 new feature
 
+## v0.29.2
+
+_release `2025.10.30`_
+
+- 🐛 fix for [issue 52](https://github.com/majohn-r/cmd-toolkit/issues/52): use `xdg`'s `CONFIG_HOME` as the base
+directory for the configuration defaults file (aka application directory).
+
 ## v0.29.1
 
 _release `2025.10.28`_

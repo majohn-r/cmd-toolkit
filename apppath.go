@@ -6,14 +6,14 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/adrg/xdg"
 	"github.com/majohn-r/output"
 )
 
-// The code in this file deals with the application path, which is where data
-// files (such as configuration files) specific to the application exist. The
-// application path is found by looking up the environment variable 'APPDATA';
-// that value is assumed to be a writable directory, and a subdirectory whose
-// name is the application name is looked for, and, if missing, is created.
+// The code in this file deals with the application path, which is where configuration files specific to the
+// application exist. The application path is found by getting the xdg.CONFIG_HOME value; that value is assumed to be a
+// writable directory, and a subdirectory whose name is the application name is looked for, and, if missing, is
+// created.
 
 var (
 	applicationPath      string
@@ -29,21 +29,20 @@ func ApplicationPath() string {
 
 // InitApplicationPath ensures that the application path exists
 func InitApplicationPath(o output.Bus, applicationName string) bool {
-	value, varDefined := os.LookupEnv(applicationDataEnvVarName)
-	if !varDefined {
-		o.Log(output.Error, "not set", map[string]any{
-			"environmentVariable": applicationDataEnvVarName,
+	value := xdg.ConfigHome
+	if value == "" {
+		// should not be possible unless Windows has lost its mind, in which case, you got major problems!
+		o.Log(output.Error, "not set or defined", map[string]any{
+			"environmentVariable":  "XDG_CONFIG_HOME",
+			"Windows known folder": "localAppData",
 		})
 		o.ErrorPrintf(
-			"Files used by %s cannot be read or written because the environment variable %s has not been set.\n",
+			"Files used by %s cannot be read or written because the configuration home directory is not known.\n",
 			applicationName,
-			applicationDataEnvVarName,
 		)
 		o.ErrorPrintln("What to do:")
-		o.ErrorPrintf(
-			"Define %s, giving it a value that is a directory path, typically %%HOMEPATH%%\\AppData\\Roaming.\n",
-			applicationDataEnvVarName,
-		)
+		o.ErrorPrintln("Define XDG_CONFIG_HOME, giving it a value that is a directory path, " +
+			"typically %%HOMEPATH%%\\AppData\\Roaming.")
 		return false
 	}
 	if err := Mkdir(value); err != nil {
@@ -52,15 +51,12 @@ func InitApplicationPath(o output.Bus, applicationName string) bool {
 			"fileName": value,
 		})
 		o.ErrorPrintf(
-			"The %s environment variable value %q is not a directory, nor can it be created as a directory.\n",
-			applicationDataEnvVarName,
+			"The configuration home directory value %q is not a directory, nor can it be created as a directory.\n",
 			value,
 		)
 		o.ErrorPrintln("What to do:")
-		o.ErrorPrintf(
-			"The value of %s should be a directory path, typically %%HOMEPATH%%\\AppData\\Roaming.\n",
-			applicationDataEnvVarName,
-		)
+		o.ErrorPrintln("The value of XDG_CONFIG_HOME should be a directory path, " +
+			"typically %%HOMEPATH%%\\AppData\\Roaming.")
 		o.ErrorPrintf("Either it should contain a subdirectory named %q.\n", applicationName)
 		o.ErrorPrintln("Or, if it does not exist, it must be possible to create that subdirectory.")
 		return false

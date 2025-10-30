@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/adrg/xdg"
 	cmdtoolkit "github.com/majohn-r/cmd-toolkit"
 
 	"github.com/majohn-r/output"
@@ -31,60 +32,62 @@ func TestApplicationPath(t *testing.T) {
 func TestInitApplicationPath(t *testing.T) {
 	originalApplicationPath := cmdtoolkit.ApplicationPath()
 	originalFileSystem := cmdtoolkit.FileSystem()
-	appDataMemento := cmdtoolkit.NewEnvVarMemento("APPDATA")
+	originalConfigHome := xdg.ConfigHome
 	defer func() {
 		cmdtoolkit.SetApplicationPath(originalApplicationPath)
-		appDataMemento.Restore()
 		cmdtoolkit.AssignFileSystem(originalFileSystem)
+		xdg.ConfigHome = originalConfigHome
 	}()
 	cmdtoolkit.AssignFileSystem(afero.NewMemMapFs())
 	tests := map[string]struct {
 		applicationName string
-		appDataValue    string
-		appDataSet      bool
+		configHome      string
 		wantInitialized bool
 		preTest         func() // things to do before calling
 		output.WantedRecording
 	}{
-		"no appdata": {
+		"no config home": {
 			applicationName: "beautifulApp",
-			appDataSet:      false,
+			configHome:      "",
 			wantInitialized: false,
 			preTest:         func() {},
 			WantedRecording: output.WantedRecording{
 				Error: "" +
-					"Files used by beautifulApp cannot be read or written because the environment variable APPDATA " +
-					"has not been set.\n" +
+					"Files used by beautifulApp cannot be read or written " +
+					"because the configuration home directory is not known.\n" +
 					"What to do:\n" +
-					"Define APPDATA, giving it a value that is a directory path, " +
-					"typically %HOMEPATH%\\AppData\\Roaming.\n",
-				Log: "level='error' environmentVariable='APPDATA' msg='not set'\n",
+					"Define XDG_CONFIG_HOME, giving it a value that is a directory path, " +
+					"typically %%HOMEPATH%%\\AppData\\Roaming.\n",
+				Log: "" +
+					"level='error' " +
+					"Windows known folder='localAppData' " +
+					"environmentVariable='XDG_CONFIG_HOME' " +
+					"msg='not set or defined'\n",
 			},
 		},
 		"no app name": {
 			applicationName: "",
-			appDataSet:      true,
-			appDataValue:    "foo", // doesn't matter ...
+			configHome:      "foo", // doesn't matter ...
 			wantInitialized: false,
 			preTest:         func() {},
 			WantedRecording: output.WantedRecording{
 				Log: "level='error' error='application name \"\" is not valid' msg='program error'\n",
 			},
 		},
-		"appData not a directory": {
+		"config home not a directory": {
 			applicationName: "myApp",
-			appDataSet:      true,
-			appDataValue:    "foo.bar",
+			configHome:      "foo.bar",
 			wantInitialized: false,
 			preTest: func() {
 				_ = afero.WriteFile(cmdtoolkit.FileSystem(), "foo.bar", []byte("foo"), cmdtoolkit.StdFilePermissions)
 			},
 			WantedRecording: output.WantedRecording{
 				Error: "" +
-					"The APPDATA environment variable value \"foo.bar\" is not a directory, " +
+					"The configuration home directory value \"foo.bar\" is not a directory, " +
 					"nor can it be created as a directory.\n" +
 					"What to do:\n" +
-					"The value of APPDATA should be a directory path, typically %HOMEPATH%\\AppData\\Roaming.\n" +
+					"The value of XDG_CONFIG_HOME should be a directory path, " +
+					"typically %%HOMEPATH%%\\AppData\\Roaming.\n" +
 					"Either it should contain a subdirectory named \"myApp\".\n" +
 					"Or, if it does not exist, it must be possible to create that subdirectory.\n",
 				Log: "" +
@@ -96,8 +99,7 @@ func TestInitApplicationPath(t *testing.T) {
 		},
 		"cannot create subdirectory": {
 			applicationName: "myApp1",
-			appDataSet:      true,
-			appDataValue:    ".",
+			configHome:      ".",
 			wantInitialized: false,
 			preTest: func() {
 				_ = afero.WriteFile(cmdtoolkit.FileSystem(), "myApp1", []byte{1, 2, 3}, cmdtoolkit.StdFilePermissions)
@@ -113,8 +115,7 @@ func TestInitApplicationPath(t *testing.T) {
 		},
 		"subdirectory already exists": {
 			applicationName: "myApp2",
-			appDataSet:      true,
-			appDataValue:    ".",
+			configHome:      ".",
 			wantInitialized: true,
 			preTest: func() {
 				_ = cmdtoolkit.FileSystem().Mkdir("myApp2", cmdtoolkit.StdDirPermissions)
@@ -122,8 +123,7 @@ func TestInitApplicationPath(t *testing.T) {
 		},
 		"subdirectory does not yet exist": {
 			applicationName: "myApp3",
-			appDataSet:      true,
-			appDataValue:    ".",
+			configHome:      ".",
 			wantInitialized: true,
 			preTest:         func() {},
 		},
@@ -131,11 +131,7 @@ func TestInitApplicationPath(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			cmdtoolkit.SetApplicationPath("")
-			if tt.appDataSet {
-				_ = os.Setenv("APPDATA", tt.appDataValue)
-			} else {
-				_ = os.Unsetenv("APPDATA")
-			}
+			xdg.ConfigHome = tt.configHome
 			tt.preTest()
 			o := output.NewRecorder()
 			if got := cmdtoolkit.InitApplicationPath(o, tt.applicationName); got != tt.wantInitialized {
