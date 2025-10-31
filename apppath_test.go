@@ -57,7 +57,7 @@ func TestInitApplicationPath(t *testing.T) {
 					"because the configuration home directory is not known.\n" +
 					"What to do:\n" +
 					"Define XDG_CONFIG_HOME, giving it a value that is a directory path, " +
-					"typically %%HOMEPATH%%\\AppData\\Roaming.\n",
+					"typically %HOMEPATH%\\AppData\\Local.\n",
 				Log: "" +
 					"level='error' " +
 					"Windows known folder='localAppData' " +
@@ -87,7 +87,7 @@ func TestInitApplicationPath(t *testing.T) {
 					"nor can it be created as a directory.\n" +
 					"What to do:\n" +
 					"The value of XDG_CONFIG_HOME should be a directory path, " +
-					"typically %%HOMEPATH%%\\AppData\\Roaming.\n" +
+					"typically %HOMEPATH%\\AppData\\Local.\n" +
 					"Either it should contain a subdirectory named \"myApp\".\n" +
 					"Or, if it does not exist, it must be possible to create that subdirectory.\n",
 				Log: "" +

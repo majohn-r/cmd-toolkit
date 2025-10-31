@@ -5,24 +5,22 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/adrg/xdg"
 	"github.com/majohn-r/output"
 	"github.com/spf13/afero"
 )
 
 func Test_initWriter(t *testing.T) {
-	originalTmp := NewEnvVarMemento("TMP")
-	originalTemp := NewEnvVarMemento("TEMP")
 	originalLogPath := logPath
 	originalFileSystem := fileSystem
+	originalStateHome := xdg.StateHome
 	defer func() {
-		originalTmp.Restore()
-		originalTemp.Restore()
 		logPath = originalLogPath
 		fileSystem = originalFileSystem
+		xdg.StateHome = originalStateHome
 	}()
 	fileSystem = afero.NewMemMapFs()
 	tests := map[string]struct {
@@ -45,183 +43,9 @@ func Test_initWriter(t *testing.T) {
 					"the application name \"\" is not valid.\n",
 			},
 		},
-		"no temp folder defined": {
-			preTest: func() {
-				_ = os.Unsetenv("TMP")
-				_ = os.Unsetenv("TEMP")
-			},
-			postTest:        func() {},
-			applicationName: "myApp",
-			wantNil:         true,
-			wantLogPath:     "",
-			WantedRecording: output.WantedRecording{
-				Error: "" +
-					"Log initialization is not possible because " +
-					"neither the TMP nor TEMP environment variables are defined.\n" +
-					"What to do:\n" +
-					"Define at least one of TMP and TEMP, setting the value to a directory path, e.g., '/tmp'.\n" +
-					"Either it should contain a subdirectory named \"myApp\", " +
-					"which in turn contains a subdirectory named \"logs\".\n" +
-					"Or, if they do not exist, it must be possible to create those subdirectories.\n",
-			},
-		},
-		"bad TMP setting, no TEMP setting": {
-			preTest: func() {
-				_ = os.Setenv("TMP", "logs2")
-				_ = os.Unsetenv("TEMP")
-				_ = afero.WriteFile(fileSystem, "logs2", []byte{}, StdFilePermissions)
-			},
-			postTest:        func() {},
-			applicationName: "myApp",
-			wantNil:         true,
-			wantLogPath:     "",
-			WantedRecording: output.WantedRecording{
-				Error: "" +
-					"The TMP environment variable value \"logs2\" is not a directory, " +
-					"nor can it be created as a directory.\n" +
-					"What to do:\n" +
-					"The values of TMP and TEMP should be a directory path, e.g., '/tmp'.\n" +
-					"Either it should contain a subdirectory named \"myApp\", " +
-					"which in turn contains a subdirectory named \"logs\".\n" +
-					"Or, if they do not exist, it must be possible to create those subdirectories.\n",
-			},
-		},
-		"TMP does not exist yet, TEMP not ok": {
-			preTest: func() {
-				_ = os.Setenv("TMP", "tmp")
-				_ = os.Setenv("TEMP", "temp")
-				_ = afero.WriteFile(fileSystem, "temp", []byte("temp"), StdFilePermissions)
-			},
-			postTest: func() {
-				if closeErr := logWriter.Close(); closeErr != nil {
-					t.Errorf("error closing logWriter: %v", closeErr)
-				} else {
-					// this is necessary because the logging library creates the
-					// directory in the os file system, not in the one our tests
-					// use
-					if fileErr := afero.NewOsFs().RemoveAll("tmp"); fileErr != nil {
-						t.Errorf("Error removing tmp: %v", fileErr)
-					}
-				}
-			},
-			applicationName: "myApp",
-			wantNil:         false,
-			wantLogPath:     "tmp\\myApp\\logs",
-		},
-		"TMP ok, TEMP not ok": {
-			preTest: func() {
-				_ = os.Setenv("TMP", "tmp")
-				_ = os.Setenv("TEMP", "temp")
-				_ = fileSystem.Mkdir("tmp", StdDirPermissions)
-				_ = afero.WriteFile(fileSystem, "temp", []byte("temp"), StdFilePermissions)
-			},
-			postTest: func() {
-				if closeErr := logWriter.Close(); closeErr != nil {
-					t.Errorf("error closing logWriter: %v", closeErr)
-				} else {
-					// this is necessary because the logging library creates the
-					// directory in the os file system, not in the one our tests
-					// use
-					if fileErr := afero.NewOsFs().RemoveAll("tmp"); fileErr != nil {
-						t.Errorf("Error removing tmp: %v", fileErr)
-					}
-				}
-			},
-			applicationName: "myApp",
-			wantNil:         false,
-			wantLogPath:     "tmp\\myApp\\logs",
-		},
-		"TEMP ok, TMP not ok": {
-			preTest: func() {
-				_ = os.Setenv("TMP", "temp")
-				_ = os.Setenv("TEMP", "tmp")
-				_ = fileSystem.Mkdir("tmp", StdDirPermissions)
-				_ = afero.WriteFile(fileSystem, "temp", []byte("temp"), StdFilePermissions)
-			},
-			postTest: func() {
-				if closeErr := logWriter.Close(); closeErr != nil {
-					t.Errorf("error closing logWriter: %v", closeErr)
-				} else {
-					// this is necessary because the logging library creates the
-					// directory in the os file system, not in the one our tests
-					// use
-					if fileErr := afero.NewOsFs().RemoveAll("tmp"); fileErr != nil {
-						t.Errorf("Error removing tmp: %v", fileErr)
-					}
-				}
-			},
-			applicationName: "myApp",
-			wantNil:         false,
-			wantLogPath:     "tmp\\myApp\\logs",
-			WantedRecording: output.WantedRecording{
-				Error: "The TMP environment variable value \"temp\" is not a directory, " +
-					"nor can it be created as a directory.\n",
-			},
-		},
-		"neither TEMP nor TMP ok": {
-			preTest: func() {
-				_ = os.Setenv("TMP", "temp")
-				_ = os.Setenv("TEMP", "temp")
-				_ = afero.WriteFile(fileSystem, "temp", []byte("temp"), StdFilePermissions)
-			},
-			postTest:        func() {},
-			applicationName: "myApp",
-			wantNil:         true,
-			wantLogPath:     "",
-			WantedRecording: output.WantedRecording{
-				Error: "" +
-					"The TMP environment variable value \"temp\" is not a directory, " +
-					"nor can it be created as a directory.\n" +
-					"The TEMP environment variable value \"temp\" is not a directory, " +
-					"nor can it be created as a directory.\n" +
-					"What to do:\n" +
-					"The values of TMP and TEMP should be a directory path, e.g., '/tmp'.\n" +
-					"Either it should contain a subdirectory named \"myApp\", " +
-					"which in turn contains a subdirectory named \"logs\".\n" +
-					"Or, if they do not exist, it must be possible to create those subdirectories.\n",
-			},
-		},
-		"cannot create TMP/myapp, but can create TEMP/myapp": {
-			preTest: func() {
-				fileSystem = afero.NewOsFs()
-				_ = os.Setenv("TMP", ".\\tmp")
-				_ = os.Setenv("TEMP", "temp")
-				_ = fileSystem.MkdirAll(filepath.Join("tmp", "myApp"), StdDirPermissions)
-				_ = afero.WriteFile(
-					fileSystem,
-					filepath.Join("tmp", "myApp", "logs"),
-					[]byte("tmp"),
-					StdFilePermissions,
-				)
-				_ = fileSystem.Mkdir("temp", StdDirPermissions)
-			},
-			postTest: func() {
-				_ = fileSystem.RemoveAll("tmp")
-				_ = fileSystem.RemoveAll("temp")
-				if closeErr := logWriter.Close(); closeErr != nil {
-					t.Errorf("error closing logWriter: %v", closeErr)
-				} else {
-					// this is necessary because the logging library creates the
-					// directory in the os file system, not in the one our tests
-					// use
-					if fileErr := fileSystem.RemoveAll("temp"); fileErr != nil {
-						t.Errorf("Error removing temp: %v", fileErr)
-					}
-				}
-				fileSystem = afero.NewMemMapFs()
-			},
-			applicationName: "myApp",
-			wantNil:         false,
-			wantLogPath:     "temp\\myApp\\logs",
-			WantedRecording: output.WantedRecording{
-				Error: "The TMP environment variable value \".\\\\tmp\" " +
-					"cannot be used to create a directory for log files.\n",
-			},
-		},
 		"success": {
 			preTest: func() {
-				_ = os.Setenv("TMP", "goodLogs")
-				_ = os.Unsetenv("TEMP")
+				xdg.StateHome = "goodLogs"
 				_ = fileSystem.Mkdir("goodLogs", StdDirPermissions)
 			},
 			postTest: func() {
@@ -399,57 +223,6 @@ func Test_deleteLogFile(t *testing.T) {
 	}
 }
 
-func Test_findTemp(t *testing.T) {
-	savedTmp := NewEnvVarMemento("TMP")
-	savedTemp := NewEnvVarMemento("TEMP")
-	defer func() {
-		savedTmp.Restore()
-		savedTemp.Restore()
-	}()
-	tests := map[string]struct {
-		preTest func()
-		want    map[string]string
-	}{
-		"no temp vars": {
-			preTest: func() {
-				_ = os.Unsetenv("TMP")
-				_ = os.Unsetenv("TEMP")
-			},
-			want: map[string]string{},
-		},
-		"TMP, no TEMP": {
-			preTest: func() {
-				_ = os.Setenv("TMP", "tmp")
-				_ = os.Unsetenv("TEMP")
-			},
-			want: map[string]string{"TMP": "tmp"},
-		},
-		"TEMP, no TMP": {
-			preTest: func() {
-				_ = os.Setenv("TEMP", "temp")
-				_ = os.Unsetenv("TMP")
-			},
-			want: map[string]string{"TEMP": "temp"},
-		},
-		"TMP and TEMP": {
-			preTest: func() {
-				_ = os.Setenv("TMP", "tmp")
-				_ = os.Setenv("TEMP", "temp")
-			},
-			want: map[string]string{"TMP": "tmp", "TEMP": "temp"},
-		},
-	}
-	for name, tt := range tests {
-		t.Run(name, func(t *testing.T) {
-			tt.preTest()
-			got := findTemp()
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("findTemp() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 type fi struct {
 	name string
 	mode fs.FileMode
@@ -538,6 +311,77 @@ func Test_logFilePrefix(t *testing.T) {
 			if got := logFilePrefix(tt.applicationName); got != tt.want {
 				t.Errorf("logFilePrefix() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func Test_findLogFilePath(t *testing.T) {
+	originalStateHome := xdg.StateHome
+	defer func() {
+		xdg.StateHome = originalStateHome
+	}()
+	testDir := "logFile_findLogFilePath"
+	if err := Mkdir(testDir); err != nil {
+		t.Errorf("Mkdir() error creating %q = %v", err, testDir)
+	}
+	defer func() {
+		_ = os.RemoveAll(testDir)
+	}()
+	badAppName := "badAppName"
+	if f, err := os.Create(filepath.Join(testDir, badAppName)); err != nil {
+		t.Errorf("os.Create() error creating %q = %v", err, badAppName)
+	} else {
+		_ = f.Close()
+	}
+	tests := map[string]struct {
+		stateHome       string
+		applicationName string
+		want            string
+		output.WantedRecording
+	}{
+		"bad state home": {
+			stateHome:       "",
+			applicationName: "myApp",
+			want:            "",
+			WantedRecording: output.WantedRecording{
+				Error: "" +
+					"The state home value \"\" is not a directory, nor can it be created as a directory.\n" +
+					"What to do:\n" +
+					"The value of XDG_STATE_HOME should be a directory path, typically %HOMEPATH%\\AppData\\Local.\n" +
+					"Either it should contain a subdirectory named \"myApp\", " +
+					"which in turn contains a subdirectory named \"logs\".\n" +
+					"Or, if they do not exist, it must be possible to create those subdirectories.\n",
+			},
+		},
+		"cannot create full dir": {
+			stateHome:       testDir,
+			applicationName: badAppName,
+			want:            "",
+			WantedRecording: output.WantedRecording{
+				Error: "" +
+					"The state home value \"logFile_findLogFilePath\" " +
+					"cannot be used to create a directory for log files.\n" +
+					"What to do:\n" +
+					"The value of XDG_STATE_HOME should be a directory path, typically %HOMEPATH%\\AppData\\Local.\n" +
+					"Either it should contain a subdirectory named \"badAppName\", " +
+					"which in turn contains a subdirectory named \"logs\".\n" +
+					"Or, if they do not exist, it must be possible to create those subdirectories.\n",
+			},
+		},
+		"success": {
+			stateHome:       testDir,
+			applicationName: "myApp",
+			want:            filepath.Join(testDir, "myApp", "logs"),
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			o := output.NewRecorder()
+			xdg.StateHome = tt.stateHome
+			if got := findLogFilePath(o, tt.applicationName); got != tt.want {
+				t.Errorf("findLogFilePath() = %v, want %v", got, tt.want)
+			}
+			o.Report(t, "findLogFilePath()."+name, tt.WantedRecording)
 		})
 	}
 }

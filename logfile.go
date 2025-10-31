@@ -3,12 +3,12 @@ package cmd_toolkit
 import (
 	"io"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/adrg/xdg"
 	"github.com/majohn-r/output"
 	"github.com/utahta/go-cronowriter"
 )
@@ -21,8 +21,7 @@ const (
 )
 
 var (
-	logWriter                   io.WriteCloser
-	tmpEnvironmentVariableNames = []string{"TMP", "TEMP"}
+	logWriter io.WriteCloser
 )
 
 func initWriter(o output.Bus, applicationName string) (w io.Writer, path string) {
@@ -34,22 +33,7 @@ func initWriter(o output.Bus, applicationName string) (w io.Writer, path string)
 		)
 		return
 	}
-	// get the temporary folder values
-	tmpFolderMap := findTemp()
-	if len(tmpFolderMap) == 0 {
-		o.ErrorPrintln(
-			"Log initialization is not possible because neither the TMP nor TEMP environment variables are defined.")
-		o.ErrorPrintln("What to do:")
-		o.ErrorPrintln("Define at least one of TMP and TEMP, setting the value to a directory path, e.g., '/tmp'.")
-		o.ErrorPrintf(
-			"Either it should contain a subdirectory named %q, which in turn contains a subdirectory named %q.\n",
-			applicationName,
-			logDirName,
-		)
-		o.ErrorPrintln("Or, if they do not exist, it must be possible to create those subdirectories.")
-		return
-	}
-	path = findLogFilePath(o, tmpFolderMap, applicationName)
+	path = findLogFilePath(o, applicationName)
 	if path != "" {
 		cleanup(o, path, applicationName)
 		logWriter = cronowriter.MustNew(
@@ -61,33 +45,22 @@ func initWriter(o output.Bus, applicationName string) (w io.Writer, path string)
 	return
 }
 
-func findLogFilePath(o output.Bus, tmpFolderMap map[string]string, applicationName string) string {
-	for _, variableName := range tmpEnvironmentVariableNames {
-		if tmpFolder, found := tmpFolderMap[variableName]; found {
-			if err := Mkdir(tmpFolder); err != nil {
-				o.ErrorPrintf(
-					"The %s environment variable value %q is not a directory, nor can it be created as a directory.\n",
-					variableName,
-					tmpFolder,
-				)
-			} else {
-				// this is safe because we know the application name has been validated
-				tmp, _ := createAppSpecificPath(tmpFolder, applicationName)
-				path := filepath.Join(tmp, logDirName)
-				_ = fileSystem.MkdirAll(path, StdDirPermissions)
-				if DirExists(path) {
-					return path
-				}
-				o.ErrorPrintf(
-					"The %s environment variable value %q cannot be used to create a directory for log files.\n",
-					variableName,
-					tmpFolder,
-				)
-			}
+func findLogFilePath(o output.Bus, applicationName string) string {
+	base := xdg.StateHome
+	if err := Mkdir(base); err != nil {
+		o.ErrorPrintf("The state home value %q is not a directory, nor can it be created as a directory.\n", base)
+	} else {
+		// this is safe because we know the application name has been validated
+		appSpecificPath, _ := createAppSpecificPath(base, applicationName)
+		path := filepath.Join(appSpecificPath, logDirName)
+		_ = fileSystem.MkdirAll(path, StdDirPermissions)
+		if DirExists(path) {
+			return path
 		}
+		o.ErrorPrintf("The state home value %q cannot be used to create a directory for log files.\n", base)
 	}
 	o.ErrorPrintln("What to do:")
-	o.ErrorPrintln("The values of TMP and TEMP should be a directory path, e.g., '/tmp'.")
+	o.ErrorPrintln("The value of XDG_STATE_HOME should be a directory path, typically %HOMEPATH%\\AppData\\Local.")
 	o.ErrorPrintf(
 		"Either it should contain a subdirectory named %q, which in turn contains a subdirectory named %q.\n",
 		applicationName,
@@ -134,16 +107,6 @@ func deleteLogFile(o output.Bus, logFile string) bool {
 		return false
 	}
 	return true
-}
-
-func findTemp() map[string]string {
-	result := map[string]string{}
-	for _, variableName := range tmpEnvironmentVariableNames {
-		if tmpFolder, found := os.LookupEnv(variableName); found {
-			result[variableName] = tmpFolder
-		}
-	}
-	return result
 }
 
 func isLogFile(file fs.FileInfo, applicationName string) (ok bool) {

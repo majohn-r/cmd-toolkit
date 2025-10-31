@@ -20,9 +20,7 @@ var (
 	applicationNameRegex = regexp.MustCompile("^[._a-zA-Z][._a-zA-Z0-9-]+$")
 )
 
-const applicationDataEnvVarName = "APPDATA"
-
-// ApplicationPath returns the path to application-specific data (%APPDATA%\appName)
+// ApplicationPath returns the path to application-specific configuration data (typically %HOME%\AppData\Local\appName)
 func ApplicationPath() string {
 	return applicationPath
 }
@@ -42,7 +40,7 @@ func InitApplicationPath(o output.Bus, applicationName string) bool {
 		)
 		o.ErrorPrintln("What to do:")
 		o.ErrorPrintln("Define XDG_CONFIG_HOME, giving it a value that is a directory path, " +
-			"typically %%HOMEPATH%%\\AppData\\Roaming.")
+			"typically %HOMEPATH%\\AppData\\Local.")
 		return false
 	}
 	if err := Mkdir(value); err != nil {
@@ -56,7 +54,7 @@ func InitApplicationPath(o output.Bus, applicationName string) bool {
 		)
 		o.ErrorPrintln("What to do:")
 		o.ErrorPrintln("The value of XDG_CONFIG_HOME should be a directory path, " +
-			"typically %%HOMEPATH%%\\AppData\\Roaming.")
+			"typically %HOMEPATH%\\AppData\\Local.")
 		o.ErrorPrintf("Either it should contain a subdirectory named %q.\n", applicationName)
 		o.ErrorPrintln("Or, if it does not exist, it must be possible to create that subdirectory.")
 		return false

@@ -15,6 +15,15 @@ Key to symbols
 - 😒 change is invisible to the user
 - 🆕 new feature
 
+## v0.29.3
+
+_release `2025.10.30`_
+
+- 🐛⚠️ fix for [issue 52](https://github.com/majohn-r/cmd-toolkit/issues/52): use `xdg`'s `STATE_HOME` as the base
+directory for the log file directory instead of either the `TMP` or `TEMP` environment variable values.
+- 🐛 cleaned up application directory code and corrected some error output to reflect that the typical value of `xdg`'s
+`CONFIG_HOME` is `%HOMEPATH%\AppData\Local`, not `%HOMEPATH%\AppData\Roaming`
+
 ## v0.29.2
 
 _release `2025.10.30`_
