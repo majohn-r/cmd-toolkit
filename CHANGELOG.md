@@ -15,15 +15,22 @@ Key to symbols
 - 😒 change is invisible to the user
 - 🆕 new feature
 
+## v0.30.0
+
+_release `2026-02-02`_
+
+- ⚠️ fix for [issue 53](https://github.com/majohn-r/cmd-toolkit/issues/53): add `AttemptRunElevated` method to
+`ElevationControl` interface.
+
 ## v0.29.4
 
-_release `2026.01.26`_
+_release `2026-01-26`_
 
 - 😒 update dependencies
 
 ## v0.29.3
 
-_release `2025.10.30`_
+_release `2025-10-30`_
 
 - 🐛⚠️ fix for [issue 52](https://github.com/majohn-r/cmd-toolkit/issues/52): use `xdg`'s `STATE_HOME` as the base
 directory for the log file directory instead of either the `TMP` or `TEMP` environment variable values.
@@ -32,45 +39,45 @@ directory for the log file directory instead of either the `TMP` or `TEMP` envir
 
 ## v0.29.2
 
-_release `2025.10.30`_
+_release `2025-10-30`_
 
 - 🐛 fix for [issue 52](https://github.com/majohn-r/cmd-toolkit/issues/52): use `xdg`'s `CONFIG_HOME` as the base
 directory for the configuration defaults file (aka application directory).
 
 ## v0.29.1
 
-_release `2025.10.28`_
+_release `2025-10-28`_
 
 - 😒 update build dependencies.
 
 ## v0.29.0
 
-_release `2025.10.28`_
+_release `2025-10-28`_
 
 - 🆕🐛 fix for [issue 52](https://github.com/majohn-r/cmd-toolkit/issues/52): introducing the `AppName` function.
 
 ## v0.28.0
 
-_release `2025.10.26`_
+_release `2025-10-26`_
 
 - 🆕🐛 first step in fixing [issue 51](https://github.com/majohn-r/cmd-toolkit/issues/51): introducing the `StateFile`
 interface.
 
 ## v0.27.2
 
-_release `2025.10.09`_
+_release `2025-10-09`_
 
 - 😒 updated dependencies.
 
 ## v0.27.1
 
-_release `2025.09.01`_
+_release `2025-09-01`_
 
 - 😒 updated dependency: **github.com/spf13/pflag** v1.0.8 -> v1.0.9. v1.0.8 badly broke a lot of consumers.
 
 ## v0.27.0
 
-_release `2025.08.31`_
+_release `2025-08-31`_
 
 - 🐛 [issue 49](https://github.com/majohn-r/cmd-toolkit/issues/49) fixed: published **(*IntBounds).ConstrainedValue()**.
 - 😒 updated dependency: **github.com/spf13/pflag** v1.0.7 -> v1.0.8.
@@ -78,37 +85,37 @@ _release `2025.08.31`_
 
 ## v0.26.3
 
-_release `2025.08.29`_
+_release `2025-08-29`_
 
 - 😒 update build and code dependencies, as well as migrating to go 1.25
 
 ## v0.26.2
 
-_release `2025.07.20`_
+_release `2025-07-20`_
 
 - 😒 update build and code dependencies.
 
 ## v0.26.1
 
-_release `2025.03.10`_
+_release `2025-03-10`_
 
 - 🐛 remove unreachable `ConfigureExit` function and associated test.
 
 ## v0.26.0
 
-_release `2025.03.08`_
+_release `2025-03-08`_
 
 - ❗remove `ConfigureExit` from `ElevationControl` interface.
 
 ## v0.25.0
 
-_release `2025.02.19`_
+_release `2025-02-19`_
 
 - 🆕 add `ModificationTime` function to return a specified file's modification time.
 
 ## v0.24.1
 
-_release `2024.10.28`_
+_release `2024-10-28`_
 
 - 🐛⚠️ change `BuildInformation` from a `struct` to an `interface` for easier mocking by consumers. Consequently,
 `GetBuildInfo` returns an _implementation_ of `BuildInformation` instead of a pointer to an instance of
@@ -116,7 +123,7 @@ _release `2024.10.28`_
 
 ## v0.24.0
 
-_release `2024.10.28`_
+_release `2024-10-28`_
 
 - 🆕add `GetBuildData(reader func() (*debug.BuildInfo, bool)) *BuildInformation`; this also adds the `BuildInformation`
 struct and four methods on `*BuildInformation`:
@@ -129,7 +136,7 @@ struct and four methods on `*BuildInformation`:
 
 ## v0.23.0
 
-_release `2024.08.30`_
+_release `2024-08-30`_
 
 - 🆕⚠️add `ErrorToString(e Error) string` function; not a breaking change, exactly, but this project uses the new
 function, and that changes error output in ways that may surprise consumers, potentially breaking unit tests.

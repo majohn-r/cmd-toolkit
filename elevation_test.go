@@ -1,6 +1,7 @@
 package cmd_toolkit_test
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -396,6 +397,85 @@ func TestProcessIsElevated(t *testing.T) {
 			cmdtoolkit.IsElevated = func(_ windows.Token) bool { return tt.want }
 			if got := cmdtoolkit.ProcessIsElevated(); got != tt.want {
 				t.Errorf("processIsElevated() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_elevationControl_AttemptRunElevated(t *testing.T) {
+	originalGetCurrentProcessToken := cmdtoolkit.GetCurrentProcessToken
+	originalIsElevated := cmdtoolkit.IsElevated
+	originalIsTerminal := cmdtoolkit.IsTerminal
+	originalIsCygwinTerminal := cmdtoolkit.IsCygwinTerminal
+	originalShellExecute := cmdtoolkit.ShellExecute
+	defer func() {
+		cmdtoolkit.GetCurrentProcessToken = originalGetCurrentProcessToken
+		cmdtoolkit.IsElevated = originalIsElevated
+		cmdtoolkit.IsTerminal = originalIsTerminal
+		cmdtoolkit.IsCygwinTerminal = originalIsCygwinTerminal
+		cmdtoolkit.ShellExecute = originalShellExecute
+	}()
+	cmdtoolkit.GetCurrentProcessToken = func() (t windows.Token) {
+		return
+	}
+	rejectionError := fmt.Errorf("user declined")
+	tests := map[string]struct {
+		assertCanElevate         bool
+		assertShellExecuteResult bool
+		wantStatus               bool
+		wantError                error
+	}{
+		"cannot elevate": {
+			assertCanElevate:         false,
+			assertShellExecuteResult: true, // shell shouldn't execute anyway
+			wantStatus:               false,
+			wantError:                &cmdtoolkit.ElevationNotAttempted{},
+		},
+		"can elevate, user declines": {
+			assertCanElevate:         true,
+			assertShellExecuteResult: false,
+			wantStatus:               false,
+			wantError:                rejectionError,
+		},
+		"can elevate, user accepts": {
+			assertCanElevate:         true,
+			assertShellExecuteResult: true,
+			wantStatus:               true,
+			wantError:                nil,
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			cmdtoolkit.IsElevated = func(_ windows.Token) bool { return !tt.assertCanElevate }
+			cmdtoolkit.IsTerminal = func(_ uintptr) bool { return tt.assertCanElevate }
+			cmdtoolkit.IsCygwinTerminal = cmdtoolkit.IsTerminal
+			cmdtoolkit.ShellExecute = func(_ windows.Handle, _, _, _, _ *uint16, _ int32) error {
+				if tt.assertShellExecuteResult {
+					return nil
+				}
+				return rejectionError
+			}
+			ec := cmdtoolkit.NewElevationControl()
+			gotError, gotStatus := ec.AttemptRunElevated()
+			if gotStatus != tt.wantStatus || !errors.Is(gotError, tt.wantError) {
+				t.Errorf("AttemptRunElevated() = %q:%v, want %q:%v", gotError, gotStatus, tt.wantError,
+					tt.wantStatus)
+			}
+		})
+	}
+}
+
+func TestElevationNotAttempted_Error(t *testing.T) {
+	tests := map[string]struct {
+		want string
+	}{
+		"test case": {want: "elevation is not possible"},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			ei := &cmdtoolkit.ElevationNotAttempted{}
+			if got := ei.Error(); got != tt.want {
+				t.Errorf("Error() = %v, want %v", got, tt.want)
 			}
 		})
 	}

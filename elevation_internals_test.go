@@ -1,6 +1,7 @@
 package cmd_toolkit
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"testing"
@@ -618,17 +619,20 @@ func Test_runElevated(t *testing.T) {
 	defer func() {
 		ShellExecute = originalShellExecute
 	}()
+	testError := fmt.Errorf("test error")
 	tests := map[string]struct {
 		preTest    func()
+		wantError  error
 		wantStatus bool
 	}{
 		"fail": {
 			preTest: func() {
 				ShellExecute = func(windows.Handle, *uint16, *uint16, *uint16, *uint16, int32) error {
-					return fmt.Errorf("rejected")
+					return testError
 				}
 			},
 			wantStatus: false,
+			wantError:  testError,
 		},
 		"success": {
 			preTest: func() {
@@ -637,13 +641,15 @@ func Test_runElevated(t *testing.T) {
 				}
 			},
 			wantStatus: true,
+			wantError:  nil,
 		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			tt.preTest()
-			if gotStatus := runElevated(); gotStatus != tt.wantStatus {
-				t.Errorf("runElevated() = %v, want %v", gotStatus, tt.wantStatus)
+			gotError, gotStatus := runElevated()
+			if gotStatus != tt.wantStatus || !errors.Is(gotError, tt.wantError) {
+				t.Errorf("runElevated() = %q:%v, want %q:%v", gotError, gotStatus, tt.wantError, tt.wantStatus)
 			}
 		})
 	}

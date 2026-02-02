@@ -42,6 +42,19 @@ type ElevationControl interface {
 	// WillRunElevated checks whether the process can run with elevated privileges, and if so,
 	// attempts to do so
 	WillRunElevated() bool
+	// AttemptRunElevated checks whether the process can run with elevated privileges, and if so, attempts to do so. If
+	// the current process cannot run with elevated privileges, or the attempt to do so fails, the error return is
+	// non-nil
+	AttemptRunElevated() (error, bool)
+}
+
+// ElevationNotAttempted is a marker error indicating that for conventional reasons (I/O redirection, for example),
+// elevation is not attempted
+type ElevationNotAttempted struct {
+}
+
+func (ei *ElevationNotAttempted) Error() string {
+	return "elevation is not possible"
 }
 
 type elevationControl struct {
@@ -114,9 +127,18 @@ func (ec *elevationControl) WillRunElevated() bool {
 		// https://github.com/majohn-r/mp3repair/issues/157 if privileges can be
 		// elevated successfully, return true, else assume user declined and
 		// return false.
-		return runElevated()
+		_, status := runElevated()
+		return status
 	}
 	return false
+}
+
+// AttemptRunElevated is the reference implementation of the ElevationControl function
+func (ec *elevationControl) AttemptRunElevated() (error, bool) {
+	if ec.canElevate() {
+		return runElevated()
+	}
+	return &ElevationNotAttempted{}, false
 }
 
 func (ec *elevationControl) canElevate() bool {
@@ -191,7 +213,7 @@ func redirectedDescriptor(fd uintptr) bool {
 
 // credit: https://gist.github.com/jerblack/d0eb182cc5a1c1d92d92a4c4fcc416c6
 
-func runElevated() (status bool) {
+func runElevated() (refusedErr error, status bool) {
 	verb := "runas"
 	exe, _ := os.Executable()
 	cwd, _ := os.Getwd()
@@ -204,7 +226,7 @@ func runElevated() (status bool) {
 	// https://github.com/majohn-r/mp3repair/issues/157 if ShellExecute returns
 	// no error, assume the user accepted admin privileges and return true
 	// status
-	if refusedErr := ShellExecute(0, verbPtr, exePtr, argPtr, cwdPtr, showCmd); refusedErr == nil {
+	if refusedErr = ShellExecute(0, verbPtr, exePtr, argPtr, cwdPtr, showCmd); refusedErr == nil {
 		status = true
 	}
 	return
