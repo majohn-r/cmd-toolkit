@@ -1,6 +1,7 @@
 package cmd_toolkit
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"strconv"
@@ -14,6 +15,11 @@ import (
 
 // the vars declared below exist to make it possible for unit tests to thoroughly exercise the
 // functionality in this file
+
+type zoneValue struct {
+	interpreted string
+	forbidden   bool
+}
 
 var (
 	// IsCygwinTerminal determines whether a particular file descriptor (e.g., os.Stdin.Fd()) is a
@@ -30,6 +36,15 @@ var (
 	// IsElevated determines whether a specified windows token represents a process running with
 	// elevated privileges
 	IsElevated = windows.Token.IsElevated
+	// ReadAlternateDataStream reads the alternate data stream, if any, and interprets the zone id
+	ReadAlternateDataStream = readAlternateDataStream
+	zoneIdMap               = map[string]zoneValue{
+		"ZoneId=0": {"Local machine", false},
+		"ZoneId=1": {"Local intranet", false},
+		"ZoneId=2": {"Trusted sites", false},
+		"ZoneId=3": {"Internet", true},
+		"ZoneId=4": {"Restricted sites", true},
+	}
 )
 
 // ElevationControl defines behavior for code pertaining to running a process with elevated
@@ -57,6 +72,14 @@ func (ei *ElevationNotAttempted) Error() string {
 	return "elevation is not possible"
 }
 
+// ADSInformation holds data read from the executable's alternate data stream, if any
+type ADSInformation struct {
+	Forbidden bool
+	ID        string
+	Content   []string
+	Err       error
+}
+
 type elevationControl struct {
 	adminPermitted   bool
 	elevated         bool
@@ -64,6 +87,7 @@ type elevationControl struct {
 	stderrRedirected bool
 	stdinRedirected  bool
 	stdoutRedirected bool
+	ads              *ADSInformation
 }
 
 // NewElevationControl creates a new instance of elevationControl that does not use an environment variable to
@@ -76,6 +100,7 @@ func NewElevationControl() ElevationControl {
 		stderrRedirected: stderrState(),
 		stdinRedirected:  stdinState(),
 		stdoutRedirected: stdoutState(),
+		ads:              ReadAlternateDataStream(),
 	}
 }
 
@@ -89,6 +114,74 @@ func NewElevationControlWithEnvVar(envVarName string, defaultEnvVarValue bool) E
 		stderrRedirected: stderrState(),
 		stdinRedirected:  stdinState(),
 		stdoutRedirected: stdoutState(),
+		ads:              ReadAlternateDataStream(),
+	}
+}
+
+type internalCloseableReader interface {
+	Read(p []byte) (n int, err error)
+	Close() error
+}
+
+var internalOpen = func(fileName string) (internalCloseableReader, error) {
+	return os.Open(fileName)
+}
+
+func readAlternateDataStream() *ADSInformation {
+	executable, _ := os.Executable()
+	return readFileAlternateDataStream(executable)
+}
+
+func readFileAlternateDataStream(executable string) *ADSInformation {
+	// optimism
+	information := &ADSInformation{
+		Forbidden: false,
+		ID:        "",
+		Content:   []string{},
+		Err:       nil,
+	}
+	// ADS path format for Windows
+	adsPath := `\\?\` + executable + `:Zone.Identifier`
+	// Try opening the ADS
+	var f internalCloseableReader
+	var err error
+	f, err = internalOpen(adsPath)
+	if err != nil {
+		information.Err = err
+		return information // cannot open ADS
+	}
+	defer func() {
+		_ = f.Close()
+	}()
+	scanner := bufio.NewScanner(f)
+	information.read(scanner)
+	return information
+}
+
+type fileReader interface {
+	Scan() bool
+	Text() string
+	Err() error
+}
+
+func (ads *ADSInformation) read(scanner fileReader) {
+	for scanner.Scan() {
+		line := scanner.Text()
+		ads.Content = append(ads.Content, line)
+
+		// look for zone id
+		if strings.HasPrefix(line, "ZoneId=") {
+			if info, ok := zoneIdMap[line]; ok {
+				ads.ID = info.interpreted
+				ads.Forbidden = info.forbidden
+			} else {
+				ads.ID = line
+				ads.Forbidden = true
+			}
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		ads.Err = err
 	}
 }
 
@@ -101,12 +194,16 @@ func (ec *elevationControl) Log(o output.Bus, level output.Level) {
 		"stdin_redirected":     ec.stdinRedirected,
 		"stdout_redirected":    ec.stdoutRedirected,
 		"environment_variable": ec.envVarName,
+		"ads_forbidden":        ec.ads.Forbidden,
+		"ads_id":               ec.ads.ID,
+		"ads_content":          strings.Join(ec.ads.Content, ","),
+		"ads_error":            ec.ads.Err,
 	})
 }
 
 // Status is the reference implementation of the ElevationControl function
 func (ec *elevationControl) Status(appName string) []string {
-	results := make([]string, 0, 3)
+	results := make([]string, 0, 4)
 	if ec.elevated {
 		results = append(results, fmt.Sprintf("%s is running with elevated privileges", appName))
 		return results
@@ -117,6 +214,10 @@ func (ec *elevationControl) Status(appName string) []string {
 	}
 	if !ec.adminPermitted {
 		results = append(results, fmt.Sprintf("The environment variable %s evaluates as false", ec.envVarName))
+	}
+	if ec.ads.Forbidden {
+		results = append(results,
+			fmt.Sprintf("The zone id (%s) forbids %s from running with elevated privileges", ec.ads.ID, appName))
 	}
 	return results
 }

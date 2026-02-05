@@ -3,7 +3,9 @@ package cmd_toolkit
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
+	"reflect"
 	"testing"
 
 	"golang.org/x/sys/windows"
@@ -660,5 +662,218 @@ func TestElevationControlImplemented(t *testing.T) {
 	ec = &elevationControl{}
 	if _, ok := ec.(ElevationControl); !ok {
 		t.Errorf("&elevationControl does not implement ElevationControl")
+	}
+}
+
+type testScanner struct {
+	content   []string
+	err       error
+	lineCount int
+}
+
+func (s *testScanner) Scan() bool {
+	return s.lineCount < len(s.content)
+}
+
+func (s *testScanner) Err() error {
+	if errors.Is(s.err, io.EOF) {
+		return nil
+	}
+	return s.err
+}
+
+func (s *testScanner) Text() string {
+	str := s.content[s.lineCount]
+	s.lineCount++
+	return str
+}
+
+func newTestScanner(data []string, e error) fileReader {
+	return &testScanner{
+		content:   data,
+		lineCount: 0,
+		err:       e,
+	}
+}
+
+func TestADSInformation_read(t *testing.T) {
+	tests := map[string]struct {
+		scanner       fileReader
+		wantForbidden bool
+		wantID        string
+		wantContents  []string
+		wantErr       error
+	}{
+		"empty": {
+			scanner:       newTestScanner([]string{}, io.EOF),
+			wantForbidden: false,
+			wantID:        "",
+			wantContents:  []string{},
+			wantErr:       nil,
+		},
+		"no id": {
+			scanner:       newTestScanner([]string{"ReferrerUrl=nope"}, io.EOF),
+			wantForbidden: false,
+			wantID:        "",
+			wantContents:  []string{"ReferrerUrl=nope"},
+			wantErr:       nil,
+		},
+		"local machine": {
+			scanner:       newTestScanner([]string{"ZoneId=0", "ReferrerUrl=nope"}, io.EOF),
+			wantForbidden: false,
+			wantID:        "Local machine",
+			wantContents:  []string{"ZoneId=0", "ReferrerUrl=nope"},
+			wantErr:       nil,
+		},
+		"local intranet": {
+			scanner:       newTestScanner([]string{"ZoneId=1", "ReferrerUrl=nope"}, io.EOF),
+			wantForbidden: false,
+			wantID:        "Local intranet",
+			wantContents:  []string{"ZoneId=1", "ReferrerUrl=nope"},
+			wantErr:       nil,
+		},
+		"trusted sites": {
+			scanner:       newTestScanner([]string{"ZoneId=2", "ReferrerUrl=nope"}, io.EOF),
+			wantForbidden: false,
+			wantID:        "Trusted sites",
+			wantContents:  []string{"ZoneId=2", "ReferrerUrl=nope"},
+			wantErr:       nil,
+		},
+		"internet": {
+			scanner:       newTestScanner([]string{"ZoneId=3", "ReferrerUrl=nope"}, io.EOF),
+			wantForbidden: true,
+			wantID:        "Internet",
+			wantContents:  []string{"ZoneId=3", "ReferrerUrl=nope"},
+			wantErr:       nil,
+		},
+		"restricted sites": {
+			scanner:       newTestScanner([]string{"ZoneId=4", "ReferrerUrl=nope"}, io.EOF),
+			wantForbidden: true,
+			wantID:        "Restricted sites",
+			wantContents:  []string{"ZoneId=4", "ReferrerUrl=nope"},
+			wantErr:       nil,
+		},
+		"garbage": {
+			scanner:       newTestScanner([]string{"ZoneId=foo", "ReferrerUrl=nope"}, io.EOF),
+			wantForbidden: true,
+			wantID:        "ZoneId=foo",
+			wantContents:  []string{"ZoneId=foo", "ReferrerUrl=nope"},
+			wantErr:       nil,
+		},
+		"sick scanner": {
+			scanner:       newTestScanner([]string{"ZoneId=0", "ReferrerUrl=nope"}, os.ErrClosed),
+			wantForbidden: false,
+			wantID:        "Local machine",
+			wantContents:  []string{"ZoneId=0", "ReferrerUrl=nope"},
+			wantErr:       os.ErrClosed,
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			ads := &ADSInformation{
+				Forbidden: false,
+				ID:        "",
+				Content:   []string{},
+				Err:       nil,
+			}
+			ads.read(tt.scanner)
+			if ads.Forbidden != tt.wantForbidden {
+				t.Errorf("ads.Forbidden = %v, want %v", ads.Forbidden, tt.wantForbidden)
+			}
+			if ads.ID != tt.wantID {
+				t.Errorf("ads.ID = %v, want %v", ads.ID, tt.wantID)
+			}
+			if !reflect.DeepEqual(ads.Content, tt.wantContents) {
+				t.Errorf("ads.Content = %v, want %v", ads.Content, tt.wantContents)
+			}
+			if !errors.Is(ads.Err, tt.wantErr) {
+				t.Errorf("ads.Err = %v, want %v", ads.Err, tt.wantErr)
+			}
+		})
+	}
+}
+
+type testFile struct {
+	errOnOpen error
+	data      []byte
+	bytesRead int
+}
+
+func (tf *testFile) Read(p []byte) (n int, err error) {
+	var toBeRead int
+	if len(p) < len(tf.data)-tf.bytesRead {
+		toBeRead = len(p)
+	} else {
+		toBeRead = len(tf.data) - tf.bytesRead
+	}
+	if toBeRead == 0 {
+		return 0, io.EOF
+	}
+	copy(p, tf.data[tf.bytesRead:toBeRead])
+	tf.bytesRead += toBeRead
+	return toBeRead, nil
+}
+
+func (tf *testFile) Close() error {
+	return nil
+}
+
+var testFileMap = map[string]*testFile{
+	`\\?\errorProne:Zone.Identifier`: {errOnOpen: os.ErrClosed, data: nil, bytesRead: 0},
+	`\\?\Internet:Zone.Identifier`:   {errOnOpen: nil, data: []byte("ZoneId=3\nReferrerUrl=foo"), bytesRead: 0},
+}
+
+func testFileOpen(filename string) (internalCloseableReader, error) {
+	if tf, ok := testFileMap[filename]; ok {
+		if tf.errOnOpen != nil {
+			return nil, tf.errOnOpen
+		}
+		return tf, nil
+	}
+	return &testFile{errOnOpen: nil, data: []byte("ZoneId=1\nReferrerUrl=foo"), bytesRead: 0}, nil
+}
+
+func Test_readFileAlternateDataStream(t *testing.T) {
+	originalInternalOpen := internalOpen
+	defer func() {
+		internalOpen = originalInternalOpen
+	}()
+	internalOpen = testFileOpen
+	tests := map[string]struct {
+		executable string
+		want       *ADSInformation
+	}{
+		"error prone": {
+			executable: "errorProne",
+			want: &ADSInformation{
+				Err:     os.ErrClosed,
+				Content: []string{},
+			},
+		},
+		"Internet": {
+			executable: "Internet",
+			want: &ADSInformation{
+				Forbidden: true,
+				ID:        "Internet",
+				Content:   []string{"ZoneId=3", "ReferrerUrl=foo"},
+			},
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := readFileAlternateDataStream(tt.executable)
+			if got.Forbidden != tt.want.Forbidden {
+				t.Errorf("readFileAlternateDataStream = %v, want %v", got.Forbidden, tt.want.Forbidden)
+			}
+			if got.ID != tt.want.ID {
+				t.Errorf("readFileAlternateDataStream = %v, want %v", got.ID, tt.want.ID)
+			}
+			if !reflect.DeepEqual(got.Content, tt.want.Content) {
+				t.Errorf("readFileAlternateDataStream = %v, want %v", got.Content, tt.want.Content)
+			}
+			if !errors.Is(got.Err, tt.want.Err) {
+				t.Errorf("readFileAlternateDataStream = %v, want %v", got.Err, tt.want.Err)
+			}
+		})
 	}
 }

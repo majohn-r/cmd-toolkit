@@ -15,6 +15,13 @@ Key to symbols
 - 😒 change is invisible to the user
 - 🆕 new feature
 
+## v0.31.0
+
+_release `2026-02-03`_
+
+- ⚠️ fix for [issue 54](https://github.com/majohn-r/cmd-toolkit/issues/54): add adverse `ZoneId` detection in an
+alternate data stream
+
 ## v0.30.0
 
 _release `2026-02-02`_
