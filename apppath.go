@@ -103,13 +103,13 @@ func AppName() string {
 	case filename == "." || filename == "..":
 		return ""
 	case strings.HasPrefix(filename, "."):
-		prefix := ""
+		var prefix strings.Builder
 		base := filename
 		for strings.HasPrefix(base, ".") {
-			prefix += "."
+			prefix.WriteString(".")
 			base = base[1:]
 		}
-		return prefix + base[:len(base)-len(filepath.Ext(base))]
+		return prefix.String() + base[:len(base)-len(filepath.Ext(base))]
 	default:
 		return filename[:len(filename)-len(filepath.Ext(filename))]
 	}

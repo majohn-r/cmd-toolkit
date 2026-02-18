@@ -87,7 +87,7 @@ func cleanup(o output.Bus, logPath, applicationName string) (found, deleted int)
 				return times[i].Before(times[j])
 			})
 			limit := len(times) - maxLogFiles
-			for k := 0; k < limit; k++ {
+			for k := range limit {
 				entry := fileMap[times[k]]
 				if entry != nil {
 					logFile := filepath.Join(logPath, entry.Name())

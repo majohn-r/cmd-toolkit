@@ -801,11 +801,7 @@ type testFile struct {
 
 func (tf *testFile) Read(p []byte) (n int, err error) {
 	var toBeRead int
-	if len(p) < len(tf.data)-tf.bytesRead {
-		toBeRead = len(p)
-	} else {
-		toBeRead = len(tf.data) - tf.bytesRead
-	}
+	toBeRead = min(len(p), len(tf.data)-tf.bytesRead)
 	if toBeRead == 0 {
 		return 0, io.EOF
 	}

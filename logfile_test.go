@@ -123,7 +123,7 @@ func Test_cleanup(t *testing.T) {
 			preTest: func() {
 				_ = fileSystem.Mkdir("maxLogFiles", StdDirPermissions)
 				prefix := logFilePrefix("")
-				for k := 0; k < maxLogFiles; k++ {
+				for k := range maxLogFiles {
 					fileName := fmt.Sprintf("%s%d%s", prefix, k, logFileExtension)
 					_ = afero.WriteFile(
 						fileSystem,
@@ -141,7 +141,7 @@ func Test_cleanup(t *testing.T) {
 			preTest: func() {
 				_ = fileSystem.Mkdir("manyLogFiles", StdDirPermissions)
 				prefix := logFilePrefix("")
-				for k := 0; k < maxLogFiles+1; k++ {
+				for k := range maxLogFiles + 1 {
 					fileName := fmt.Sprintf("%s%d%s", prefix, k, logFileExtension)
 					_ = afero.WriteFile(
 						fileSystem,
