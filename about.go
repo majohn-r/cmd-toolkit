@@ -81,6 +81,8 @@ func GetBuildData(reader func() (*debug.BuildInfo, bool)) BuildInformation {
 // InterpretBuildData interprets the output of calling buildInfoReader() into easily
 // consumed forms; see https://github.com/majohn-r/cmd-toolkit/issues/17. for production
 // callers, pass in debug.ReadBuildInfo
+//
+//go:fix inline
 func InterpretBuildData(buildInfoReader func() (*debug.BuildInfo, bool)) (goVersion string, dependencies []string) {
 	bi := GetBuildData(buildInfoReader)
 	goVersion = bi.GoVersion()

@@ -5,7 +5,7 @@ go 1.26
 require (
 	github.com/goyek/goyek/v3 v3.0.1
 	github.com/goyek/x v0.4.0
-	github.com/majohn-r/tools-build v0.14.2
+	github.com/majohn-r/tools-build v0.15.0
 )
 
 require (
@@ -14,6 +14,6 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-shellwords v1.0.12 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
-	golang.org/x/text v0.34.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
+	golang.org/x/text v0.35.0 // indirect
 )
