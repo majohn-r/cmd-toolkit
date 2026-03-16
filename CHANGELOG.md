@@ -15,6 +15,12 @@ Key to symbols
 - 😒 change is invisible to the user
 - 🆕 new feature
 
+## v0.31.2
+
+_release `2026-03-16`_
+
+- 🐛 marked deprecated `InterpretBuildData` function with `go:fix inline` comment
+
 ## v0.31.1
 
 _ release `2026-02-18`_
